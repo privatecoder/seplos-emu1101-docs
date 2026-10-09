@@ -183,7 +183,7 @@ This accounts for all 32 bytes. No fields are missing: the 0x5A response contain
 
 ## Real captures (test data)
 
-24 responses from 11 packs of a 12-pack system (firmware 16.06, captured on the pack bus). All checksums are correct. The mapping above fits every frame, including the thresholds of the system status bits: `10` standby down to −0.19 A, `01` discharging from −0.52 A, `02` charging from +1.49 A, `82` from +3.01 A (still set at +2.92 A, hysteresis down to 2.81 A). At SOC 98.2 % and 3.40–3.49 V per cell, alarm event 2 shows `01` (cell high alarm) or `11` (additionally pack high alarm).
+24 responses from 10 packs (addresses 1, 2, 4–11) of a 12-pack system (firmware 16.06, captured on the pack bus). All checksums are correct. The mapping above fits every frame, including the thresholds of the system status bits: `10` standby down to −0.19 A, `01` discharging from −0.52 A, `02` charging from +1.49 A, `82` from +3.01 A (still set at +2.92 A, hysteresis down to 2.81 A). At SOC 98.2 % and 3.40–3.49 V per cell, alarm event 2 shows `01` (cell high alarm) or `11` (additionally pack high alarm).
 
 | Frame | Pack | Cell max / min (V) | Current (A) | Pack (V) | SOC (%) | Events 1–6 | System status |
 |---|---|---|---|---|---|---|---|

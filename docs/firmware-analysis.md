@@ -36,7 +36,7 @@ An `.ehex` is an ASCII file with CRLF line endings: **16 pseudo Intel HEX record
 
 ### 2.1 Header (256 bytes)
 
-- Every record has the form `:10 0000 00 <16 bytes> AA`: length 16, address always 0000, type 00, **checksum always `AA`**. The checksum is therefore deliberately invalid, and this is exactly how the update tool recognizes the header.
+- Every record has the form `:10 0000 00 <16 bytes> AA`: length 16, address always 0000, type 00, **checksum always `AA`**. The checksum is therefore deliberately invalid; *presumably* this is how the update tool recognizes the header (the update tool and bootloader code are not available).
 - The payloads of the 16 records together make up 256 bytes. *(An earlier version said 15 records / 240 bytes; recounted in all 7 files, there are 16 records with checksum `AA`. The 16th went unnoticed because, as a record at address 0, it is overwritten by the real code.)*
 
 | Bytes | Content (identical in all 7 versions) | Meaning |
@@ -51,7 +51,7 @@ The update tool presumably checks only this header for compatibility. There is *
 ### 2.2 Payload
 
 - Type 00 records with 16 bytes (the last one shorter), contiguous addresses from `0x0000`, **valid Intel HEX checksums**.
-- Type 04 (Extended Linear Address) = `0000`.
+- No type 04 (Extended Linear Address) records: all seven files contain only types 00, 05 and 01 after the header. *(confirmed)*
 - Type 05 (Start Linear Address) = **`0x000000C1`**. This is the Keil entry `__main` in Thumb mode; the reset handler jumps there after hardware initialization. *(confirmed)*
 - Type 01 (EOF).
 
@@ -185,7 +185,7 @@ Further strings:
 | `0xAEBA` | CAN transmit dispatcher | confirmed |
 | `0xC4DA` | Send CAN frame | confirmed |
 | `0x4C3C` | Parameter plausibility check (before taking over 0xA1) | confirmed |
-| `0x4890` / `0x4748` | Write parameter EEPROM image | confirmed |
+| `0x4890` / `0x4748` | Write parameter block to **internal flash** (`0x25000 + block × 0x1000`, erase + program, mirrored copy +0x1000) | confirmed |
 | `0x5174` | Save calibration data | confirmed |
 | `0x5998` / `0x574C` | Write history record / EEPROM driver | confirmed |
 | `0x5D76` | Clear history and reset counters (ASCII 0x45 type 5) | confirmed |
@@ -343,7 +343,7 @@ Column "Value" = the example configuration export `Parameter 20260419_1308.xml` 
 
 ### 7.3 Function switches (`0x20000028…2F` = BitGroup0…7)
 
-**Switch byte k (k = 0…5) is the enable mask for alarm event k+1.** Proven for byte 0 ↔ event 1, byte 2 ↔ event 3, byte 5 ↔ event 6 *(confirmed)* and **byte 1 ↔ event 2** *(confirmed, see below)*; analogously for 3, 4 *(probable)*. The function `0x6894` is not a mask function; it checks sensor/connection faults (BitGroup0 bit 1, BitGroup5 bit 6).
+**Switch bytes 1…5 (BitGroup1–5) are the enable masks for alarm events 2…6.** Proven for byte 1 ↔ event 2 *(confirmed, see below)*, byte 2 ↔ event 3 and byte 5 ↔ event 6 *(confirmed)*; analogously for 3, 4 *(probable)*. **BitGroup0 is not a mask**: only its bit 1 is used, as the enable for the sensor plausibility check (16.06.13 `0x68A0`); event 1 is not ANDed with it. The function `0x6894` is not a mask function; it checks sensor/connection faults (BitGroup0 bit 1, BitGroup5 bit 6).
 
 **Event 2 / BitGroup1 in detail** (06.13 `0x6686`, 06.12 `0x64BA`, identical) *(confirmed)*:
 1. The voltage evaluation (06.13 `0x647E` → `0x6400`) sets or clears the bits of event 2 (`0x20000031`) without delay: warning or protection when the measured value is ≥ the parameter, return below the recovery parameter.
@@ -397,7 +397,7 @@ The function sets or clears **alarm event 8 bit 6** ("charging forbidden"). From
    - internal flag (`0x200000EA` in 06.05) bit 6
 4. Afterwards: on-off bit 1 → GPIO pin of the charge MOSFET. If current limiting (bit 2) is off, GPIO bit 10 is cleared.
 
-Conditions and masks are identical in all versions, **except SP80**. *(confirmed)*
+The bit masks are identical in all versions, **except SP80**. The **source of the temperature condition** changed in 16.06.11: up to 16.06.05 it tests the reported event 3 (`0x20000032`, masked by the current direction), from 16.06.11 the raw protection byte `0x200000BB` (not masked by direction). *(confirmed: 16.06.05 `0x6576`, 16.06.11 `0x6E84`, 16.06.13 `0x7050`)*
 
 Additionally (06.12/06.13): if event 7 bit 6 or 7 is set (current limiting, see §8.1b) and the pack is charging, the **charge MOSFET is switched off and the current limiter switched on**. The standby shutdown (§8.1c) also sets "charging forbidden" 60 s before shutting down. *(confirmed)*
 
@@ -433,7 +433,7 @@ The discharge MOSFET (on-off bit 0, GPIO 13) is **off** as long as any of the fo
   - manual (BitGroup6 bit 5, event 7 bit 5): once after power-on, if UVP, the empty flag or SOC protection persists and the port voltage is below a threshold
   - Window: for **P72 minutes**, the latch of cell/pack UVP, empty flag and SOC protection is cleared every second, so the MOSFETs can close. Aborted if for 5 s the following do not hold: lowest cell > P9, current > −3 A, both MOSFET paths on. Charging ≥ 3 A for > 5 s or lowest cell > P7 resets the attempts.
   - Purpose *(probable)*: a charger should be able to detect and charge a switched-off battery. Since the voltage evaluation immediately sets UVP again as long as a cell is ≤ P6, it is effective in practice between P6 and P7.
-- **Standby shutdown** (parameter 77, BitGroup7 bit 1, `0x88D0`): a seconds counter runs in standby without external voltage at the port (system status bit 4 and not bit 2); 5 s outside this condition reset it. After **P77 hours**, with highest cell < P5 and no charge activation in progress: 60 s "charging forbidden", then **"off"**. Afterwards (`0x8A24`): if after 30 s there is a voltage > P15 at the port (charger), it is aborted; otherwise the firmware saves the EEPROM and sets GPIO `0x50001000` bit 1 to 0. That this switches off the supply (self-latching) is *probable*. Button or port voltage abort it.
+- **Standby shutdown** (parameter 77, BitGroup7 bit 1, `0x88D0`): a seconds counter runs in standby without external voltage at the port (system status bit 4 and not bit 2); 5 s outside this condition reset it. After **P77 hours**, with highest cell < P5 and no charge activation in progress: 60 s "charging forbidden", then **"off"**. Afterwards (`0x8A24`): if after 30 s there is a voltage > P15 at the port (charger), it is aborted; otherwise the firmware saves its state to internal flash (block 6, `0x5564` → `0x4748`) and sets GPIO `0x50001000` bit 1 to 0. That this switches off the supply (self-latching) is *probable*. Button or port voltage abort it.
 
 ### 8.2 Temperature alarms and heater (06.13 `0x66C2`, 06.12 `0x64F6`, 06.11 `0x64FA`)
 
@@ -557,5 +557,5 @@ Result:
 
 - The tools and commands are described in [tools/README.md](../tools/README.md).
 - The image contains no symbols. All function names are derived from data flow, constants and the protocol PDFs.
-- **Not** contained in the image: bootloader, EEPROM default parameters as a table (defaults are set in the code or stored in the EEPROM), texts of the BatteryMonitor tool.
+- **Not** contained in the image: bootloader, a table of default parameters (defaults are set in the code or kept in the parameter block in internal flash), texts of the BatteryMonitor tool.
 - RAM addresses apply to 06.13. Older versions are partially shifted (see section 6).

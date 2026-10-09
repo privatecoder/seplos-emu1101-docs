@@ -31,9 +31,9 @@ Everything here is derived from the firmware code unless marked otherwise. It is
 3. **Interfaces and protocols (far more than documented):**
    - RS485-1/2 sockets (UART0, **19200 baud**, 16.04.06: 9600): Seplos ASCII with all commands, including intra-pack 0x5A and control commands. A master pack (DIP address 0 with slaves) polls its slaves there and **never answers requests on this bus**.
    - RS485 pair in the CAN socket (UART1, **9600 baud**): 0x42/0x44/0x51 of every pack at its DIP address, plus **Modbus RTU** (read only) and **Pylontech ASCII** (master only).
-   - RS232/TTL (UART2): **binary protocol** for the LCD display.
+   - RS232/TTL (UART2): **binary protocol**, probably for the LCD display.
    - CAN: 7 protocols, transmit only, master only, all frames once per second.
-4. **All inverter-facing data are system values computed by the master** (DIP 0) over all online packs.
+4. **Almost all inverter-facing data are system values computed by the master** (DIP 0) over all online packs (exceptions: e.g. the CAN cycle count is the master's own).
 5. **Pylontech/Deye CAN:** CVL = pack over-voltage protection parameter (fixed); CCL = charge over-current warning ÷ 2 (or − 10 A) × chargeable packs, 10 A total when all packs have a charge warning, 0 when a cell exceeds OVP + 30 mV, with ramp; DCL = discharge over-current warning − 10 A × packs; SOH always 100.
 6. **SOC logic:** coulomb counting with a hold at 98.2 % until a cell reaches the cell high-voltage warning, voltage-based recalibration (100 % after 30 min at ≥ N × cell high-voltage warning with < 3 A per pack), capacity learning only over a full charge-to-empty discharge.
 7. **SP80 (16.06.05)** differs from 16.06.04 by exactly one byte (charge MOSFET also off during "intermittent recharge waiting"); not carried into later versions.

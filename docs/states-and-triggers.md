@@ -51,7 +51,7 @@ Afterwards the remaining capacity is clamped to 0 … full capacity.
 
 **Consequences:**
 - A "stuck" SOC of **98.2 %** while charging is normal: without P0 at a cell or without calibration the firmware does not count further.
-- A full pack in standby at < 3.35 V per cell loses 0.2 A arithmetically, i.e. ≈ 0.26 %/h at 280 Ah, down to 96 %. This artificially creates room again for "Intermittent recharge" (§4) after a charge has ended.
+- A full pack in standby at < 3.35 V per cell loses 0.2 A arithmetically, i.e. 0.2 Ah per hour: ≈ 0.071 %/h at 280 Ah, so roughly 56 h from 100 % to 96 % (as long as no exception applies). *(An earlier version said ≈ 0.26 %/h. The counter runs once per second in units of 0.01 As and deducts 20 or 3 units, i.e. 0.20 or 0.03 A.)* This artificially creates room again for "Intermittent recharge" (§4) after a charge has ended.
 - The discharge SOC holds at 6 % or 0.9 % respectively until the voltage confirms the value.
 
 ---
@@ -97,7 +97,7 @@ The OVP/UVP rules act immediately (the delay lies in the respective protection d
 
 ## 3. Relearning the full capacity
 
-`0x8E4C` / `0x8BE0`, counting in `0x9044` *(confirmed)*. The "Full Capacity" (280.00 Ah in the example configuration) changes only through this sequence:
+`0x8E4C` / `0x8BE0`, counting in `0x9044` *(confirmed)*. The "Full Capacity" (280.00 Ah in the example configuration) is learned only through this sequence; besides that, writing P58 can set it directly (0x49; 0xA1 only at ≥ 10 Ah difference, see [configuration-parameters.md P58](configuration-parameters.md)):
 
 1. **Full mark:** highest cell ≥ P0 (3.45 V) **and** lowest cell ≥ 3.350 V. It persists as long as the highest cell is ≥ 3.370 V **and** SOC ≥ 98 %.
 2. **Start:** the pack starts to **discharge** while the full mark is set. From now on the removed charge is summed up.
@@ -107,9 +107,9 @@ The OVP/UVP rules act immediately (the delay lies in the respective protection d
 4. **Empty mark:** while discharging, the lowest cell reaches **≤ P2** (2.90 V).
 5. **Completion:** the pack is no longer discharging, the empty mark is set, and discharging lasted **≥ 1 h** in total.
    - New full capacity = removed charge + remaining capacity left.
-   - If the value lies between 80 % and 120 % of the old full capacity, it is adopted; otherwise it is clamped to 80 % or 120 % respectively. It is stored in the EEPROM.
+   - If the value lies between 80 % and 120 % of the old full capacity, it is adopted; otherwise it is clamped to 80 % or 120 % respectively. It is stored in internal flash (persistence block 6).
 
-**Consequence:** Without a complete discharge from ≥ 3.45 V to ≤ 2.90 V cell voltage in one go, the full capacity is **never** adjusted. The nominal capacity (P58) is independent of this.
+**Consequence:** Without a complete discharge from ≥ 3.45 V to ≤ 2.90 V cell voltage in one go, the full capacity is **never learned** (only a P58 write changes it). The nominal capacity (P58) is independent of this.
 
 ---
 
@@ -121,9 +121,9 @@ The OVP/UVP rules act immediately (the delay lies in the respective protection d
 |---|---|
 | **set** | Full flag set (100 % via §2.2 or §2.3) **and** SOC > P80 (96 %) **and** function switch BitGroup5 bit 1 on |
 | **cleared** | SOC ≤ P80, or highest cell ≤ P3 (3.10 V); with the switch disabled, the full flag is also cleared continuously (except during OVP) |
-| **Effect** | The pack counts as **charge-locked**. If **all** packs are charge-locked, the master reports **CCL = 0** and "Charge enable" = 0 to the inverter ([CAN protocols §3](protocols/can.md#3-limits-and-data-source-master-aggregation-confirmed)). The charge MOSFET stays on (only the special build SP80 switches it off). |
+| **Effect** | The pack counts as **charge-locked**. If **all** packs are charge-locked, the master normally reports **CCL = 0** and "Charge enable" = 0 to the inverter (exception: heating minimum, see §8) ([CAN protocols §3](protocols/can.md#3-limits-and-data-source-master-aggregation-confirmed)). The charge MOSFET stays on (among the vendor files, only the special build SP80 switches it off; see [soft vs. hard stop](intermittent-recharge-soft-vs-hard-stop.md)). |
 
-**Sequence in the example system:** pack reaches 100 % (e.g. 55.2 V for 30 min at < 3 A) → event 6 bit 1 → as soon as all 12 packs have reached this point, CCL = 0 → standby → SOC drops through consumption or the 0.2 A drift (§1) to 96 % → charging enabled again.
+**Sequence in the example system:** pack reaches 100 % (e.g. 55.2 V for 30 min at < 3 A) → event 6 bit 1 → as soon as all 12 packs have reached this point, CCL = 0 (without an active heating request) → standby → SOC drops through consumption or the 0.2 A drift (§1) to 96 % → charging enabled again.
 
 ---
 
@@ -186,7 +186,7 @@ Details: [CAN protocols §3](protocols/can.md#3-limits-and-data-source-master-ag
 | **DCL** | \|P52\|, above 20 A minus 10 A, × packs able to discharge | (155 − 10) × 12 = 1,740 A |
 | **CCL** normal | BitGroup7 bit 7 = 0: P50 / 2; bit 7 = 1: P50 − 10 A (above 20 A); × packs able to charge | 150 / 2 × 12 = 900 A |
 | **CCL** on warning | **all** packs able to charge have a charge-related warning (cell/pack high voltage alarm, charge temperature, ambient/MOS temperature, charge OC warning) → **10.0 A total** | 10 A total, i.e. ~0.8 A per pack |
-| **CCL** = 0 | no pack may charge (MOSFET off or Intermittent recharge on all packs), or highest cell > P4 + 30 mV | – |
+| **CCL** = 0 | no pack may charge (MOSFET off or Intermittent recharge on all packs) unless a heating request sets the heating minimum, or highest cell > P4 + 30 mV | – |
 | **CCL** heating | BitGroup3 bit 6 on, highest cell temperature < 25 °C, lowest ≤ P36 → at least packs × 10 A | off in the example configuration |
 | Ramp | CCL changes per cycle by at most packs × 1.0 A | ± 12 A per cycle |
 | **Forced charge** | System SOC ≤ 5 % (off > 10 %) or ≤ 9 % (off > 13 %) | – |
@@ -246,7 +246,7 @@ Sequence when fully charging with the example parameters *(derived from §1–8)
 1. Deye charges with up to 900 A CCL up to the CVL of **56.0 V**.
 2. From **55.20 V** pack voltage (P10) or 3.45 V at a cell (P0), a pack has a high voltage warning. As soon as **all 12** packs are warning, the CCL drops (with a ramp of 12 A per cycle) to **10 A total**, i.e. ~0.8 A per pack.
 3. Per pack: charge current < 3 A → after 30 s **98 %**, after 30 min at ≥ 55.20 V and lowest cell ≥ 3.35 V **100 %**.
-4. 100 % → **Intermittent recharge waiting** (BitGroup5 bit 1 is on in the example configuration). As soon as all packs have reached this point: **CCL = 0**.
+4. 100 % → **Intermittent recharge waiting** (BitGroup5 bit 1 is on in the example configuration). As soon as all packs have reached this point: **CCL = 0** (unless a heating request is active).
 5. Charging only resumes when the SOC of a pack drops to ≤ 96 % (consumption or 0.2 A standby drift).
 6. Pack OVP (56.0 V) is **disabled** in the example configuration via BitGroup1 = `DF` *(confirmed, mask 06.12 `0x64BA`)*. A 100 % reset via pack OVP therefore does not take place; cell OVP (3.65 V) remains active.
 7. The full capacity stays at 280.00 Ah as long as no pack is ever discharged in one go from ≥ 3.45 V to ≤ 2.90 V cell voltage (§3).
@@ -273,7 +273,7 @@ The specification describes the same BMS family, but lists **factory settings** 
 | "Longest standby time 48 h (no charger, no charge current)" | P77 + BitGroup7 bit 1 (§14) |
 | Heating (factory setting OFF): only with charger, not in standby/discharging | BitGroup3 bit 6, heating output only while charging or with a detected charger |
 | External switch (factory setting **OFF**): on/off via external switch in standby | BitGroup7 bit 0. **On in the example configuration** (`1F`). Without a connected switch, the idle level of the input decides; since the example packs are running, it is at "on". |
-| "LCD screen ON" | BitGroup7 bit 3 (binary protocol). The device on the binary port is therefore the **LCD display**. |
+| "LCD screen ON" | BitGroup7 bit 3 (binary protocol). The device on the binary port is therefore *probably* the **LCD display** (the code cannot identify it). |
 | "Charging activating 1 minute … press the button for recovering from protection" | P72 = 1 min, manual charge activation after switching on (BitGroup6 bit 5) |
 | Remaining capacity "calculated according to the cell voltage" | SOC voltage rules (§2) |
 | Compensation 1 → 9, 2 → 13, "Battery connection line impedance compensation" | P83–P86: correction of the cell with this number, i.e. of the connector before it (e.g. between cell 8 and 9) |
@@ -315,7 +315,7 @@ The specification describes the same BMS family, but lists **factory settings** 
 | Control command | ASCII 0x45 type 4, value ≠ 0x10 | Type 4 with 0x10, charging |
 | **Standby shutdown** | BitGroup7 bit 1; **P77 hours** of continuous standby without external voltage at the port (system status bit 4 and not bit 2), highest cell < P5, no pending charge activation; 5 s outside standby reset the counter | Charger (port > P15), button, charging |
 
-- Sequence of the standby shutdown: 60 s "charging forbidden", then "off". After 30 s "off" and without voltage at the port: save EEPROM, then GPIO `0x50001000` bit 1 = 0. That this switches off the BMS supply (self-holding circuit) is *probable*.
+- Sequence of the standby shutdown: 60 s "charging forbidden", then "off". After 30 s "off" and without voltage at the port: save state to internal flash (block 6), then GPIO `0x50001000` bit 1 = 0. That this switches off the BMS supply (self-holding circuit) is *probable*.
 - "Off" opens the discharge MOSFET (§7a).
 - **In the example configuration:** BitGroup7 = `1F` → bit 1 on, **shutdown after 48 h of standby** without a charger. In a system with an inverter that keeps the port permanently energized or charges regularly, this practically never happens.
 

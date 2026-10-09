@@ -136,7 +136,7 @@ Response INFO (169 bytes, without DATA FLAG):
 | 151–158 | function switches BitGroup0…7 (`0x20000028…2F`) |
 | 159–168 | device name, 10 characters (without length byte) |
 
-Meaning of each parameter and switch: [firmware-analysis.md, section 7](../firmware-analysis.md#7-parameters-and-function-switches). **Switch byte k masks alarm event k+1.**
+Meaning of each parameter and switch: [firmware-analysis.md, section 7](../firmware-analysis.md#7-parameters-and-function-switches). **Switch bytes 1–5 mask alarm events 2–6; BitGroup0 is not a mask (only bit 1: sensor plausibility check).**
 
 ### 1.5 CID2 0x49: Set parameters (capacities only) *(confirmed)*
 
@@ -207,7 +207,7 @@ Sequence:
 1. A wrong marker → RTN 4.
 2. Plausibility check `0x4C3C` (e.g. alarm < protection, limit values). Failure → **RTN 6**.
    - ⚠ Function switches and name have **nevertheless already been changed** in RAM in that case, but are not saved.
-3. On success: transfer into the live tables and write to EEPROM (I²C 0xA0).
+3. On success: transfer into the live tables and write to the **internal flash** parameter block (mirrored). The I²C EEPROM holds only the history.
 4. If the new rated capacity deviates from the full capacity by ≥ 10.00 Ah, the **full capacity is reset to the rated capacity**.
 
 ### 1.10 CID2 0xA0: Calibration *(confirmed)*

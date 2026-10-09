@@ -4,8 +4,8 @@
   Status: verified in the code of 06.12/06.13. FOR READING ONLY - do not import into BatteryMonitor (whether comments interfere with the import is unverified).
   Explanation: docs/configuration-parameters.md, derivations: docs/states-and-triggers.md.
   Pn = parameter number in the order of the file (0-86). The BMS reads/writes by position, not by name.
-  Warning = report only (CCL 10 A total if all packs have a charge warning); protection = MOSFET opens.
-  BitGroup0-5 mask alarm events 1-6: bit = 0 disables reporting and reaction.
+  Warning = does not open a MOSFET by itself, but can have control effects (CCL 10 A total if all packs have a charge warning; the charge over-current warning can activate the current limiter); protection = MOSFET opens.
+  BitGroup1-5 mask alarm events 2-6: bit = 0 disables reporting and reaction. BitGroup0 is not a mask: only bit 1 is used (sensor plausibility check).
 -->
 <paraGroup>
   <filetype>Parameter</filetype>
@@ -154,7 +154,7 @@
     <Value>5.0</Value>
     <Unit>℃</Unit>
   </parameter>
-  <!-- P24 Cell temperature while CHARGING: over-temperature PROTECTION. Event 3 bit 1. Charging forbidden (charge MOSFET off). Return: P25. -->
+  <!-- P24 Cell temperature while CHARGING: over-temperature PROTECTION. Event 3 bit 1. Charging forbidden (charge MOSFET off). Reported (event 3) only in this current direction; from 06.11 the MOSFET lock tests the raw protection byte regardless of the current direction. Return: P25. -->
   <parameter>
     <Name>Charging over temperature protection</Name>
     <Value>55.0</Value>
@@ -166,7 +166,7 @@
     <Value>50.0</Value>
     <Unit>℃</Unit>
   </parameter>
-  <!-- P26 Cell temperature while CHARGING: under-temperature PROTECTION. Event 3 bit 3. Charging forbidden. Return: P27. Note: do not charge LiFePO4 below 0 C; here the lock only takes effect at -10 C. -->
+  <!-- P26 Cell temperature while CHARGING: under-temperature PROTECTION. Event 3 bit 3. Charging forbidden. Reported (event 3) only in this current direction; from 06.11 the MOSFET lock tests the raw protection byte regardless of the current direction. Return: P27. Note: do not charge LiFePO4 below 0 C; here the lock only takes effect at -10 C. -->
   <parameter>
     <Name>Charging under-temperature protection</Name>
     <Value>-10.0</Value>
@@ -202,7 +202,7 @@
     <Value>3.0</Value>
     <Unit>℃</Unit>
   </parameter>
-  <!-- P32 Cell temperature while DISCHARGING: over-temperature PROTECTION. Event 3 bit 5. Discharge MOSFET off. Return: P33. -->
+  <!-- P32 Cell temperature while DISCHARGING: over-temperature PROTECTION. Event 3 bit 5. Discharge MOSFET off. Reported (event 3) only in this current direction; from 06.11 the MOSFET lock tests the raw protection byte regardless of the current direction. Return: P33. -->
   <parameter>
     <Name>Discharge over temperature protection</Name>
     <Value>55.0</Value>
@@ -214,7 +214,7 @@
     <Value>50.0</Value>
     <Unit>℃</Unit>
   </parameter>
-  <!-- P34 Cell temperature while DISCHARGING: under-temperature PROTECTION. Event 3 bit 7. Discharge MOSFET off. Return: P35. -->
+  <!-- P34 Cell temperature while DISCHARGING: under-temperature PROTECTION. Event 3 bit 7. Discharge MOSFET off. Reported (event 3) only in this current direction; from 06.11 the MOSFET lock tests the raw protection byte regardless of the current direction. Return: P35. -->
   <parameter>
     <Name>Discharge under-temperature protection</Name>
     <Value>-15.0</Value>
@@ -334,13 +334,13 @@
     <Value>-153.00</Value>
     <Unit>A</Unit>
   </parameter>
-  <!-- P54 Charge overcurrent PROTECTION. Event 5 bit 1. Charge MOSFET off after P66 seconds. Re-enable: P69/P70. -->
+  <!-- P54 Charge overcurrent PROTECTION. Event 5 bit 1. Charge MOSFET off after P66 seconds. Re-enable: after P69 seconds, or immediately on discharge current. -->
   <parameter>
     <Name>Charge overcurrent protection</Name>
     <Value>160.00</Value>
     <Unit>A</Unit>
   </parameter>
-  <!-- P55 Discharge overcurrent PROTECTION. Event 5 bit 3. Discharge MOSFET off after P67 seconds. Re-enable: P69/P70. -->
+  <!-- P55 Discharge overcurrent PROTECTION. Event 5 bit 3. Discharge MOSFET off after P67 seconds. Re-enable: after P69 seconds, or immediately on charge current. -->
   <parameter>
     <Name>Discharge overcurrent protection</Name>
     <Value>-160.00</Value>
@@ -358,7 +358,7 @@
     <Value>2000</Value>
     <Unit>mS</Unit>
   </parameter>
-  <!-- P58 RATED capacity, in 0x42 as Rated capacity. CAUTION: every write of P58 (single command 0x49 and whole block 0xA1) also resets the learned FULL capacity to this value. Cf. P59. -->
+  <!-- P58 RATED capacity, in 0x42 as Rated capacity. CAUTION: writing P58 with 0x49 sets the learned FULL capacity to this value (if remaining capacity is not above it); writing the whole block 0xA1 resets it only if P58 differs from it by >= 10 Ah. Cf. P59. -->
   <parameter>
     <Name>Battery rated capacity</Name>
     <Value>280.00</Value>
@@ -370,7 +370,7 @@
     <Value>75.00</Value>
     <Unit>Ah</Unit>
   </parameter>
-  <!-- P60 Cell difference FAULT if highest - lowest cell >= P60 (invalidation differential pressure = failure voltage difference). Event 1 bit 4 (BitGroup0 bit 4). Return: P61. -->
+  <!-- P60 Cell difference FAULT if highest - lowest cell >= P60 (invalidation differential pressure = failure voltage difference). Event 1 bit 4 (not maskable; BitGroup0 bit 4 has no effect). Return: P61. -->
   <parameter>
     <Name>Cell invalidation differential pressure</Name>
     <Value>0.50</Value>
@@ -472,7 +472,7 @@
     <Value>240</Value>
     <Unit>Minutes</Unit>
   </parameter>
-  <!-- P77 Self-shutdown after P77 hours of standby (unit 'When' = hours). Only with BitGroup7 bit 1 (ON in the example configuration). Condition: continuous standby without external voltage at the port, highest cell < P5. Then 60 s charging forbidden, off, save EEPROM, supply off (probable). A charger (port > P15) or the push button aborts. -->
+  <!-- P77 Self-shutdown after P77 hours of standby (unit 'When' = hours). Only with BitGroup7 bit 1 (ON in the example configuration). Condition: continuous standby without external voltage at the port, highest cell < P5. Then 60 s charging forbidden, off, save state to internal flash (block 6), supply off (probable). A charger (port > P15) or the push button aborts. -->
   <parameter>
     <Name>Standby shutdown delay</Name>
     <Value>48</Value>
@@ -490,7 +490,7 @@
     <Value>5</Value>
     <Unit>%</Unit>
   </parameter>
-  <!-- P80 Intermittent recharge (Interval charge capacity): after 100 % the pack is charge-locked (event 6 bit 1) until SOC <= P80; all packs locked -> CCL = 0. Only with BitGroup5 bit 1 (ON in the example configuration). Above P80 additionally 0.2 A SOC drift in standby. -->
+  <!-- P80 Intermittent recharge (Interval charge capacity): after 100 % the pack is charge-locked (event 6 bit 1) until SOC <= P80; all packs locked -> CCL = 0 (except heating minimum). Only with BitGroup5 bit 1 (ON in the example configuration). Above P80 additionally 0.2 A SOC drift in standby. -->
   <parameter>
     <Name>Interval charge capacity</Name>
     <Value>96</Value>
@@ -557,7 +557,7 @@
     <Name>BitGroup4</Name>
     <Value>BF</Value>
   </param_bit_group>
-  <!-- BitGroup5: enable mask event 6. Bit 0 charger overvoltage (P18), 1 intermittent recharge (P80), 2 SOC warning (P78), 3 SOC protection (P79, discharge MOSFET off), 4 cell too low for charging (P9), 5 reverse polarity (not implemented in the firmware), 6 output connection fault (hardware input, P82 unused), 7 current limiter feedback. 9F = bits 5 and 6 OFF; bit 1 ON: after 100 % CCL = 0 until SOC <= P80. -->
+  <!-- BitGroup5: enable mask event 6. Bit 0 charger overvoltage (P18), 1 intermittent recharge (P80), 2 SOC warning (P78), 3 SOC protection (P79, discharge MOSFET off), 4 cell too low for charging (P9), 5 reverse polarity (not implemented in the firmware), 6 output connection fault (hardware input, P82 unused), 7 current limiter feedback. 9F = bits 5 and 6 OFF; bit 1 ON: after 100 % CCL = 0 (except heating minimum) until SOC <= P80. -->
   <param_bit_group>
     <Name>BitGroup5</Name>
     <Value>9F</Value>

@@ -48,7 +48,7 @@ The English names were machine-translated from Chinese. The most common errors:
 | **protection** | 保护 | **protection**: MOSFET opens |
 | **recovery** | 恢复 | return threshold (hysteresis) |
 
-**Warning vs. protection:** every quantity has two levels. The warning is only reported. If all packs have a charge-related warning, the master lowers the CCL to 10 A total. The protection opens the MOSFET. *(confirmed, see [States and triggers §7/8](states-and-triggers.md#7-charging-forbidden--charge-mosfet))*
+**Warning vs. protection:** every quantity has two levels. A warning does not open a MOSFET by itself, but it can have control effects: if all packs have a charge-related warning, the master lowers the CCL to 10 A total, and the charge over-current warning can activate the hardware current limiter. The protection opens the MOSFET. *(confirmed, see [States and triggers §7/8](states-and-triggers.md#7-charging-forbidden--charge-mosfet))*
 
 ---
 
@@ -86,7 +86,7 @@ The English names were machine-translated from Chinese. The most common errors:
 
 ### 3.3 Temperatures (cell sensors)
 
-The charge limits only apply in the charging state, the discharge limits only while discharging. *(confirmed)*
+The **reported** charge-temperature warnings and protections (event 3) are masked by the current direction: charge bits only while charging, discharge bits only while discharging. The **MOSFET control** does not use that masked byte: from 16.06.11 the charge lock tests the raw charge-protection bits (`0x200000BB` & `0x0A`) and the discharge lock the raw discharge-protection bits (`& 0xA0`) regardless of the current direction (16.06.13 `0x7050`, `0x71D4`). *(confirmed)*
 
 | # | Name | correct meaning | Example value |
 |---|---|---|---|
@@ -135,7 +135,7 @@ Notes:
 
 | # | Name | correct meaning | Example value | what the firmware does with it |
 |---|---|---|---|---|
-| 58 | Battery rated capacity | **rated capacity** | 280.00 Ah | Reported in 0x42 as "Rated capacity". **Caution:** every write of P58 (single command 0x49 **and** writing the whole parameter block 0xA1) also resets the **learned full capacity** to this value. *(confirmed)* |
+| 58 | Battery rated capacity | **rated capacity** | 280.00 Ah | Reported in 0x42 as "Rated capacity". **Caution:** writing P58 can also reset the **learned full capacity**: the single command 0x49 sets it directly to the new value (if the remaining capacity is not above it); writing the whole parameter block 0xA1 resets it only if P58 differs from the learned full capacity by **≥ 10 Ah**. *(confirmed)* |
 | 59 | SOC | **remaining capacity (set value)**, not a percentage | 75.00 Ah | The value in the file is **not the current state of charge**, but the last stored set value. Writing it with single command 0x49 sets the remaining capacity to this value (only if ≤ full capacity). When the whole block is written, it is not applied to the counter. *(confirmed)* |
 
 ---
@@ -161,10 +161,10 @@ Notes:
 | 74 | Charge activation times | **charge activation: max. attempts** | 10 | Counter is reset on charging ≥ 3 A (5 s) or lowest cell > P7 |
 | 75 | Work record interval | history entry during operation every | 30 min | EEPROM history (max. 500 entries), readable with 0x4B |
 | 76 | Standby recording interval | history entry in standby every | 240 min | |
-| 77 | Standby shutdown delay | **self-shutdown after … hours of standby** | 48 h | Only with BitGroup7 bit 1 (**on** in the example configuration). Conditions: continuous standby **without external voltage at the port**, highest cell < P5. Then 60 s "charging forbidden", then "off" (discharge MOSFET off), save EEPROM, switch off supply *(switching off the supply probable)*. A charger (port > P15) or the push button aborts. |
+| 77 | Standby shutdown delay | **self-shutdown after … hours of standby** | 48 h | Only with BitGroup7 bit 1 (**on** in the example configuration). Conditions: continuous standby **without external voltage at the port**, highest cell < P5. Then 60 s "charging forbidden", then "off" (discharge MOSFET off), save state to internal flash, switch off supply *(switching off the supply probable)*. A charger (port > P15) or the push button aborts. |
 | 78 | Remaining capacity alarm | **SOC warning below** | 15 % | Event 6 bit 2. Part of the 10 % SOC rule ((P78+P79)/2) and reset of the empty mark |
 | 79 | Remaining capacity protection | **SOC protection below** | 5 % | Event 6 bit 3 → **discharge MOSFET off** (charging remains allowed). Discharge SOC holds at (P79 + 1) % = 6 % until a cell is ≤ P2. Charge activation (P72–P74) briefly lifts the protection periodically. |
-| 80 | Interval charge capacity | **intermittent recharge: charge again only below** | 96 % | After 100 % charging is locked (event 6 bit 1) until SOC ≤ P80; all packs locked → CCL = 0. Only with BitGroup5 bit 1. Above P80, 0.2 A SOC drift in standby. |
+| 80 | Interval charge capacity | **intermittent recharge: charge again only below** | 96 % | After 100 % charging is locked (event 6 bit 1) until SOC ≤ P80; all packs locked → CCL = 0 (except heating minimum). Only with BitGroup5 bit 1. Above P80, 0.2 A SOC drift in standby. |
 | 81 | Cycle cumulative capacity | **a cycle counts after cumulative … % discharge** | 80 % | |
 | 82 | Connection fault impedance | "connection fault impedance" | 10.0 mΩ | **No function:** never read by the firmware. The output connection fault (event 6 bit 6) comes from a hardware input (GPIO `0x50001000` pin 10, ≥ 5 s low, only with BitGroup5 bit 6). |
 | 83 / 84 | Compensation point 1 position / impedance | **connector compensation 1**: cell number / resistance (0.1 mΩ) | 9 / 0.0 mΩ | Current × P84 is subtracted from the voltage of **exactly cell no. P83** (correction in mV = I [A] × R [mΩ]; lower when charging, higher when discharging). For a connector with contact resistance that falls into the measurement of this cell. 0.0 = ineffective. |
@@ -236,7 +236,7 @@ Bit 0/1 charging high warning/protection (P20/P24), 2/3 charging low (P22/P26), 
 | 6 | output connection fault: hardware input GPIO `0x50001000` pin 10 ≥ 5 s low → discharge MOSFET off (P82 is not used) | **off** |
 | 7 | feedback of the current limiter stage (internal, masked out in 0x44/0x5A) | on |
 
-**Consequence of bit 1 = 1:** after a SOC reset to 100 % the pack reports "Intermittent recharge waiting". Once all packs are in this state, **CCL = 0** is sent to the inverter until a pack drops to ≤ 96 % (P80). If this is not wanted, switch bit 1 off.
+**Consequence of bit 1 = 1:** after a SOC reset to 100 % the pack reports "Intermittent recharge waiting". Once all packs are in this state, **CCL = 0** is sent to the inverter (unless a heating request raises it to the heating minimum, see [can.md §3](protocols/can.md#3-limits-and-data-source-master-aggregation-confirmed)) until a pack drops to ≤ 96 % (P80). If this is not wanted, switch bit 1 off.
 
 ### BitGroup6 = `BF` (functions)
 
@@ -258,7 +258,7 @@ Bit 0/1 charging high warning/protection (P20/P24), 2/3 charging low (P22/P26), 
 | 0 | **external on/off switch** (GPIO `0x50001000` pin 0: high = off, low = on). Factory default according to the Seplos specification: **off** | on |
 | 1 | **standby self-shutdown** after P77 | **on** (48 h) |
 | 2 | no function (no reader) | on |
-| 3 | binary protocol on RS232/TTL = **LCD display** (Seplos specification: "LCD screen ON") | on |
+| 3 | binary protocol on RS232/TTL, *probably* the **LCD display** port (Seplos specification: "LCD screen ON"; the code cannot identify the device) | on |
 | 4 | binary protocol in extended format A | on |
 | 5 | ignore DIP address, address assignment via pulse chain (GPIO 7/8/9), master adjusts slave count *(hardware interpretation probable)* | off |
 | 6 | no function (no reader) | off |
@@ -293,7 +293,7 @@ Detailed derivation: [States and triggers](states-and-triggers.md).
 
 ## 7. Notable points and remarks
 
-1. **P58/P59 when writing back:** writing the parameters resets the learned full capacity to P58. Since the packs of the example system are at 280.00 Ah anyway (never re-learned), this has no consequences there. P59 (75 Ah) is an old set value, not a measured value.
+1. **P58/P59 when writing back:** writing P58 with 0x49, or the whole block (0xA1) with P58 at least 10 Ah away from the learned full capacity, resets the learned full capacity to P58. Since the packs of the example system are at 280.00 Ah anyway (never re-learned), this has no consequences there. P59 (75 Ah) is an old set value, not a measured value.
 2. **Pack OVP off, CVL = pack OVP value:** intended or not, the combination works: the inverter charges up to 56.0 V, the cells are protected by the cell OVP of 3.65 V. At 56.0 V / 16 = 3.50 V on average there is a margin to 3.65 V as long as the cells do not drift far apart.
 3. **P10 = 16 × P0 (55.20 V):** from 55.20 V every pack warns, the CCL drops to 10 A total as soon as all 12 warn. With 12 packs this is ~0.8 A per pack. This is at the same time the condition (< 3 A per pack) under which the SOC reset to 100 % takes effect.
 4. **Balancing from 3.40 V (P8)** with start from 30 mV spread (P62): with well-matched cells balancing is almost never active. This is the behaviour observed on the example system.

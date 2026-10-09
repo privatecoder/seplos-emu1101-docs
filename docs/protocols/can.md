@@ -9,12 +9,12 @@ Confidence: **confirmed** = directly from the code · **probable** · **assumpti
 ## 1. Summary for Deye
 
 - **Only the master pack (DIP address 0) sends CAN.** Slaves are silent on CAN. *(confirmed)*
-- **All values are system values across all online packs.** The master collects them via the intra-pack protocol (0x5A): voltage = average, current and capacity = sum, cell extremes across all packs. *(confirmed)*
+- **Almost all values are system values across all online packs** (exceptions: the cycle count in 0x35C and the GINLONG ambient temperature in 0x356 are the master's own values). The master collects them via the intra-pack protocol (0x5A): voltage = average, current and capacity = sum, cell extremes across all packs. *(confirmed)*
 - **500 kbit/s**, 11-bit IDs. Roughly once per main loop tick, the set **0x351 → 0x355 → 0x356 → 0x359 → 0x370 → 0x371 → 0x35E → 0x35C** is sent *(confirmed; period presumably approx. 1 s)*.
 - **The BMS receives nothing via CAN.** Heartbeat 0x305 and other frames from the Deye are ignored; there is no timeout. *(confirmed)*
 - **Manufacturer name in 0x35E: "SHEnergy"**, not "PYLON". *(confirmed)*
-- **0x359 never reports "Protection"** (bytes 0/1 are always 0), only warnings. *(confirmed)*
-- **SOC stays at 98 %** until all packs are above 98 %. *(confirmed)*
+- **0x359 bytes 0/1 (the Pylontech "Protection" fields) are always 0.** Some protection states are nevertheless mapped into the alarm bytes: cell/pack under-voltage protection (event 2 bits 3/7) and charge over-current protection (event 5 bit 1). *(confirmed, 16.06.13 `0x9CE0`)*
+- **SOC stays at 98 %** until every pack is at least 98 % (and the system SOC is above 98 %). *(confirmed)*
 - **CVL is fixed** to the parameter "pack overvoltage protection". There is no absorption/float reduction. Throttling happens only via the charge current limit (CCL). *(confirmed)*
 
 **With the example configuration** (`config/parameter-export-example.xml`, module 1101-SP75, BitGroup7 = `1F` → bit 7 = 0 = "passive" limiting), per pack able to charge:
@@ -197,8 +197,8 @@ Not sent: 0x35A, 0x35F, 0x372–0x37F and extended IDs.
 ### Practical consequences
 
 - Deye charges up to the **pack OVP threshold** (CVL). Throttling comes only via the CCL (10 A on warning, 0 A when a cell is > OVP + 30 mV). Anyone wanting a lower end-of-charge voltage has to lower parameter 14. *(code confirmed, assessment assumption)*
-- Because 0x359 never reports "Protection", the inverter does not shut down because of a protection bit. The BMS protects itself via its MOSFETs and CCL = 0. *(code confirmed, inverter reaction assumption)*
-- During "Intermittent recharge waiting" (charging stopped after 100 % until SOC < parameter 80), the pack counts as charge-blocked. If all packs are affected, **CCL = 0** and Charge Enable = 0 follow, even without the SP80 MOSFET shutdown. *(confirmed)*
+- Because the Protection fields of 0x359 stay 0, an inverter that only evaluates those fields does not shut down because of a protection bit; some protection states still appear in the alarm bytes. The BMS protects itself via its MOSFETs and CCL = 0. *(code confirmed, inverter reaction assumption)*
+- During "Intermittent recharge waiting" (charging stopped after 100 % until SOC < parameter 80), the pack counts as charge-blocked. If all packs are affected, **CCL = 0** and Charge Enable = 0 follow, even without the SP80 MOSFET shutdown, unless a heating request raises the CCL to the heating minimum (step 4); the ramp (step 6) applies in both cases. *(confirmed)*
 
 ---
 

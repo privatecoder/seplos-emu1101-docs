@@ -122,7 +122,7 @@ Details: [CAN protocols](protocols/can.md) · [Modbus RTU](protocols/modbus-rtu.
 - In the "charging forbidden" ("Laden verboten") function (`0x6516`), **alarm event 6** is now checked with `0x73` instead of `0x71`. So **bit 1 "Intermittent recharge waiting"** additionally counts. *(confirmed)*
 - **Effect:**
   - If the "Intermittent power supply" function has stopped charging at 100 % (resumption below parameter 80, e.g. 96 %), SP80 additionally **opens the charge MOSFET**.
-  - In all other versions the MOSFET stays closed. There, only the inverter communication (pack counts as charge-blocked → CCL = 0 / Charge Enable = 0) and the charge current request block charging.
+  - In all other versions the MOSFET stays closed. There, only the inverter communication (pack counts as charge-blocked → CCL = 0 / Charge Enable = 0 when all packs wait, except heating minimum) and the charge current request block charging.
   - This matches the name "MOS off and Intermittent charging enabled on power on". The "enabled on power on" part is not a code change, but presumably a factory configuration. *(probable)*
 - **Not distinguishable from 06.04** via protocol (same version identifier).
 - ⚠ **Not adopted into the main line:** 06.11 to 06.13 use `0x71` again. *(confirmed)*

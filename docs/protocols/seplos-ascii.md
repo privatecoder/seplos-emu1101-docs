@@ -14,13 +14,13 @@ The board has three sockets: **CAN**, **RS485-1** and **RS485-2**. Besides CAN, 
 
 | Socket | UART | Baud rate | Protocols | Who responds |
 |---|---|---|---|---|
-| **RS485-1 / RS485-2** (pack bus, intra-pack) | UART0 `0x50010000` | **19200** (from 16.06.03); **9600** in 16.04.06 ("_9600") | this ASCII protocol, **full command set** | Slaves always. The master (DIP 0) with slaves polls by itself and responds only in pauses between its poll rounds |
+| **RS485-1 / RS485-2** (pack bus, intra-pack) | UART0 `0x50010000` | **19200** (from 16.06.03); **9600** in 16.04.06 ("_9600") | this ASCII protocol, **full command set** | Slaves always. The master (DIP 0) with slaves polls by itself and **does not respond** on this bus |
 | **CAN socket, RS485 pair** (inverter bus) | UART1 `0x50011000` | **9600** (all versions) | this ASCII protocol with a **restricted command set** + Pylontech system commands + Modbus RTU | 0x42/0x44/0x51: every pack under its DIP address; 0x60–0x63 and Modbus: only the master |
 | (internal) RS232/TTL | UART2 `0x50012000` | 9600 | binary protocol `0x55…0xAA` (see [undocumented-commands.md §2](undocumented-commands.md#2-binary-protocol-0x55--0xaa-uart2)) | – |
 
 - Data format: 8 data bits, no parity, 1 stop bit.
 - RS485 has direction switching (UART0: GPIO `0x50002000` bit 6).
-- **Multi-pack practice:** On RS485-1/2 the master is itself the bus master and can hardly be queried there. Via the RS485 pair of the CAN socket (9600 baud), **all packs including the master** can be read with 0x42/0x44/0x51.
+- **Multi-pack practice:** On RS485-1/2 the master is itself the bus master and cannot be queried there. Via the RS485 pair of the CAN socket (9600 baud), **all packs including the master** can be read with 0x42/0x44/0x51.
 - **Header of the `.ehex` file** `RS485Y19200N9600`: *assumption:* "19200" = pack bus/update port (the update tool uses 19200), "9600" = inverter bus.
 
 ---
@@ -230,7 +230,7 @@ Regarding "Off" (type 4):
 - The firmware keeps running afterwards. It detects the edges, sends the broadcasts and can be switched on again with type 4/`10`. *(confirmed)*
 - "Off" opens the **discharge MOSFET** (discharge lock `0x7184`) and clears the discharging/standby states. Charging cancels "Off" at any time. *(confirmed)*
 - Further triggers for "Off": button > 3 s, external switch (BitGroup7 bit 0, GPIO `0x50001000` bit 0 high; low switches back on) and the standby shutdown after parameter 77 (BitGroup7 bit 1). *(confirmed)*
-- After "Off" via button or standby shutdown, the BMS saves the EEPROM and sets GPIO `0x50001000` bit 1 to 0, provided no voltage is present at the port and the button is not pressed. That this drops the self-hold of the power supply (BMS completely off) is *probable*. Details: [states-and-triggers.md §14](../states-and-triggers.md#14-onoff-standby-shutdown-and-external-switch).
+- After "Off" via button or standby shutdown, the BMS saves its state to internal flash and sets GPIO `0x50001000` bit 1 to 0, provided no voltage is present at the port and the button is not pressed. That this drops the self-hold of the power supply (BMS completely off) is *probable*. Details: [states-and-triggers.md §14](../states-and-triggers.md#14-onoff-standby-shutdown-and-external-switch).
 - Physical access to the button should be ensured before the first test.
 
 **Only available on the pack bus (RS485-1/2).** The RS485 bus of the CAN socket knows no control commands; Modbus is also read-only there (FC 03/04).
@@ -353,7 +353,7 @@ Rejection → RTN 06, unknown subcode → RTN 04.
 - **Request:** INFO 169 bytes, layout as the 0x47 response. Byte 0 is ignored, the markers `3C`/`1B`/`08` are mandatory (otherwise RTN 04).
 - Plausibility check (alarm < protection, limits) → on error RTN 06.
 - ⚠ Function switches and device name are applied **before the check**. With RTN 06 they are therefore changed in RAM, but not saved.
-- On success, the data is written to the EEPROM. If the rated capacity deviates from the full capacity by ≥ 10 Ah, the full capacity is reset.
+- On success, the data is written to the internal flash parameter block (mirrored). If the rated capacity deviates from the full capacity by ≥ 10 Ah, the full capacity is reset.
 
 ### 5.13 CID2 0xA2–0xA5: Two 30-byte strings
 

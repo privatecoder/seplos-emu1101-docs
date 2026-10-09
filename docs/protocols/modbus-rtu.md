@@ -207,9 +207,9 @@ Reg 0x22:
 There is no dedicated bit for cell or pack **over**voltage, and charge/discharge OC *alarms* (Ev5 b0/b2) are not reported.
 
 - **`0x0010` × 19** (`0x301E`): same layout at the same addresses 0x10…0x22, but **without DCL**. The CCL (0x19) is calculated more simply:
-  - at least one pack able to charge → parameter 50 (0.01 A) × packs able to charge, without halving, ramp or heating logic
-  - packs able to charge, but (+0x03) = 0 → 3000 (= 30.00 A)
-  - otherwise 0
+  - at least one pack not charge-blocked (+0x06 < +0x01) and at least one pack able to charge (+0x03 ≠ 0) → parameter 50 (0.01 A) × packs able to charge, without halving, ramp or heating logic
+  - at least one pack not charge-blocked (+0x06 < +0x01), but no pack counted as able to charge (+0x03 = 0) → **3000 (= 30.00 A)**; note that this reports 30 A although no pack qualifies
+  - otherwise (all packs charge-blocked) 0
   - clamped to 32700
 
 ### 3.4 `0x0013` × 17 (since 04.06)
