@@ -4,7 +4,7 @@ Seven firmware images for the Seplos BMS V2.0 ("10C/10E" boards, BMS module EMU1
 
 ## Hashes
 
-`.ehex` = the vendor file. "Image" = the decoded flash image (Intel-HEX records after the 240-byte header, gaps filled with `0xFF`, starting at address 0), produced with [`tools/ehex2bin.py`](../tools/ehex2bin.py).
+`.ehex` = the vendor file. "Image" = the decoded flash image (Intel-HEX records after the 256-byte header, gaps filled with `0xFF`, starting at address 0), produced with [`tools/ehex2bin.py`](../tools/ehex2bin.py).
 
 | File | Version | Build date | Suffix | .ehex size (bytes) | .ehex SHA-256 | .ehex MD5 | Image size (bytes) | Image SHA-256 |
 |---|---|---|---|---|---|---|---|---|
@@ -25,7 +25,7 @@ shasum -a 256 ehex/*.ehex
 ## File name and header
 
 - File name: `CAN1101[V<HW>.<Major>.<Patch>_PN01_<YYMMDD>[_Suffix]].ehex`, e.g. `V16.06.13` = hardware line 16, firmware 06, patch 13, built 2025-06-07. The firmware itself only knows `16.06` (`0x10 0x06`); the patch number exists only in the file name (see [docs/firmware-analysis.md](../docs/firmware-analysis.md)).
-- All images share the same 240-byte header (15 pseudo Intel-HEX records): `SWM181RCT6_64_M0` (MCU Synwit SWM181, Cortex-M0), `EMU1101_10D_HW16`, `RS485Y19200N9600`, padded with `0x55`.
+- All images share the same 256-byte header (16 pseudo Intel-HEX records): `SWM181RCT6_64_M0` (MCU Synwit SWM181, Cortex-M0), `EMU1101_10D_HW16`, `RS485Y19200N9600`, padded with `0x55`.
 - `_9600` (16.04.06): RS485-1/2 run at 9600 baud instead of 19200.
 - `_SP80` (16.06.05): special build, one byte different from 16.06.04 (charge MOSFET also off during "intermittent recharge waiting").
 

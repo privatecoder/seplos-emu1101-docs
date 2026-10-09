@@ -5,7 +5,7 @@ for p in sys.argv[2:]:
     hdr=bytearray(); img={}; ext=0; entry=None
     for i,l in enumerate(recs):
         b=bytes.fromhex(l[1:]); n=b[0]; a=(b[1]<<8)|b[2]; t=b[3]; d=b[4:4+n]
-        if i<15: hdr+=d; continue
+        if i<16: hdr+=d; continue  # 16 header pseudo records (checksum AA)
         if t==0:
             for k,x in enumerate(d): img[ext+a+k]=x
         elif t==4: ext=struct.unpack('>H',d)[0]<<16

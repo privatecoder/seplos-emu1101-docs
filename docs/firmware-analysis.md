@@ -32,19 +32,19 @@ Contents of the ZIP files in the `Firmware/` folder: each contains exactly the `
 
 ## 2. The `.ehex` format
 
-An `.ehex` is an ASCII file with CRLF line endings: **15 pseudo Intel HEX records as a header**, followed by **regular Intel HEX**. *(confirmed)*
+An `.ehex` is an ASCII file with CRLF line endings: **16 pseudo Intel HEX records as a header**, followed by **regular Intel HEX**. *(confirmed)*
 
-### 2.1 Header (240 bytes)
+### 2.1 Header (256 bytes)
 
 - Every record has the form `:10 0000 00 <16 bytes> AA`: length 16, address always 0000, type 00, **checksum always `AA`**. The checksum is therefore deliberately invalid, and this is exactly how the update tool recognizes the header.
-- The payloads of the 15 records together make up 240 bytes:
+- The payloads of the 16 records together make up 256 bytes. *(An earlier version said 15 records / 240 bytes; recounted in all 7 files, there are 16 records with checksum `AA`. The 16th went unnoticed because, as a record at address 0, it is overwritten by the real code.)*
 
 | Bytes | Content (identical in all 7 versions) | Meaning |
 |---|---|---|
 | 0–15 | `SWM181RCT6_64_M0` | MCU: **Synwit SWM181 RCT6**, Cortex-**M0**; "64" presumably flash variant/clock specification |
 | 16–31 | `EMU1101_10D_HW16` | Device **EMU1101**, variant "10D", **hardware 16** |
 | 32–47 | `RS485Y19200N9600` | Interface **RS485**. *Assumption:* "Y 19200" = update/bootloader baud rate (the update guide states 19200), "N 9600" = normal operating baud rate (default 9600 according to the protocol PDF) |
-| 48–239 | `0x55` × 192 | Padding bytes |
+| 48–255 | `0x55` × 208 | Padding bytes |
 
 The update tool presumably checks only this header for compatibility. There is **no** cryptographic signature or encryption. *(confirmed: the code is plain Thumb, and there is no signature/CRC structure over the image)*
 
@@ -55,7 +55,7 @@ The update tool presumably checks only this header for compatibility. There is *
 - Type 05 (Start Linear Address) = **`0x000000C1`**. This is the Keil entry `__main` in Thumb mode; the reset handler jumps there after hardware initialization. *(confirmed)*
 - Type 01 (EOF).
 
-The header is the only difference from regular Intel HEX. Removing the first 15 lines yields a file that any Intel HEX tool can read.
+The header is the only difference from regular Intel HEX. Removing the first 16 lines yields a file that any Intel HEX tool can read.
 
 ---
 

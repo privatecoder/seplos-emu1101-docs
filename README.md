@@ -12,6 +12,7 @@ Everything here is derived from the firmware code unless marked otherwise. It is
 | [docs/firmware-changelog.md](docs/firmware-changelog.md) | **Unofficial changelog** of all versions, including the SP80 special build |
 | [docs/firmware-analysis.md](docs/firmware-analysis.md) | `.ehex` format, memory layout, hardware and interfaces, function map, **RAM map**, **parameter and function switch tables**, protection logic, persistence, update procedure |
 | [docs/states-and-triggers.md](docs/states-and-triggers.md) | **What happens when?** Conditions, durations and prerequisites for SOC jumps (98.2 % hold, 23/70/90/98/100 %, 10 %, 0 %), capacity learning, intermittent recharge, charge/discharge lock, current limiter, standby shutdown, CVL/CCL/DCL; comparison with the Seplos specification |
+| [docs/intermittent-recharge-soft-vs-hard-stop.md](docs/intermittent-recharge-soft-vs-hard-stop.md) | **Intermittent recharge: soft stop vs. hard stop.** What a full pack does in the standard firmware and in SP80, five situations with examples, when the SP80 behaviour is the better one, and how to apply it to later versions |
 | [docs/configuration-parameters.md](docs/configuration-parameters.md) | **Guide to the BatteryMonitor parameter export**: structure, translation errors, every parameter and every function switch bit with its effect |
 | [docs/protocols/seplos-ascii.md](docs/protocols/seplos-ascii.md) | **Firmware-based description of the "MODBUS-ASCII" protocol** (YD/T 1363.3 style): ports, baud rates, framing, checksums, addressing, all commands, bit fields, balancing |
 | [docs/protocols/undocumented-commands.md](docs/protocols/undocumented-commands.md) | Everything the vendor documentation leaves out: ASCII commands 0x45, 0x47, 0x49, 0x4B, 0x4D/4E, 0x51, 0xA0–0xA6, 0xAA/0xAB, deviations in 0x42/0x44, binary (display) protocol |
@@ -21,11 +22,11 @@ Everything here is derived from the firmware code unless marked otherwise. It is
 | [docs/protocols/pylontech-rs485.md](docs/protocols/pylontech-rs485.md) | Undocumented **Pylontech ASCII protocol** (0x60–0x63) on the inverter-side RS485 bus |
 | [config/](config/) | Example BatteryMonitor parameter export and an annotated copy (comments for every parameter) |
 | [specs/](specs/) | Vendor documents referenced by the docs (Seplos protocol V2.0, PACE Modbus V1.3, Seplos battery specification) |
-| [tools/](tools/README.md) | Scripts used for the analysis (ehex → bin, disassembly helpers, cross references) |
+| [tools/](tools/README.md) | Scripts used for the analysis (ehex → bin, disassembly helpers, cross references) and `hardstop.py` (SP80 behaviour for later versions) |
 
 ## Key findings
 
-1. **Format:** `.ehex` = 240-byte header (`SWM181RCT6_64_M0` / `EMU1101_10D_HW16` / `RS485Y19200N9600`) + plain Intel-HEX. Not encrypted, not signed. MCU: Synwit SWM181 (Cortex-M0, 48 MHz), built with Keil.
+1. **Format:** `.ehex` = 256-byte header (`SWM181RCT6_64_M0` / `EMU1101_10D_HW16` / `RS485Y19200N9600`) + plain Intel-HEX. Not encrypted, not signed. MCU: Synwit SWM181 (Cortex-M0, 48 MHz), built with Keil.
 2. **Version number:** the image only knows "16.06". Patch level and build date exist only in the file name; the patch level can be derived from features (see firmware analysis).
 3. **Interfaces and protocols (far more than documented):**
    - RS485-1/2 sockets (UART0, **19200 baud**, 16.04.06: 9600): Seplos ASCII with all commands, including intra-pack 0x5A and control commands. A master pack (DIP address 0 with slaves) polls its slaves there and **never answers requests on this bus**.
