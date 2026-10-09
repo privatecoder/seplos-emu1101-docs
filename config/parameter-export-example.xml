@@ -1,0 +1,472 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<paraGroup>
+  <filetype>Parameter</filetype>
+  <modualName>1101-SP75 </modualName>
+  <parameter>
+    <Name>Monomer high voltage alarm</Name>
+    <Value>3.450</Value>
+    <Unit>V</Unit>
+  </parameter>
+  <parameter>
+    <Name>Monomer high pressure recovery</Name>
+    <Value>3.350</Value>
+    <Unit>V</Unit>
+  </parameter>
+  <parameter>
+    <Name>Monomer low pressure alarm</Name>
+    <Value>2.900</Value>
+    <Unit>V</Unit>
+  </parameter>
+  <parameter>
+    <Name>Monomer low pressure recovery</Name>
+    <Value>3.100</Value>
+    <Unit>V</Unit>
+  </parameter>
+  <parameter>
+    <Name>Monomer overvoltage protection</Name>
+    <Value>3.650</Value>
+    <Unit>V</Unit>
+  </parameter>
+  <parameter>
+    <Name>Monomer overvoltage recovery</Name>
+    <Value>3.450</Value>
+    <Unit>V</Unit>
+  </parameter>
+  <parameter>
+    <Name>Monomer undervoltage protection</Name>
+    <Value>2.700</Value>
+    <Unit>V</Unit>
+  </parameter>
+  <parameter>
+    <Name>Monomer undervoltage recovery</Name>
+    <Value>3.100</Value>
+    <Unit>V</Unit>
+  </parameter>
+  <parameter>
+    <Name>Equalization opening voltage</Name>
+    <Value>3.400</Value>
+    <Unit>V</Unit>
+  </parameter>
+  <parameter>
+    <Name>Battery low voltage forbidden charging</Name>
+    <Value>1.500</Value>
+    <Unit>V</Unit>
+  </parameter>
+  <parameter>
+    <Name>Total pressure high pressure alarm</Name>
+    <Value>55.20</Value>
+    <Unit>V</Unit>
+  </parameter>
+  <parameter>
+    <Name>Total pressure and high pressure recovery</Name>
+    <Value>53.60</Value>
+    <Unit>V</Unit>
+  </parameter>
+  <parameter>
+    <Name>Total pressure low pressure alarm</Name>
+    <Value>46.40</Value>
+    <Unit>V</Unit>
+  </parameter>
+  <parameter>
+    <Name>Total pressure and low pressure recovery</Name>
+    <Value>48.00</Value>
+    <Unit>V</Unit>
+  </parameter>
+  <parameter>
+    <Name>Total_voltage overvoltage protection</Name>
+    <Value>56.00</Value>
+    <Unit>V</Unit>
+  </parameter>
+  <parameter>
+    <Name>Total pressure overpressure recovery</Name>
+    <Value>53.60</Value>
+    <Unit>V</Unit>
+  </parameter>
+  <parameter>
+    <Name>Total_voltage undervoltage protection</Name>
+    <Value>43.20</Value>
+    <Unit>V</Unit>
+  </parameter>
+  <parameter>
+    <Name>Total pressure undervoltage recovery</Name>
+    <Value>48.00</Value>
+    <Unit>V</Unit>
+  </parameter>
+  <parameter>
+    <Name>Harging overvoltage protection</Name>
+    <Value>63.00</Value>
+    <Unit>V</Unit>
+  </parameter>
+  <parameter>
+    <Name>Charging overvoltage recovery</Name>
+    <Value>61.00</Value>
+    <Unit>V</Unit>
+  </parameter>
+  <parameter>
+    <Name>Charging high temperature warning</Name>
+    <Value>50.0</Value>
+    <Unit>℃</Unit>
+  </parameter>
+  <parameter>
+    <Name>Charging high temperature recovery</Name>
+    <Value>47.0</Value>
+    <Unit>℃</Unit>
+  </parameter>
+  <parameter>
+    <Name>Charging low temperature warning</Name>
+    <Value>2.0</Value>
+    <Unit>℃</Unit>
+  </parameter>
+  <parameter>
+    <Name>Charging low temperature recovery</Name>
+    <Value>5.0</Value>
+    <Unit>℃</Unit>
+  </parameter>
+  <parameter>
+    <Name>Charging over temperature protection</Name>
+    <Value>55.0</Value>
+    <Unit>℃</Unit>
+  </parameter>
+  <parameter>
+    <Name>Charging over temperature recovery</Name>
+    <Value>50.0</Value>
+    <Unit>℃</Unit>
+  </parameter>
+  <parameter>
+    <Name>Charging under-temperature protection</Name>
+    <Value>-10.0</Value>
+    <Unit>℃</Unit>
+  </parameter>
+  <parameter>
+    <Name>Charging under temperature recovery</Name>
+    <Value>0.0</Value>
+    <Unit>℃</Unit>
+  </parameter>
+  <parameter>
+    <Name>Discharge high temperature warning</Name>
+    <Value>52.0</Value>
+    <Unit>℃</Unit>
+  </parameter>
+  <parameter>
+    <Name>Discharge high temperature recovery</Name>
+    <Value>47.0</Value>
+    <Unit>℃</Unit>
+  </parameter>
+  <parameter>
+    <Name>Discharge low temperature warning</Name>
+    <Value>-10.0</Value>
+    <Unit>℃</Unit>
+  </parameter>
+  <parameter>
+    <Name>Discharge low temperature recovery</Name>
+    <Value>3.0</Value>
+    <Unit>℃</Unit>
+  </parameter>
+  <parameter>
+    <Name>Discharge over temperature protection</Name>
+    <Value>55.0</Value>
+    <Unit>℃</Unit>
+  </parameter>
+  <parameter>
+    <Name>Discharge over temperature recovery</Name>
+    <Value>50.0</Value>
+    <Unit>℃</Unit>
+  </parameter>
+  <parameter>
+    <Name>Discharge under-temperature protection</Name>
+    <Value>-15.0</Value>
+    <Unit>℃</Unit>
+  </parameter>
+  <parameter>
+    <Name>Discharge under temperature recovery</Name>
+    <Value>0.0</Value>
+    <Unit>℃</Unit>
+  </parameter>
+  <parameter>
+    <Name>Cell low temperature heating</Name>
+    <Value>0.0</Value>
+    <Unit>℃</Unit>
+  </parameter>
+  <parameter>
+    <Name>Cell heating recovery</Name>
+    <Value>10.0</Value>
+    <Unit>℃</Unit>
+  </parameter>
+  <parameter>
+    <Name>Ambient high temperature alarm</Name>
+    <Value>50.0</Value>
+    <Unit>℃</Unit>
+  </parameter>
+  <parameter>
+    <Name>Ambient high temperature recovery</Name>
+    <Value>47.0</Value>
+    <Unit>℃</Unit>
+  </parameter>
+  <parameter>
+    <Name>Ambient low temperature alarm</Name>
+    <Value>0.0</Value>
+    <Unit>℃</Unit>
+  </parameter>
+  <parameter>
+    <Name>Ambient low temperature recovery</Name>
+    <Value>3.0</Value>
+    <Unit>℃</Unit>
+  </parameter>
+  <parameter>
+    <Name>Environmental over-temperature protection</Name>
+    <Value>60.0</Value>
+    <Unit>℃</Unit>
+  </parameter>
+  <parameter>
+    <Name>Environmental overtemperature recovery</Name>
+    <Value>55.0</Value>
+    <Unit>℃</Unit>
+  </parameter>
+  <parameter>
+    <Name>Environmental under-temperature protection</Name>
+    <Value>-10.0</Value>
+    <Unit>℃</Unit>
+  </parameter>
+  <parameter>
+    <Name>Environmental undertemperature recovery</Name>
+    <Value>0.0</Value>
+    <Unit>℃</Unit>
+  </parameter>
+  <parameter>
+    <Name>Power high temperature alarm</Name>
+    <Value>90.0</Value>
+    <Unit>℃</Unit>
+  </parameter>
+  <parameter>
+    <Name>Power high temperature recovery</Name>
+    <Value>85.0</Value>
+    <Unit>℃</Unit>
+  </parameter>
+  <parameter>
+    <Name>Power over temperature protection</Name>
+    <Value>100.0</Value>
+    <Unit>℃</Unit>
+  </parameter>
+  <parameter>
+    <Name>Power over temperature recovery</Name>
+    <Value>85.0</Value>
+    <Unit>℃</Unit>
+  </parameter>
+  <parameter>
+    <Name>Charging overcurrent warning</Name>
+    <Value>150.00</Value>
+    <Unit>A</Unit>
+  </parameter>
+  <parameter>
+    <Name>Charging overcurrent recovery</Name>
+    <Value>145.00</Value>
+    <Unit>A</Unit>
+  </parameter>
+  <parameter>
+    <Name>Discharge overcurrent warning</Name>
+    <Value>-155.00</Value>
+    <Unit>A</Unit>
+  </parameter>
+  <parameter>
+    <Name>Discharge overcurrent recovery</Name>
+    <Value>-153.00</Value>
+    <Unit>A</Unit>
+  </parameter>
+  <parameter>
+    <Name>Charge overcurrent protection</Name>
+    <Value>160.00</Value>
+    <Unit>A</Unit>
+  </parameter>
+  <parameter>
+    <Name>Discharge overcurrent protection</Name>
+    <Value>-160.00</Value>
+    <Unit>A</Unit>
+  </parameter>
+  <parameter>
+    <Name>Transient overcurrent protection</Name>
+    <Value>-300.00</Value>
+    <Unit>A</Unit>
+  </parameter>
+  <parameter>
+    <Name>Output soft start delay</Name>
+    <Value>2000</Value>
+    <Unit>mS</Unit>
+  </parameter>
+  <parameter>
+    <Name>Battery rated capacity</Name>
+    <Value>280.00</Value>
+    <Unit>Ah</Unit>
+  </parameter>
+  <parameter>
+    <Name>SOC</Name>
+    <Value>75.00</Value>
+    <Unit>Ah</Unit>
+  </parameter>
+  <parameter>
+    <Name>Cell invalidation differential pressure</Name>
+    <Value>0.50</Value>
+    <Unit>V</Unit>
+  </parameter>
+  <parameter>
+    <Name>Cell invalidation recovery</Name>
+    <Value>0.30</Value>
+    <Unit>V</Unit>
+  </parameter>
+  <parameter>
+    <Name>Equalization opening pressure difference</Name>
+    <Value>0.030</Value>
+    <Unit>V</Unit>
+  </parameter>
+  <parameter>
+    <Name>Equalization closing pressure difference</Name>
+    <Value>0.020</Value>
+    <Unit>V</Unit>
+  </parameter>
+  <parameter>
+    <Name>Static equilibrium time</Name>
+    <Value>10</Value>
+    <Unit>When</Unit>
+  </parameter>
+  <parameter>
+    <Name>Battery number in series</Name>
+    <Value>16</Value>
+    <Unit>String</Unit>
+  </parameter>
+  <parameter>
+    <Name>Charge overcurrent delay</Name>
+    <Value>10</Value>
+    <Unit>S</Unit>
+  </parameter>
+  <parameter>
+    <Name>Discharge overcurrent delay</Name>
+    <Value>10</Value>
+    <Unit>S</Unit>
+  </parameter>
+  <parameter>
+    <Name>Transient overcurrent delay</Name>
+    <Value>30</Value>
+    <Unit>mS</Unit>
+  </parameter>
+  <parameter>
+    <Name>Overcurrent delay recovery</Name>
+    <Value>60</Value>
+    <Unit>S</Unit>
+  </parameter>
+  <parameter>
+    <Name>Overcurrent recovery times</Name>
+    <Value>5</Value>
+    <Unit>times</Unit>
+  </parameter>
+  <parameter>
+    <Name>Charge current limit delay</Name>
+    <Value>5</Value>
+    <Unit>Minutes</Unit>
+  </parameter>
+  <parameter>
+    <Name>Charge activation delay</Name>
+    <Value>1</Value>
+    <Unit>Minutes</Unit>
+  </parameter>
+  <parameter>
+    <Name>Charging activation interval</Name>
+    <Value>10</Value>
+    <Unit>When</Unit>
+  </parameter>
+  <parameter>
+    <Name>Charge activation times</Name>
+    <Value>10</Value>
+    <Unit>times</Unit>
+  </parameter>
+  <parameter>
+    <Name>Work record interval</Name>
+    <Value>30</Value>
+    <Unit>Minutes</Unit>
+  </parameter>
+  <parameter>
+    <Name>Standby recording interval</Name>
+    <Value>240</Value>
+    <Unit>Minutes</Unit>
+  </parameter>
+  <parameter>
+    <Name>Standby shutdown delay</Name>
+    <Value>48</Value>
+    <Unit>When</Unit>
+  </parameter>
+  <parameter>
+    <Name>Remaining capacity alarm</Name>
+    <Value>15</Value>
+    <Unit>%</Unit>
+  </parameter>
+  <parameter>
+    <Name>Remaining capacity protection</Name>
+    <Value>5</Value>
+    <Unit>%</Unit>
+  </parameter>
+  <parameter>
+    <Name>Interval charge capacity</Name>
+    <Value>96</Value>
+    <Unit>%</Unit>
+  </parameter>
+  <parameter>
+    <Name>Cycle cumulative capacity</Name>
+    <Value>80</Value>
+    <Unit>%</Unit>
+  </parameter>
+  <parameter>
+    <Name>Connection fault impedance</Name>
+    <Value>10.0</Value>
+    <Unit>mΩ</Unit>
+  </parameter>
+  <parameter>
+    <Name>Compensation point 1 position</Name>
+    <Value>9</Value>
+    <Unit>String</Unit>
+  </parameter>
+  <parameter>
+    <Name>Compensation point 1 impedance</Name>
+    <Value>0.0</Value>
+    <Unit>mΩ</Unit>
+  </parameter>
+  <parameter>
+    <Name>Ompensation point 2 position</Name>
+    <Value>13</Value>
+    <Unit>String</Unit>
+  </parameter>
+  <parameter>
+    <Name>Compensation point 2 impedance</Name>
+    <Value>0.0</Value>
+    <Unit>mΩ</Unit>
+  </parameter>
+  <param_bit_group>
+    <Name>BitGroup0</Name>
+    <Value>FF</Value>
+  </param_bit_group>
+  <param_bit_group>
+    <Name>BitGroup1</Name>
+    <Value>DF</Value>
+  </param_bit_group>
+  <param_bit_group>
+    <Name>BitGroup2</Name>
+    <Value>FF</Value>
+  </param_bit_group>
+  <param_bit_group>
+    <Name>BitGroup3</Name>
+    <Value>3F</Value>
+  </param_bit_group>
+  <param_bit_group>
+    <Name>BitGroup4</Name>
+    <Value>BF</Value>
+  </param_bit_group>
+  <param_bit_group>
+    <Name>BitGroup5</Name>
+    <Value>9F</Value>
+  </param_bit_group>
+  <param_bit_group>
+    <Name>BitGroup6</Name>
+    <Value>BF</Value>
+  </param_bit_group>
+  <param_bit_group>
+    <Name>BitGroup7</Name>
+    <Value>1F</Value>
+  </param_bit_group>
+</paraGroup>

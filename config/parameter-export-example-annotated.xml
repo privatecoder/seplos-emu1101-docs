@@ -1,0 +1,575 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Annotated copy of "config/parameter-export-example.xml" (BatteryMonitor parameter export, module 1101-SP75).
+  Status: verified in the code of 06.12/06.13. FOR READING ONLY - do not import into BatteryMonitor (whether comments interfere with the import is unverified).
+  Explanation: docs/configuration-parameters.md, derivations: docs/states-and-triggers.md.
+  Pn = parameter number in the order of the file (0-86). The BMS reads/writes by position, not by name.
+  Warning = report only (CCL 10 A total if all packs have a charge warning); protection = MOSFET opens.
+  BitGroup0-5 mask alarm events 1-6: bit = 0 disables reporting and reaction.
+-->
+<paraGroup>
+  <filetype>Parameter</filetype>
+  <modualName>1101-SP75 </modualName>
+  <!-- P0 Cell high-voltage WARNING (Monomer = single cell). Event 2 bit 0 (mask BitGroup1 bit 0). If all packs warn: CCL 10 A total. SOC: above 98.2 % the SOC only counts up while charging if a cell >= P0; 100 % threshold = P65 x P0 (P0 limited to 3.45-3.50 V) = 55.20 V for 30 min; full mark for capacity learning. Hysteresis: P1. Cf. P10 (pack warning = 16 x P0). -->
+  <parameter>
+    <Name>Monomer high voltage alarm</Name>
+    <Value>3.450</Value>
+    <Unit>V</Unit>
+  </parameter>
+  <!-- P1 Return of the cell high-voltage warning (pressure = voltage). Hysteresis for P0. No SOC drift in standby as long as a cell >= P1. -->
+  <parameter>
+    <Name>Monomer high pressure recovery</Name>
+    <Value>3.350</Value>
+    <Unit>V</Unit>
+  </parameter>
+  <!-- P2 Cell undervoltage WARNING. Event 2 bit 2. SOC jumps to (P78+P79)/2 = 10 % if a cell <= P2 and SOC >= P78. Discharge SOC holds at P79+1 = 6 % as long as all cells > P2. Empty mark for capacity learning. Hysteresis: P3. Cf. P6 (protection), P12 (pack warning). -->
+  <parameter>
+    <Name>Monomer low pressure alarm</Name>
+    <Value>2.900</Value>
+    <Unit>V</Unit>
+  </parameter>
+  <!-- P3 Return of the cell undervoltage warning. Hysteresis for P2. Also clears the full flag when the highest cell <= P3. -->
+  <parameter>
+    <Name>Monomer low pressure recovery</Name>
+    <Value>3.100</Value>
+    <Unit>V</Unit>
+  </parameter>
+  <!-- P4 Cell overvoltage PROTECTION (OVP). Event 2 bit 1 (BitGroup1 bit 1). Charge MOSFET off, SOC := 100 % (only while charging). CCL = 0 if a cell > P4 + 30 mV. Return: P5. In the example configuration the only active overcharge protection (pack OVP P14 masked). -->
+  <parameter>
+    <Name>Monomer overvoltage protection</Name>
+    <Value>3.650</Value>
+    <Unit>V</Unit>
+  </parameter>
+  <!-- P5 Return of cell OVP. Charging enabled again when all cells < P5. Discharging > 10 A for approx. 10 s lifts the OVP immediately. Equal to P0. -->
+  <parameter>
+    <Name>Monomer overvoltage recovery</Name>
+    <Value>3.450</Value>
+    <Unit>V</Unit>
+  </parameter>
+  <!-- P6 Cell undervoltage PROTECTION (UVP). Event 2 bit 3. Discharge MOSFET off, SOC := 0 %. Return: P7. Afterwards charge activation P72-P74. -->
+  <parameter>
+    <Name>Monomer undervoltage protection</Name>
+    <Value>2.700</Value>
+    <Unit>V</Unit>
+  </parameter>
+  <!-- P7 Return of cell UVP. -->
+  <parameter>
+    <Name>Monomer undervoltage recovery</Name>
+    <Value>3.100</Value>
+    <Unit>V</Unit>
+  </parameter>
+  <!-- P8 Balancing start voltage (Equalization = balancing). A cell is only balanced if it is >= P8. Further conditions: P62, P63, BitGroup6. With 3.40 V practically only at the end of charging. -->
+  <parameter>
+    <Name>Equalization opening voltage</Name>
+    <Value>3.400</Value>
+    <Unit>V</Unit>
+  </parameter>
+  <!-- P9 Charging forbidden as long as a cell <= P9 (event 6 bit 4, BitGroup5 bit 4). ONLY if BitGroup6 bit 4 = 0 - in the example configuration (BF) bit 4 is on, so the lock is INEFFECTIVE. Also an abort condition for charge activation (P72). -->
+  <parameter>
+    <Name>Battery low voltage forbidden charging</Name>
+    <Value>1.500</Value>
+    <Unit>V</Unit>
+  </parameter>
+  <!-- P10 Pack high-voltage WARNING (Total pressure = pack voltage). Event 2 bit 4 (BitGroup1 bit 4). If all packs warn: CCL 10 A total (approx. 0.8 A per pack with 12 packs). No SOC influence. = 16 x P0. Hysteresis: P11. -->
+  <parameter>
+    <Name>Total pressure high pressure alarm</Name>
+    <Value>55.20</Value>
+    <Unit>V</Unit>
+  </parameter>
+  <!-- P11 Return of pack high-voltage warning. -->
+  <parameter>
+    <Name>Total pressure and high pressure recovery</Name>
+    <Value>53.60</Value>
+    <Unit>V</Unit>
+  </parameter>
+  <!-- P12 Pack undervoltage WARNING. Event 2 bit 6. Reported to the inverter as DVL (discharge cut-off voltage). Hysteresis: P13. Cf. P16 (protection). -->
+  <parameter>
+    <Name>Total pressure low pressure alarm</Name>
+    <Value>46.40</Value>
+    <Unit>V</Unit>
+  </parameter>
+  <!-- P13 Return of pack undervoltage warning. -->
+  <parameter>
+    <Name>Total pressure and low pressure recovery</Name>
+    <Value>48.00</Value>
+    <Unit>V</Unit>
+  </parameter>
+  <!-- P14 Pack overvoltage PROTECTION. Reported to the inverter as CVL (charge voltage limit), fixed. As protection (event 2 bit 5): charge MOSFET off, SOC := 100 %. MASKED IN THE EXAMPLE CONFIGURATION (BitGroup1 = DF, bit 5 = 0): acts only as CVL. Return: P15. -->
+  <parameter>
+    <Name>Total_voltage overvoltage protection</Name>
+    <Value>56.00</Value>
+    <Unit>V</Unit>
+  </parameter>
+  <!-- P15 Return of pack OVP (overpressure = overvoltage). -->
+  <parameter>
+    <Name>Total pressure overpressure recovery</Name>
+    <Value>53.60</Value>
+    <Unit>V</Unit>
+  </parameter>
+  <!-- P16 Pack undervoltage PROTECTION. Event 2 bit 7. Discharge MOSFET off, SOC := 0 %. Return: P17. Cf. P6, P12. -->
+  <parameter>
+    <Name>Total_voltage undervoltage protection</Name>
+    <Value>43.20</Value>
+    <Unit>V</Unit>
+  </parameter>
+  <!-- P17 Return of pack UVP. -->
+  <parameter>
+    <Name>Total pressure undervoltage recovery</Name>
+    <Value>48.00</Value>
+    <Unit>V</Unit>
+  </parameter>
+  <!-- P18 Charger overvoltage PROTECTION (Harging = typo for Charging): voltage at port P+/P-. Event 6 bit 0 (BitGroup5 bit 0), charging forbidden. Return: P19. -->
+  <parameter>
+    <Name>Harging overvoltage protection</Name>
+    <Value>63.00</Value>
+    <Unit>V</Unit>
+  </parameter>
+  <!-- P19 Return of charger overvoltage. -->
+  <parameter>
+    <Name>Charging overvoltage recovery</Name>
+    <Value>61.00</Value>
+    <Unit>V</Unit>
+  </parameter>
+  <!-- P20 Cell temperature while CHARGING: over-temperature WARNING. Event 3 bit 0 (BitGroup2 bit 0). If all packs: CCL 10 A. Return: P21. Protection: P24. -->
+  <parameter>
+    <Name>Charging high temperature warning</Name>
+    <Value>50.0</Value>
+    <Unit>℃</Unit>
+  </parameter>
+  <!-- P21 Return of charging over-temperature warning. -->
+  <parameter>
+    <Name>Charging high temperature recovery</Name>
+    <Value>47.0</Value>
+    <Unit>℃</Unit>
+  </parameter>
+  <!-- P22 Cell temperature while CHARGING: under-temperature WARNING. Event 3 bit 2. If all packs: CCL 10 A. Return: P23. Protection: P26. -->
+  <parameter>
+    <Name>Charging low temperature warning</Name>
+    <Value>2.0</Value>
+    <Unit>℃</Unit>
+  </parameter>
+  <!-- P23 Return of charging under-temperature warning. -->
+  <parameter>
+    <Name>Charging low temperature recovery</Name>
+    <Value>5.0</Value>
+    <Unit>℃</Unit>
+  </parameter>
+  <!-- P24 Cell temperature while CHARGING: over-temperature PROTECTION. Event 3 bit 1. Charging forbidden (charge MOSFET off). Return: P25. -->
+  <parameter>
+    <Name>Charging over temperature protection</Name>
+    <Value>55.0</Value>
+    <Unit>℃</Unit>
+  </parameter>
+  <!-- P25 Return of charging over-temperature protection. -->
+  <parameter>
+    <Name>Charging over temperature recovery</Name>
+    <Value>50.0</Value>
+    <Unit>℃</Unit>
+  </parameter>
+  <!-- P26 Cell temperature while CHARGING: under-temperature PROTECTION. Event 3 bit 3. Charging forbidden. Return: P27. Note: do not charge LiFePO4 below 0 C; here the lock only takes effect at -10 C. -->
+  <parameter>
+    <Name>Charging under-temperature protection</Name>
+    <Value>-10.0</Value>
+    <Unit>℃</Unit>
+  </parameter>
+  <!-- P27 Return of charging under-temperature protection. -->
+  <parameter>
+    <Name>Charging under temperature recovery</Name>
+    <Value>0.0</Value>
+    <Unit>℃</Unit>
+  </parameter>
+  <!-- P28 Cell temperature while DISCHARGING: over-temperature WARNING. Event 3 bit 4. Return: P29. Protection: P32. -->
+  <parameter>
+    <Name>Discharge high temperature warning</Name>
+    <Value>52.0</Value>
+    <Unit>℃</Unit>
+  </parameter>
+  <!-- P29 Return of discharging over-temperature warning. -->
+  <parameter>
+    <Name>Discharge high temperature recovery</Name>
+    <Value>47.0</Value>
+    <Unit>℃</Unit>
+  </parameter>
+  <!-- P30 Cell temperature while DISCHARGING: under-temperature WARNING. Event 3 bit 6. Return: P31. Protection: P34. -->
+  <parameter>
+    <Name>Discharge low temperature warning</Name>
+    <Value>-10.0</Value>
+    <Unit>℃</Unit>
+  </parameter>
+  <!-- P31 Return of discharging under-temperature warning. -->
+  <parameter>
+    <Name>Discharge low temperature recovery</Name>
+    <Value>3.0</Value>
+    <Unit>℃</Unit>
+  </parameter>
+  <!-- P32 Cell temperature while DISCHARGING: over-temperature PROTECTION. Event 3 bit 5. Discharge MOSFET off. Return: P33. -->
+  <parameter>
+    <Name>Discharge over temperature protection</Name>
+    <Value>55.0</Value>
+    <Unit>℃</Unit>
+  </parameter>
+  <!-- P33 Return of discharging over-temperature protection. -->
+  <parameter>
+    <Name>Discharge over temperature recovery</Name>
+    <Value>50.0</Value>
+    <Unit>℃</Unit>
+  </parameter>
+  <!-- P34 Cell temperature while DISCHARGING: under-temperature PROTECTION. Event 3 bit 7. Discharge MOSFET off. Return: P35. -->
+  <parameter>
+    <Name>Discharge under-temperature protection</Name>
+    <Value>-15.0</Value>
+    <Unit>℃</Unit>
+  </parameter>
+  <!-- P35 Return of discharging under-temperature protection. -->
+  <parameter>
+    <Name>Discharge under temperature recovery</Name>
+    <Value>0.0</Value>
+    <Unit>℃</Unit>
+  </parameter>
+  <!-- P36 Cell heating ON when the lowest cell temperature <= P36 (event 4 bit 6). Only effective with BitGroup3 bit 6 - OFF in the example configuration. Then also minimum CCL packs x 10 A for heating. Off: P37. -->
+  <parameter>
+    <Name>Cell low temperature heating</Name>
+    <Value>0.0</Value>
+    <Unit>℃</Unit>
+  </parameter>
+  <!-- P37 Cell heating OFF when the lowest cell temperature > P37. -->
+  <parameter>
+    <Name>Cell heating recovery</Name>
+    <Value>10.0</Value>
+    <Unit>℃</Unit>
+  </parameter>
+  <!-- P38 AMBIENT temperature (BMS board): over-temperature WARNING. Event 4 bit 0 (BitGroup3 bit 0). While active: current thresholds for charging/discharging doubled, balancing possibly blocked (BitGroup6 bit 3). Return: P39. Protection: P42. -->
+  <parameter>
+    <Name>Ambient high temperature alarm</Name>
+    <Value>50.0</Value>
+    <Unit>℃</Unit>
+  </parameter>
+  <!-- P39 Return of ambient over-temperature warning. -->
+  <parameter>
+    <Name>Ambient high temperature recovery</Name>
+    <Value>47.0</Value>
+    <Unit>℃</Unit>
+  </parameter>
+  <!-- P40 AMBIENT: under-temperature WARNING. Event 4 bit 2. Return: P41. Protection: P44. -->
+  <parameter>
+    <Name>Ambient low temperature alarm</Name>
+    <Value>0.0</Value>
+    <Unit>℃</Unit>
+  </parameter>
+  <!-- P41 Return of ambient under-temperature warning. -->
+  <parameter>
+    <Name>Ambient low temperature recovery</Name>
+    <Value>3.0</Value>
+    <Unit>℃</Unit>
+  </parameter>
+  <!-- P42 AMBIENT: over-temperature PROTECTION (Environmental = Ambient, same sensor). Event 4 bit 1. Charging forbidden. Return: P43. -->
+  <parameter>
+    <Name>Environmental over-temperature protection</Name>
+    <Value>60.0</Value>
+    <Unit>℃</Unit>
+  </parameter>
+  <!-- P43 Return of ambient over-temperature protection. -->
+  <parameter>
+    <Name>Environmental overtemperature recovery</Name>
+    <Value>55.0</Value>
+    <Unit>℃</Unit>
+  </parameter>
+  <!-- P44 AMBIENT: under-temperature PROTECTION. Event 4 bit 3. Charging forbidden. Return: P45. -->
+  <parameter>
+    <Name>Environmental under-temperature protection</Name>
+    <Value>-10.0</Value>
+    <Unit>℃</Unit>
+  </parameter>
+  <!-- P45 Return of ambient under-temperature protection. -->
+  <parameter>
+    <Name>Environmental undertemperature recovery</Name>
+    <Value>0.0</Value>
+    <Unit>℃</Unit>
+  </parameter>
+  <!-- P46 POWER STAGE/MOSFET (Power): over-temperature WARNING. Event 4 bit 5 (BitGroup3 bit 5). Return: P47. Protection: P48. -->
+  <parameter>
+    <Name>Power high temperature alarm</Name>
+    <Value>90.0</Value>
+    <Unit>℃</Unit>
+  </parameter>
+  <!-- P47 Return of power stage warning. -->
+  <parameter>
+    <Name>Power high temperature recovery</Name>
+    <Value>85.0</Value>
+    <Unit>℃</Unit>
+  </parameter>
+  <!-- P48 POWER STAGE/MOSFET: over-temperature PROTECTION. Event 4 bit 4. Charging forbidden / MOSFET off. Return: P49. -->
+  <parameter>
+    <Name>Power over temperature protection</Name>
+    <Value>100.0</Value>
+    <Unit>℃</Unit>
+  </parameter>
+  <!-- P49 Return of power stage protection. -->
+  <parameter>
+    <Name>Power over temperature recovery</Name>
+    <Value>85.0</Value>
+    <Unit>℃</Unit>
+  </parameter>
+  <!-- P50 Charge overcurrent WARNING. Event 5 bit 0. BASIS OF THE CCL: per pack P50/2 (BitGroup7 bit 7 = 0, as in the example configuration) or P50 - 10 A (bit 7 = 1). In the example system 75 A x 12 packs = 900 A. Return: P51. Protection: P54. -->
+  <parameter>
+    <Name>Charging overcurrent warning</Name>
+    <Value>150.00</Value>
+    <Unit>A</Unit>
+  </parameter>
+  <!-- P51 Return of charge overcurrent warning. -->
+  <parameter>
+    <Name>Charging overcurrent recovery</Name>
+    <Value>145.00</Value>
+    <Unit>A</Unit>
+  </parameter>
+  <!-- P52 Discharge overcurrent WARNING (negative = discharging). Event 5 bit 2. BASIS OF THE DCL: |P52| - 10 A (above 20 A) per pack. In the example system 145 A x 12 = 1,740 A. Return: P53. Protection: P55. -->
+  <parameter>
+    <Name>Discharge overcurrent warning</Name>
+    <Value>-155.00</Value>
+    <Unit>A</Unit>
+  </parameter>
+  <!-- P53 Return of discharge overcurrent warning. -->
+  <parameter>
+    <Name>Discharge overcurrent recovery</Name>
+    <Value>-153.00</Value>
+    <Unit>A</Unit>
+  </parameter>
+  <!-- P54 Charge overcurrent PROTECTION. Event 5 bit 1. Charge MOSFET off after P66 seconds. Re-enable: P69/P70. -->
+  <parameter>
+    <Name>Charge overcurrent protection</Name>
+    <Value>160.00</Value>
+    <Unit>A</Unit>
+  </parameter>
+  <!-- P55 Discharge overcurrent PROTECTION. Event 5 bit 3. Discharge MOSFET off after P67 seconds. Re-enable: P69/P70. -->
+  <parameter>
+    <Name>Discharge overcurrent protection</Name>
+    <Value>-160.00</Value>
+    <Unit>A</Unit>
+  </parameter>
+  <!-- P56 Short-term overcurrent PROTECTION (Transient) while discharging. Event 5 bit 4. Off after P68 ms. Permanent lockout only with BitGroup4 bit 6 (off in the example configuration). -->
+  <parameter>
+    <Name>Transient overcurrent protection</Name>
+    <Value>-300.00</Value>
+    <Unit>A</Unit>
+  </parameter>
+  <!-- P57 Pre-charge (soft start): when the discharge MOSFET is switched on, a pre-charge path runs first for at most P57 ms (ends earlier if the output voltage stops rising). Then short-circuit check (BitGroup4 bit 5), then discharge MOSFET on. -->
+  <parameter>
+    <Name>Output soft start delay</Name>
+    <Value>2000</Value>
+    <Unit>mS</Unit>
+  </parameter>
+  <!-- P58 RATED capacity, in 0x42 as Rated capacity. CAUTION: every write of P58 (single command 0x49 and whole block 0xA1) also resets the learned FULL capacity to this value. Cf. P59. -->
+  <parameter>
+    <Name>Battery rated capacity</Name>
+    <Value>280.00</Value>
+    <Unit>Ah</Unit>
+  </parameter>
+  <!-- P59 'SOC' = set value of the REMAINING CAPACITY in Ah, not a percentage, not the current state of charge. When written individually (0x49), the remaining capacity is set to this value (only if <= full capacity). -->
+  <parameter>
+    <Name>SOC</Name>
+    <Value>75.00</Value>
+    <Unit>Ah</Unit>
+  </parameter>
+  <!-- P60 Cell difference FAULT if highest - lowest cell >= P60 (invalidation differential pressure = failure voltage difference). Event 1 bit 4 (BitGroup0 bit 4). Return: P61. -->
+  <parameter>
+    <Name>Cell invalidation differential pressure</Name>
+    <Value>0.50</Value>
+    <Unit>V</Unit>
+  </parameter>
+  <!-- P61 Return of cell difference fault. -->
+  <parameter>
+    <Name>Cell invalidation recovery</Name>
+    <Value>0.30</Value>
+    <Unit>V</Unit>
+  </parameter>
+  <!-- P62 Balancing only STARTS when the spread (highest - lowest cell) > P62. Cf. P8, P63. -->
+  <parameter>
+    <Name>Equalization opening pressure difference</Name>
+    <Value>0.030</Value>
+    <Unit>V</Unit>
+  </parameter>
+  <!-- P63 A cell is balanced as long as it is >= P63 above the lowest cell (stop threshold). Cf. P8, P62. -->
+  <parameter>
+    <Name>Equalization closing pressure difference</Name>
+    <Value>0.020</Value>
+    <Unit>V</Unit>
+  </parameter>
+  <!-- P64 Time limit for balancing WITHOUT charging in hours (unit 'When' = hours). With BitGroup6 bit 2: counter runs as long as balancing is enabled and the pack is not charging; afterwards balancing is blocked until the next charge (event 7 bit 2). -->
+  <parameter>
+    <Name>Static equilibrium time</Name>
+    <Value>10</Value>
+    <Unit>When</Unit>
+  </parameter>
+  <!-- P65 Cells in series (N; unit 'String' = count). Cell count in 0x42/0x44 and factor of all pack voltage rules of the SOC (N x 3.30 / 3.37 / 3.40 / P0). -->
+  <parameter>
+    <Name>Battery number in series</Name>
+    <Value>16</Value>
+    <Unit>String</Unit>
+  </parameter>
+  <!-- P66 Delay of charge overcurrent PROTECTION (P54), seconds. Also: current limiter after charge overcurrent WARNING (P50) already after P66/2 s (BitGroup6 bit 7). -->
+  <parameter>
+    <Name>Charge overcurrent delay</Name>
+    <Value>10</Value>
+    <Unit>S</Unit>
+  </parameter>
+  <!-- P67 Delay of discharge overcurrent protection (P55), seconds. -->
+  <parameter>
+    <Name>Discharge overcurrent delay</Name>
+    <Value>10</Value>
+    <Unit>S</Unit>
+  </parameter>
+  <!-- P68 Delay of short-term overcurrent protection (P56), milliseconds. -->
+  <parameter>
+    <Name>Transient overcurrent delay</Name>
+    <Value>30</Value>
+    <Unit>mS</Unit>
+  </parameter>
+  <!-- P69 Automatic re-enable after charge/discharge overcurrent, short-term and short-circuit protection after P69 seconds. Charging clears discharge protections immediately, discharging clears the charge protection. -->
+  <parameter>
+    <Name>Overcurrent delay recovery</Name>
+    <Value>60</Value>
+    <Unit>S</Unit>
+  </parameter>
+  <!-- P70 Lockout after P70 short-term or short-circuit events (without a 301 s pause), only with BitGroup4 bit 6/7 (event 5 bit 6/7). Discharge MOSFET stays off until the pack detects charging. Does NOT affect the normal overcurrent. -->
+  <parameter>
+    <Name>Overcurrent recovery times</Name>
+    <Value>5</Value>
+    <Unit>times</Unit>
+  </parameter>
+  <!-- P71 Duration of current limiting in minutes: after a charge overcurrent warning (P50 for P66/2 s) the pack charges for P71 minutes through the hardware current limiter instead of the charge MOSFET (BitGroup6 bit 7, event 7 bit 7). Also ends after 5 s without charging. -->
+  <parameter>
+    <Name>Charge current limit delay</Name>
+    <Value>5</Value>
+    <Unit>Minutes</Unit>
+  </parameter>
+  <!-- P72 Charge activation: window duration in minutes. For this long after an undervoltage or SOC protection shutdown, the protection is cleared every second so that the MOSFETs close and a charger can charge (event 7 bit 4/5). -->
+  <parameter>
+    <Name>Charge activation delay</Name>
+    <Value>1</Value>
+    <Unit>Minutes</Unit>
+  </parameter>
+  <!-- P73 Charge activation: automatically every P73 hours as long as UVP / SOC 0 % / SOC protection persists (BitGroup6 bit 4). -->
+  <parameter>
+    <Name>Charging activation interval</Name>
+    <Value>10</Value>
+    <Unit>When</Unit>
+  </parameter>
+  <!-- P74 Charge activation: at most P74 attempts. Counter reset on charging >= 3 A (5 s) or lowest cell > P7. -->
+  <parameter>
+    <Name>Charge activation times</Name>
+    <Value>10</Value>
+    <Unit>times</Unit>
+  </parameter>
+  <!-- P75 History entry during OPERATION every ... minutes (EEPROM, max. 500 entries, command 0x4B). -->
+  <parameter>
+    <Name>Work record interval</Name>
+    <Value>30</Value>
+    <Unit>Minutes</Unit>
+  </parameter>
+  <!-- P76 History entry in STANDBY every ... minutes. -->
+  <parameter>
+    <Name>Standby recording interval</Name>
+    <Value>240</Value>
+    <Unit>Minutes</Unit>
+  </parameter>
+  <!-- P77 Self-shutdown after P77 hours of standby (unit 'When' = hours). Only with BitGroup7 bit 1 (ON in the example configuration). Condition: continuous standby without external voltage at the port, highest cell < P5. Then 60 s charging forbidden, off, save EEPROM, supply off (probable). A charger (port > P15) or the push button aborts. -->
+  <parameter>
+    <Name>Standby shutdown delay</Name>
+    <Value>48</Value>
+    <Unit>When</Unit>
+  </parameter>
+  <!-- P78 SOC WARNING below ... % (Remaining capacity = remaining capacity). Event 6 bit 2 (BitGroup5 bit 2). Part of the 10 % rule: SOC := (P78+P79)/2 at cell <= P2. -->
+  <parameter>
+    <Name>Remaining capacity alarm</Name>
+    <Value>15</Value>
+    <Unit>%</Unit>
+  </parameter>
+  <!-- P79 SOC PROTECTION below ... % (event 6 bit 3, BitGroup5 bit 3): discharge MOSFET OFF, charging remains allowed. Discharge SOC holds at P79+1 = 6 % until a cell <= P2. Charge activation (P72-P74) briefly lifts the protection periodically. -->
+  <parameter>
+    <Name>Remaining capacity protection</Name>
+    <Value>5</Value>
+    <Unit>%</Unit>
+  </parameter>
+  <!-- P80 Intermittent recharge (Interval charge capacity): after 100 % the pack is charge-locked (event 6 bit 1) until SOC <= P80; all packs locked -> CCL = 0. Only with BitGroup5 bit 1 (ON in the example configuration). Above P80 additionally 0.2 A SOC drift in standby. -->
+  <parameter>
+    <Name>Interval charge capacity</Name>
+    <Value>96</Value>
+    <Unit>%</Unit>
+  </parameter>
+  <!-- P81 Cycle counter +1 after a cumulative ... % SOC decrease while discharging. -->
+  <parameter>
+    <Name>Cycle cumulative capacity</Name>
+    <Value>80</Value>
+    <Unit>%</Unit>
+  </parameter>
+  <!-- P82 NO FUNCTION: never read by the firmware. The output connection fault (event 6 bit 6) comes from a hardware input (GPIO 0x50001000 pin 10, only with BitGroup5 bit 6 - off in the example configuration). -->
+  <parameter>
+    <Name>Connection fault impedance</Name>
+    <Value>10.0</Value>
+    <Unit>mΩ</Unit>
+  </parameter>
+  <!-- P83 Connector compensation 1: cell number. Current x P84 is subtracted from the voltage of EXACTLY this cell (for a connector with contact resistance in the measurement path of this cell). -->
+  <parameter>
+    <Name>Compensation point 1 position</Name>
+    <Value>9</Value>
+    <Unit>String</Unit>
+  </parameter>
+  <!-- P84 Connector compensation 1: resistance (internally 0.1 mOhm). Correction in mV = I [A] x R [mOhm]; lower when charging, higher when discharging. 0.0 = ineffective. -->
+  <parameter>
+    <Name>Compensation point 1 impedance</Name>
+    <Value>0.0</Value>
+    <Unit>mΩ</Unit>
+  </parameter>
+  <!-- P85 Connector compensation 2: cell number (Ompensation = typo). Cf. P83. -->
+  <parameter>
+    <Name>Ompensation point 2 position</Name>
+    <Value>13</Value>
+    <Unit>String</Unit>
+  </parameter>
+  <!-- P86 Connector compensation 2: resistance. 0.0 = ineffective. -->
+  <parameter>
+    <Name>Compensation point 2 impedance</Name>
+    <Value>0.0</Value>
+    <Unit>mΩ</Unit>
+  </parameter>
+  <!-- BitGroup0: NOT a mask. Only bit 1 has an effect: plausibility check of the temperature sensors (< -45 C or >= 100 C, or spread >= 20 K -> event 1 bit 1, heating off). Bits 0, 2-7 without function (only stored/reported). -->
+  <param_bit_group>
+    <Name>BitGroup0</Name>
+    <Value>FF</Value>
+  </param_bit_group>
+  <!-- BitGroup1: enable mask event 2 (voltage). Bit 0 cell warning high (P0), 1 cell OVP (P4), 2 cell warning low (P2), 3 cell UVP (P6), 4 pack warning high (P10), 5 pack OVP (P14), 6 pack warning low (P12), 7 pack UVP (P16). DF = bit 5 OFF: pack OVP never triggers, P14 acts only as CVL; no 100 % reset via pack OVP (verified in the code: event 2 &= BitGroup1 directly after the voltage evaluation, before all consumers). -->
+  <param_bit_group>
+    <Name>BitGroup1</Name>
+    <Value>DF</Value>
+  </param_bit_group>
+  <!-- BitGroup2: enable mask event 3 (cell temperature). Bit 0/1 charging high warning/protection (P20/P24), 2/3 charging low (P22/P26), 4/5 discharging high (P28/P32), 6/7 discharging low (P30/P34). FF = all on. -->
+  <param_bit_group>
+    <Name>BitGroup2</Name>
+    <Value>FF</Value>
+  </param_bit_group>
+  <!-- BitGroup3: enable mask event 4. Bit 0-3 ambient high/low warning/protection (P38-P45), 4 power stage protection (P48), 5 power stage warning (P46), 6 cell heating (P36/P37; heating only while charging or with a detected charger; also minimum CCL for heating), 7 severe fault report (latch; with bit 6 off it switches the heating/relay output). 3F = bits 6 and 7 OFF. -->
+  <param_bit_group>
+    <Name>BitGroup3</Name>
+    <Value>3F</Value>
+  </param_bit_group>
+  <!-- BitGroup4: enable mask event 5 (current). Bit 0/1 charging warning/protection (P50/P54), 2/3 discharging warning/protection (P52/P55), 4 short-term detection (P56/P68), 5 short-circuit detection, 6 lockout after P70 short-term events, 7 lockout after P70 short circuits. BF = bit 6 OFF. -->
+  <param_bit_group>
+    <Name>BitGroup4</Name>
+    <Value>BF</Value>
+  </param_bit_group>
+  <!-- BitGroup5: enable mask event 6. Bit 0 charger overvoltage (P18), 1 intermittent recharge (P80), 2 SOC warning (P78), 3 SOC protection (P79, discharge MOSFET off), 4 cell too low for charging (P9), 5 reverse polarity (not implemented in the firmware), 6 output connection fault (hardware input, P82 unused), 7 current limiter feedback. 9F = bits 5 and 6 OFF; bit 1 ON: after 100 % CCL = 0 until SOC <= P80. -->
+  <param_bit_group>
+    <Name>BitGroup5</Name>
+    <Value>9F</Value>
+  </param_bit_group>
+  <!-- BitGroup6: functions. Bit 0 balancing on, 1 balancing also when idle, 2 time limit P64, 3 balancing lock on ambient temperature, 4 automatic charge activation (P72-P74) AND disabling of the P9 charge lock, 5 manual charge activation after power-on, 6 charging from 10 A through current limiter, 7 current limiter after charge overcurrent warning for P71 minutes. BF = bit 6 OFF. -->
+  <param_bit_group>
+    <Name>BitGroup6</Name>
+    <Value>BF</Value>
+  </param_bit_group>
+  <!-- BitGroup7: functions. Bit 0 external on/off switch (GPIO input, high = off), 1 standby self-shutdown after P77, 2 no function, 3 binary protocol RS232/TTL, 4 binary format A, 5 auto-addressing via pulse chain instead of DIP (hardware interpretation probable), 6 no function, 7 CCL mode (1 = P50 - 10 A, 0 = P50/2). 1F = bits 5-7 OFF: CCL = P50/2 per pack; standby shutdown after 48 h ON. -->
+  <param_bit_group>
+    <Name>BitGroup7</Name>
+    <Value>1F</Value>
+  </param_bit_group>
+</paraGroup>
