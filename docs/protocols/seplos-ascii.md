@@ -87,7 +87,7 @@ Frame:   ~200146510000FDAD<CR>
 
 ### Pack bus (RS485-1/2, UART0)
 - A pack accepts a frame if **ADR = its own DIP address or `FF`**.
-- **Master mode:** DIP 0 with at least one slave. The master polls the slaves itself (CID2 0x5A, §5.10, one round per second). In this mode its main loop calls **only the polling, never the ASCII dispatcher** (`0x6264`–`0x628A`); the evaluation accepts only 0x5A responses. **On RS485-1/2 the master therefore does not answer any requests, not even between rounds.** It can only be read on the RS485 bus of the CAN socket (9600 baud). *(confirmed, verified in practice)*
+- **Master mode:** DIP 0 with at least one slave. The master polls the slaves itself (CID2 0x5A, §5.10; 150 ms per slave, a new round starts with the next 1 s cycle, so about every 2 s with 11 slaves). In this mode its main loop calls **only the polling, never the ASCII dispatcher** (`0x6264`–`0x628A`); the evaluation accepts only 0x5A responses. **On RS485-1/2 the master therefore does not answer any requests, not even between rounds.** It can only be read on the RS485 bus of the CAN socket (9600 baud). *(confirmed, verified in practice)*
 - Response ADR = **always its own DIP address**, even for requests to `FF`. *(confirmed)*
 - No pack responds to a broadcast `FF` with 0x45 type 4 (on/off).
 
@@ -141,7 +141,7 @@ The documentation additionally lists 01 (VER), 07, E1–E4. **The firmware does 
 | 0x60–0x63 | Pylontech system commands | – | ✔ (master) | 0x61–0x63: 04.06, 0x60: 06.04 |
 | 0xA0 | Calibration | ✔ | – | 04.06 |
 | 0xA1 | Write parameters | ✔ | – | 04.06 |
-| 0xA2 / 0xA3 | Read / write string 1 (serial number) | ✔ | – | 04.06 |
+| 0xA2 / 0xA3 | Read / write string 1 (battery serial number) | ✔ | – | 04.06 |
 | 0xA4 / 0xA5 | Read / write string 2 | ✔ | – | 04.06 |
 | 0xA6 | Set CAN protocol | ✔ | – | 04.06 |
 | 0xAA / 0xAB | Tunnel to binary port | ✔ | – | 06.13 |
@@ -271,7 +271,7 @@ Other indices → RTN 04. All other parameters can only be set via 0xA1.
 ### 5.6 CID2 0x4B: Read history
 
 **Request:** INFO 2 bytes: `[0]` unused, `[1]` = `00` oldest record, otherwise next.
-- Storage: ring buffer in an I²C EEPROM, **max. 500 records**. Recording interval: parameter 75 (operation) / 76 (standby).
+- Storage: ring buffer in an I²C EEPROM, **max. 500 records**. Written at once on every change of the system status or events 1–7 (partly masked), otherwise at the interval of parameter 75 (operation) / 76 (standby); such a record still holds the events from before the change. Details: [undocumented commands §1.6](undocumented-commands.md).
 
 **Response:** 97 bytes (empty if no records exist):
 
@@ -342,11 +342,11 @@ No handler: response RTN 00 without INFO. The version is only in the VER field (
 
 | Sub | Function | Reference | Acceptance condition | clears event 8 |
 |---|---|---|---|---|
-| 00 | current zero point | – | both raw current ADC values \|x\| < 1000 | bit 4 |
-| 01 | current gain | reference current s16, 0.01 A | deviation < 3.01 A | bit 3 |
-| 02 | voltage | reference cell voltage mV | cell difference < 20 mV, \|avg − ref\| < 30 mV, \|port − ref·M\| < 2 V | bit 2 |
+| 00 | current zero point | – | both converted current channels \|x\| < 1000 mA (a residual current stays as an offset) | bit 4 |
+| 01 | current gain | reference current s16, 0.01 A | deviation < 3.01 A, no minimum current | bit 3 |
+| 02 | voltage | reference cell voltage mV | cell difference < 20 mV, \|avg − ref\| < 30 mV, \|port P+/P− − ref·M\| < 2 V | bit 2 |
 
-Rejection → RTN 06, unknown subcode → RTN 04.
+Rejection → RTN 06, unknown subcode → RTN 04. Stored in calibration flash block 2; no UART command reads the factors. Details: [undocumented commands §1.10](undocumented-commands.md).
 
 ### 5.12 CID2 0xA1: Write parameters
 
@@ -359,7 +359,7 @@ Rejection → RTN 06, unknown subcode → RTN 04.
 
 | CID2 | Function |
 |---|---|
-| 0xA2 | read string 1 (pack serial number, *probable*), response 30 bytes: `~200146A20000FDA0<CR>` |
+| 0xA2 | read string 1 (battery serial number, *confirmed*), response 30 bytes: `~200146A20000FDA0<CR>` |
 | 0xA3 | write string 1 (saved immediately) |
 | 0xA4 / 0xA5 | read / write string 2 |
 
@@ -370,6 +370,7 @@ Writing: up to 06.05 always 30 bytes are read; from 06.11 only LENGTH/2 bytes (m
 - **Request:** INFO 1 byte: 1 PNG_DYE_Luxp_TBB (Pylontech/Deye/Luxpower), 2 Growatt_SPF_SPH, 3 Victron, 4 SMA_SOFAR, 5 GINLONG, 6 Studer, 7 MUST (from 06.11).
 - 1…20 are accepted; 8…20 act like 1. Otherwise RTN 04.
 - Saved immediately. When switching to or from 7, CAN is reinitialized (100 ↔ 500 kbit/s).
+- 06.04/06.05 store 7 as well but run it as 1; after an update to ≥ 06.11 MUST then applies (see [undocumented commands §1.12](undocumented-commands.md)).
 - Example protocol 1 to address 1: `~200146A6E00201FD24<CR>`
 
 ### 5.15 CID2 0xAA / 0xAB (from 06.13): Tunnel to the binary port
@@ -486,7 +487,7 @@ Details on all function switches: [configuration-parameters.md §5](../configura
 - **Neighbor lock:** two balanced cells must be at least three positions apart. For cell n, n±1 and n±2 are locked, a limitation of the balancing IC.
 - The measurement IC receives the mask only in part of each measurement cycle (phase 17–38 of 40) and is otherwise off (measurement). The mask is reported continuously.
 
-**Why balancing is rarely seen** (example configuration (module 1101-SP75): start 3.400 V, opening 30 mV, closing 20 mV, switch `BF` = on, also when idle):
+**Why balancing is rarely seen** (example configuration: start 3.400 V, opening 30 mV, closing 20 mV, BitGroup6 bits 0/1 = on, also when idle):
 - LiFePO4 reaches 3.40 V only in the topmost SOC range at the end of charging.
 - Balancing only starts if the spread is **at the same time** above 30 mV. With well-balanced packs this is never the case.
 - After the end of charging (charge stop or "Intermittent recharge waiting"), the cells drop below 3.40 V within minutes. After that, no cell is selectable any more.

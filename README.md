@@ -19,6 +19,7 @@ Everything here is derived from the firmware code unless marked otherwise. It is
 | [docs/protocols/intra-pack.md](docs/protocols/intra-pack.md) | **Multi-pack communication (CID2 0x5A)**, fully decoded, with captured frames |
 | [docs/protocols/can.md](docs/protocols/can.md) | **What is sent to the inverter via CAN**: all 7 protocols (Pylontech/Deye, Victron, SMA, Growatt, Ginlong, Studer, MUST), limit calculation, send timing |
 | [docs/protocols/modbus-rtu.md](docs/protocols/modbus-rtu.md) | Undocumented **Modbus RTU slave** on the inverter-side RS485 bus: all register blocks |
+| [docs/protocols/current-limits-and-enables.md](docs/protocols/current-limits-and-enables.md) | Index of every response field (CAN/Modbus/Pylontech) reporting CCL/DCL or an enable/force-charge bit, with the exceptions that do not follow the aggregate |
 | [docs/protocols/pylontech-rs485.md](docs/protocols/pylontech-rs485.md) | Undocumented **Pylontech ASCII protocol** (0x60–0x63) on the inverter-side RS485 bus |
 | [config/](config/) | Example BatteryMonitor parameter export and an annotated copy (comments for every parameter) |
 | [specs/](specs/) | Vendor documents referenced by the docs (Seplos protocol V2.0, PACE Modbus V1.3, Seplos battery specification) |

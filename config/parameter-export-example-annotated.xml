@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-  Annotated copy of "config/parameter-export-example.xml" (BatteryMonitor parameter export, module 1101-SP75).
+  Annotated copy of "config/parameter-export-example.xml" (fictitious example of a BatteryMonitor parameter export, module 1101-SPxx).
   Status: verified in the code of 06.12/06.13. FOR READING ONLY - do not import into BatteryMonitor (whether comments interfere with the import is unverified).
   Explanation: docs/configuration-parameters.md, derivations: docs/states-and-triggers.md.
   Pn = parameter number in the order of the file (0-86). The BMS reads/writes by position, not by name.
@@ -9,7 +9,7 @@
 -->
 <paraGroup>
   <filetype>Parameter</filetype>
-  <modualName>1101-SP75 </modualName>
+  <modualName>1101-SPxx </modualName>
   <!-- P0 Cell high-voltage WARNING (Monomer = single cell). Event 2 bit 0 (mask BitGroup1 bit 0). If all packs warn: CCL 10 A total. SOC: above 98.2 % the SOC only counts up while charging if a cell >= P0; 100 % threshold = P65 x P0 (P0 limited to 3.45-3.50 V) = 55.20 V for 30 min; full mark for capacity learning. Hysteresis: P1. Cf. P10 (pack warning = 16 x P0). -->
   <parameter>
     <Name>Monomer high voltage alarm</Name>
@@ -70,7 +70,7 @@
     <Value>1.500</Value>
     <Unit>V</Unit>
   </parameter>
-  <!-- P10 Pack high-voltage WARNING (Total pressure = pack voltage). Event 2 bit 4 (BitGroup1 bit 4). If all packs warn: CCL 10 A total (approx. 0.8 A per pack with 12 packs). No SOC influence. = 16 x P0. Hysteresis: P11. -->
+  <!-- P10 Pack high-voltage WARNING (Total pressure = pack voltage). Event 2 bit 4 (BitGroup1 bit 4). If all packs warn: CCL 10 A total (2.5 A per pack with 4 packs). No SOC influence. = 16 x P0. Hysteresis: P11. -->
   <parameter>
     <Name>Total pressure high pressure alarm</Name>
     <Value>55.20</Value>
@@ -166,10 +166,10 @@
     <Value>50.0</Value>
     <Unit>℃</Unit>
   </parameter>
-  <!-- P26 Cell temperature while CHARGING: under-temperature PROTECTION. Event 3 bit 3. Charging forbidden. Reported (event 3) only in this current direction; from 06.11 the MOSFET lock tests the raw protection byte regardless of the current direction. Return: P27. Note: do not charge LiFePO4 below 0 C; here the lock only takes effect at -10 C. -->
+  <!-- P26 Cell temperature while CHARGING: under-temperature PROTECTION. Event 3 bit 3. Charging forbidden. Reported (event 3) only in this current direction; from 06.11 the MOSFET lock tests the raw protection byte regardless of the current direction. Return: P27. Note: LiFePO4 cells are usually specified for charging only from 0 C; here the lock only takes effect at -5 C. -->
   <parameter>
     <Name>Charging under-temperature protection</Name>
-    <Value>-10.0</Value>
+    <Value>-5.0</Value>
     <Unit>℃</Unit>
   </parameter>
   <!-- P27 Return of charging under-temperature protection. -->
@@ -310,28 +310,28 @@
     <Value>85.0</Value>
     <Unit>℃</Unit>
   </parameter>
-  <!-- P50 Charge overcurrent WARNING. Event 5 bit 0. BASIS OF THE CCL: per pack P50/2 (BitGroup7 bit 7 = 0, as in the example configuration) or P50 - 10 A (bit 7 = 1). In the example system 75 A x 12 packs = 900 A. Return: P51. Protection: P54. -->
+  <!-- P50 Charge overcurrent WARNING. Event 5 bit 0. BASIS OF THE CCL: per pack P50/2 (BitGroup7 bit 7 = 0, as in the example configuration) or P50 - 10 A (bit 7 = 1). In a 4-pack example 50 A x 4 = 200 A. Return: P51. Protection: P54. -->
   <parameter>
     <Name>Charging overcurrent warning</Name>
-    <Value>150.00</Value>
+    <Value>100.00</Value>
     <Unit>A</Unit>
   </parameter>
   <!-- P51 Return of charge overcurrent warning. -->
   <parameter>
     <Name>Charging overcurrent recovery</Name>
-    <Value>145.00</Value>
+    <Value>95.00</Value>
     <Unit>A</Unit>
   </parameter>
-  <!-- P52 Discharge overcurrent WARNING (negative = discharging). Event 5 bit 2. BASIS OF THE DCL: |P52| - 10 A (above 20 A) per pack. In the example system 145 A x 12 = 1,740 A. Return: P53. Protection: P55. -->
+  <!-- P52 Discharge overcurrent WARNING (negative = discharging). Event 5 bit 2. BASIS OF THE DCL: |P52| - 10 A (above 20 A) per pack. In a 4-pack example 95 A x 4 = 380 A. Return: P53. Protection: P55. -->
   <parameter>
     <Name>Discharge overcurrent warning</Name>
-    <Value>-155.00</Value>
+    <Value>-105.00</Value>
     <Unit>A</Unit>
   </parameter>
   <!-- P53 Return of discharge overcurrent warning. -->
   <parameter>
     <Name>Discharge overcurrent recovery</Name>
-    <Value>-153.00</Value>
+    <Value>-103.00</Value>
     <Unit>A</Unit>
   </parameter>
   <!-- P54 Charge overcurrent PROTECTION. Event 5 bit 1. Charge MOSFET off after P66 seconds. Re-enable: after P69 seconds, or immediately on discharge current. -->
@@ -367,7 +367,7 @@
   <!-- P59 'SOC' = set value of the REMAINING CAPACITY in Ah, not a percentage, not the current state of charge. When written individually (0x49), the remaining capacity is set to this value (only if <= full capacity). -->
   <parameter>
     <Name>SOC</Name>
-    <Value>75.00</Value>
+    <Value>50.00</Value>
     <Unit>Ah</Unit>
   </parameter>
   <!-- P60 Cell difference FAULT if highest - lowest cell >= P60 (invalidation differential pressure = failure voltage difference). Event 1 bit 4 (not maskable; BitGroup0 bit 4 has no effect). Return: P61. -->

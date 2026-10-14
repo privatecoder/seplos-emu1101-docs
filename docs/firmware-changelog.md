@@ -60,7 +60,7 @@ Details: [CAN protocols](protocols/can.md) · [Modbus RTU](protocols/modbus-rtu.
 ### Battery logic
 - **Bugfix: hysteresis of the cell temperature alarms** (event 3) *(confirmed, code and consequence)*
   - **Up to 06.11:** The hysteresis state was stored in the reported byte `0x20000032`, which was then masked depending on the charge/discharge state. On a change charge ↔ discharge, the state of the other half was lost.
-  - **From 06.12:** The evaluation works on `0x200000BB`; a masked copy is reported, which is now also masked with BitGroup2.
+  - **From 06.12:** The evaluation works on `0x200000BB`, and this byte is now masked with BitGroup2 (06.12 `0x677C`–`0x6786`, 06.13 `0x6946`–`0x6952`); a copy masked by current direction is reported in `0x20000032`. **06.11 only:** the charge/discharge locks read the unmasked copy `0x200000BB` (06.11 `0x6584`–`0x658A`, mask only applied to `0x32` at `0x678A`); a cell temperature protection disabled via BitGroup2 therefore still opened the MOSFET there (correct in 06.05 and from 06.12). *(confirmed)*
   - *Consequence up to 06.11* (with P24 = 55 °C, P25 = 50 °C): charging at 56 °C → charge overtemperature protection. Brief discharge → charge bits including their memory are cleared. Charging again at 52 °C → **charging allowed**, although the temperature did not drop below 50 °C. From 06.12 the protection stays active until below 50 °C. Mirror-symmetrically for the discharge temperature protection.
 - **Heating request** (event 4 bit 6): is now set from the temperature alone (≤ parameter 36 on, > 37 off). Up to 06.11 only during active charging/float. The condition "charging or charger detected" is checked from 06.12 by the heater output itself instead; heating therefore still only happens with a charger present, but the request is always reported. *(confirmed)*
 - **"Float" logic** (system status bit 2, per documentation "Floating charge", actually "charger/external voltage detected at the port"; internally on-off bit 6) *(confirmed)*:
@@ -109,7 +109,7 @@ Details: [CAN protocols](protocols/can.md) · [Modbus RTU](protocols/modbus-rtu.
 - **SOC := 0 % on undervoltage protection:** up to 06.05 only if the pack is currently discharging; from 06.11 always.
 - **Enabling of the SOC voltage calibration:** up to 06.05 only from lowest cell 3.000 V, from 06.11 from 2.000 V.
 - **Charge and discharge lockout** read the temperature protection bits from an unfiltered copy (`0x200000BB`) from 06.11. Up to 06.05 from the event 3 byte masked by state: while discharging, the charge lockout did not see the charge temperature bits; while charging, the discharge lockout did not see the discharge bits.
-- Unchanged since 04.06: capacity learning, event 6 / intermittent recharge, system status thresholds, standby shutdown, button/switch, event 2 mask. Since 06.03 only shifted RAM addresses: current limiter, overcurrent reconnect/lockout, charge activation, discharge lockout.
+- Unchanged since 04.06: capacity learning, event 6 / intermittent recharge, system status thresholds, standby shutdown, button/switch, event 2 mask. Since 06.03 only shifted RAM addresses: current limiter, overcurrent reconnect/lockout, charge activation. The discharge lockout is unchanged except for the temperature source (above).
 
 ### ASCII protocol
 - CID2 0xA3/0xA5 (write serial number strings): The length now comes from LENGTH (max. 30), the rest is padded with spaces. Previously 30 bytes were always read. *(confirmed)*

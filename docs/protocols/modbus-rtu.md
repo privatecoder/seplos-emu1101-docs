@@ -38,15 +38,16 @@ Confidence: **confirmed** = directly from the code · **probable** · **assumpti
 | 03 | 0x9000 | 0x1A (26) (up to 06.12: 0x15) | `0x3898` |
 | 04 | 0x0000 / 0x0015 / 0x0028 / 0x3100 | see section 4 | `0x3DAA` / `0x3EB0` / `0x41A4` / `0x364A` |
 
-### ⚠ Non-compliant responses (single registers)
+### ⚠ Non-compliant responses (16-bit byte count)
 
 The handlers for **0x0033, 0x0034, 0x0070 (count 1) and 0x0071–0x0074** write a **16-bit byte count**:
 
 ```
-01 03 00 02 HH LL CRC CRC        (instead of  01 03 02 HH LL CRC CRC)
+01 03 00 02 HH LL CRC CRC              (instead of  01 03 02 HH LL CRC CRC)        single register
+01 03 00 04 D0 D1 D2 D3 CRC CRC        (instead of  01 03 04 D0 D1 D2 D3 CRC CRC)  0x0034, 2 registers (`0x4292`)
 ```
 
-A standard Modbus master reads this as byte count = 0 plus one surplus byte. *(confirmed: code; probably a bug, possibly intentional for a proprietary master)*
+A standard Modbus master reads this as byte count = 0 plus one surplus byte before the data. *(confirmed: code; probably a bug, possibly intentional for a proprietary master)*
 
 ---
 
@@ -84,7 +85,7 @@ Almost all registers come from a system structure. Function `0x99BA` computes it
 5. `0x200000F7.2` = 0 (highest cell > parameter 4 cell OVP + 30 mV): **0**.
 6. **Ramp:** per cycle at most ± (packs online × 1.0 A) change.
 
-Example with the example configuration (module 1101-SP75): parameter 50 = 150 A, bit 7 of BitGroup7 (`1F`) = 0 → halved → **75 A per pack**. DCL: parameter 52 = −155 A → 155 − 10 = **145 A per pack**. CVL = 56.0 V (parameter 14), DVL = 46.4 V (parameter 12).
+Example with the example configuration: parameter 50 = 100 A, bit 7 of BitGroup7 = 0 → halved → **50 A per pack**. DCL: parameter 52 = −105 A → 105 − 10 = **95 A per pack**. CVL = 56.0 V (parameter 14), DVL = 46.4 V (parameter 12).
 
 **Status flags `0x200000F7`** *(confirmed)*
 
@@ -327,7 +328,7 @@ The blocks `0x0000`, `0x0015` and `0x0028` contain **only data of the master pac
 
 | Reg | Content | Unit |
 |---|---|---|
-| 0x00–0x0A | ASCII string 1 (`0x2000004C`, set via CID2 0xA3; **pack serial number**, *probable*), the first 22 characters, 2 per register | char |
+| 0x00–0x0A | ASCII string 1 (`0x2000004C`, set via CID2 0xA3; **battery serial number**, *confirmed*), the first 22 characters, 2 per register | char |
 | 0x0B–0x0E | cell temperature 1–4 | °C (integer, signed) |
 | 0x0F | power stage / MOS temperature (the ambient temperature is **not** output) | °C |
 | 0x10 | **0x0001**, constant | ? |

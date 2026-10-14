@@ -19,15 +19,27 @@ Confidence: **confirmed** = read directly from the code · **probable** = inferr
 The main loop (06.13 from `0x6264`) selects the mode:
 
 ```
-if (rs485_address == 0  &&  slave_count != 0  &&  !(flag 0x20000000.bit2))
-    master polling   (functions 0x13f6 = send request, 0x14ae = evaluate response)
-else
+if (rs485_address == 0  &&  slave_count != 0) {
+    if (!(flag 0x20000000.bit2))
+        master polling   (functions 0x13f6 = send request, 0x14ae = evaluate response)
+    // bit 2 set: neither polling nor dispatcher (pause until the next round)
+} else
     normal ASCII slave dispatcher (0x1132: 0x42, 0x44, 0x47, 0x5A, …)
 ```
 
+- `flag 0x20000000.bit2` = "polling round complete": `0x14ae` sets it after the last slave of the round (`0x1570`), `0x99ba` clears it in the measurement cycle (about 1 s) after recomputing the system aggregate (`0x9a34`–`0x9a3a`). Then the next round starts. The bit does **not** switch to the dispatcher: while it is set, the main loop skips both polling and dispatcher (`0x6274`–`0x627a` → `0x628e`). *(confirmed)*
+
 - `rs485_address` = RAM `0x20000027` (DIP switch). *(confirmed)*
-- `slave_count` = RAM `0x20000026`, maximum **21** (0x15). *(confirmed)* If the function switch byte `0x2000002f` bit 5 is set, the master adjusts the number automatically: it increases it as long as the last slave responds, and decreases it when a slave drops out. *(probable)*
+- `slave_count` = RAM `0x20000026`, maximum **21** (0x15). *(confirmed)* If the function switch byte `0x2000002f` bit 5 is set, the master determines the number itself: start value 1 if its pin 9 is low, otherwise 0 (`0x944C`). If the last slave answers validly and reports event 8 bit 7 = 0 (successor present), `0x14AE` increments the number by 1. If it reports bit 7 = 1 or drops out (failure counter ≥ 10), the chain ends at that slave (`0x152A`–`0x1566`). Upper limit 21. *(confirmed)*
 - Consequence *(confirmed, code and practice)*: In master mode the main loop calls only the polling, never the normal ASCII dispatcher. **On the pack bus the master does not answer any requests**, not even between rounds. External queries there also collide with its polling ("multimaster collisions"). The master is read via the RS485 bus of the CAN socket.
+
+### Taking the master off the bus during operation (DIP 5–8 to 0)
+
+- The DIP switches are not only read at startup: `0x2112` runs in the main loop's measurement cycle (`0x6152`–`0x6160`, about 1 s) and rewrites the slave count from DIP 5–8 to `0x20000026` every time (`0x21BE`, only if BitGroup7 bit 5 is off). *(confirmed)*
+- Setting DIP 5–8 on the master to 0 during operation makes the main loop take the normal dispatcher `0x1132` immediately: polling stops, the master answers requests to address 0 on the pack bus, and the bus is free for an external client. Switching back restarts polling without a reboot. *(confirmed in code; whether "all OFF" decodes as 0 on the hardware has not been measured)*
+- ⚠ **Limitation:** While DIP 5–8 are at 0, the master reports only **its own values as a single-pack system** to the inverter: capacity, SOC and current of the master pack only, DCL immediately for 1 pack. The CCL only falls via the ramp, by 1 A per second (step = packs online × 1 A, `0x995C`–`0x9986`), so from a large starting value it takes many minutes to reach the single-pack value. *(confirmed)*
+  - Reason: with address 0 and slave count 0, `0x944C` clears the flag byte `0x20000000` and the online bitmask (`0x94C6`–`0x94CE`). Immediately afterwards (`0x6212`), `0x12E2` sets its own online bit (`0x1364`–`0x136A`) and bit 2 again (`0x136C`–`0x1380`). `0x99BA` therefore recomputes the aggregate every second, but only from its own pack. The same applies to a master operated alone.
+  - The inverter thus sees only a fraction of the current and capacity while all packs keep delivering power. Every pack still protects itself via its MOSFETs. Even so, the inverter should be set to **"no battery power"** for this maintenance window.
 
 ### Master request (function `0x13f6`)
 
@@ -49,7 +61,7 @@ This is the frame "`20.01.46.5A.00.00`" from esphome issue #116.
 | Master switched on | INFO `00 04 10` → all slaves switch **on** |
 | Master switched off | INFO `00 04 1F` → all slaves switch **off** |
 
-- The edge is detected in `0x8A24`; the request is stored in `0x20000000` bit 5 (on) or bit 4 (off).
+- The edge is detected in `0x8A24` (shadow `0x200000F0`); ASCII 0x45 type 4 also sets the request directly (`0x0A96`–`0x0ABC`). It is stored in `0x20000000` bit 5 (on) or bit 4 (off).
 - Slaves do not respond to broadcasts.
 - Details on CID2 0x45: [undocumented-commands.md §1.3](undocumented-commands.md#13-cid2-0x45-remote-control-confirmed).
 
@@ -67,7 +79,7 @@ This is the frame "`20.01.46.5A.00.00`" from esphome issue #116.
 
 - The master accepts only responses with CID2 = 0x5A and the expected total length (82 characters including framing). *(confirmed)*
 - It decodes **30 bytes** starting at INFO byte 2, i.e. without `00 01`, and stores them in a table: `0x20000524 + 30 × pack index`. **Index 0 is the master itself** (function `0x12e2` copies its own values there). *(confirmed)*
-- There is a failure counter per pack. After **10** missed or invalid responses, the pack's bit in the online bitmask is cleared (`0x20000500 + 0x18`, 32 bits, bit n = pack n). On a valid response the counter is reset and the bit is set. *(confirmed)*
+- There is a failure counter per pack. From the **11th** consecutive missed or invalid attempt (counter ≥ 10, `0x14FE`–`0x1528`), the pack's bit in the online bitmask is cleared (`0x20000500 + 0x18`, 32 bits, bit n = pack n). On a valid response the counter is reset and the bit is set. *(confirmed)*
 - From this table the master forms the **system values for the inverter** (CAN, Modbus, Pylontech RS485). Function `0x99BA` calls `0x94D2`, `0x96CE` and `0x98A8` for this. *(confirmed)*
 
 | System value | Derivation |
@@ -105,7 +117,7 @@ All 16-bit values are big-endian and, as everywhere in the protocol, transmitted
 | 24 | 48–49 | **Alarm event 3** (cell temperature) | bit field | `0x20000032` | confirmed |
 | 25 | 50–51 | **Alarm event 4** (ambient/power section/heater) | bit field | `0x20000033` | confirmed |
 | 26 | 52–53 | **Alarm event 5** (current) | bit field | `0x20000034` | confirmed |
-| 27 | 54–55 | **Alarm event 6** (miscellaneous) | bit field, bit 7 masked | `0x20000035 & 0x7F` | confirmed |
+| 27 | 54–55 | **Alarm event 6** (miscellaneous) | bit field, unfiltered (only 0x44 applies `& 0x7F`) | `0x20000035` | confirmed |
 | 28 | 56–57 | **Switch state (On-off state)** | bit field | `0x200000b5` | confirmed |
 | 29 | 58–59 | **Alarm event 7** | bit field, unfiltered (in 0x44 only `& 0x30`) | `0x20000036` | confirmed |
 | 30 | 60–61 | **Alarm event 8** bits 0–6, **bit 7 = internal flag** | bit field | `(0x20000005 & 0x7F) \| (0x80 if 0x200000f6.bit3 == 0)` | confirmed (bit 7: input GPIO pin 9, see [firmware-analysis §8.2d](../firmware-analysis.md#82d-alarm-event-8-bit-7-and-automatic-address-assignment)) |
@@ -122,7 +134,7 @@ The mapping of the RAM bytes to the events is established via the 0x44 handler: 
 | Event 3 | Charge overtemp. alarm | Charge overtemp. protection | Charge undertemp. alarm | Charge undertemp. protection | Discharge overtemp. alarm | Discharge overtemp. protection | Discharge undertemp. alarm | Discharge undertemp. protection |
 | Event 4 | Ambient overtemp. alarm | Ambient overtemp. protection | Ambient undertemp. alarm | Ambient undertemp. protection | Power section overtemp. protection | Power section overtemp. alarm | Cell heating requested | **Severe fault** (latch: sensor fault, cell ≥ P4 + 50 mV, cell ≤ P6 − 200 mV, overcurrent protection; see [seplos-ascii.md](seplos-ascii.md) §6.1) |
 | Event 5 | Charge overcurrent alarm | Charge overcurrent protection | Discharge overcurrent alarm | Discharge overcurrent protection | Transient overcurrent protection | Short-circuit protection | Transient overcurrent lockout | Short-circuit lockout |
-| Event 6 | Charger overvoltage | **Intermittent recharge waiting** | Remaining capacity alarm | Remaining capacity protection | Charging blocked (cell too low) | Reverse polarity (never set) | Output connection fault (GPIO input) | Current limiter not ready (masked in 0x5A) |
+| Event 6 | Charger overvoltage | **Intermittent recharge waiting** | Remaining capacity alarm | Remaining capacity protection | Charging blocked (cell too low) | Reverse polarity (never set) | Output connection fault (GPIO input) | Current limiter not ready (only visible in 0x5A, masked in 0x44) |
 | On-off | Discharge MOSFET on | Charge MOSFET on | Current limiting on | Heater on | Precharge in progress (P57) | Discharge MOSFET just switched on (100 ms) | External voltage at port with MOSFET open | – |
 | Event 7 | **Balancing active** | **Balancing blocked / not needed** | Balancing time limit reached | Balancing blocked due to ambient temperature | Charge activation automatic | Charge activation manual | Charging via current limiter from 10 A | Current limiting after charge overcurrent warning |
 | Event 8 | EEPROM fault | RTC fault | Voltage not calibrated | Current not calibrated | Zero point not calibrated | RTC time invalid | internal: "charging forbidden" request (controls the charge MOSFET, see SP80 in [firmware-changelog.md](../firmware-changelog.md)) | in 0x5A: **input GPIO pin 9 high** (presumably "no address request from neighbouring pack"; always 1 with DIP addressing) |
@@ -156,7 +168,7 @@ Complete frame with checksum (calculated):
 | Alarm events 1–6 | `00 00 00 00 00 00` | no alarms |
 | Switch state | `03` | discharge and charge MOSFET on |
 | Alarm event 7 | `02` | bit 1: balancing blocked or no balancing needed |
-| Alarm event 8 | `80` | no faults; bit 7 = input pin 9 high (idle state) |
+| Alarm event 8 | `80` | no faults; bit 7 = 1, always set with DIP addressing |
 | System status | `82` | bit 1 = **charging**, bit 7 = **charge current ≥ 3 A**; consistent with +5.77 A |
 
 ### Example log (esphome, 38-byte frame)
@@ -177,13 +189,13 @@ Complete frame with checksum (calculated):
 | Unknown `0x00 0x00` (2nd) | Alarm event 3 = 0, alarm event 4 = 0 |
 | Unknown `0x00 0x00` (3rd) | Alarm event 5 = 0, alarm event 6 = 0 |
 | Unknown `0x03 0x02` | Switch state = 0x03 (both MOSFETs on), alarm event 7 = 0x02 (bit 1: balancing blocked / not needed) |
-| Unknown `0x80 0x10` | Alarm event 8 = 0x80 (no faults, bit 7 = pin 9 in idle state), system status = 0x10 = **standby** (consistent with 0.01 A) |
+| Unknown `0x80 0x10` | Alarm event 8 = 0x80 (no faults, bit 7 always 1 with DIP addressing), system status = 0x10 = **standby** (consistent with 0.01 A) |
 
 This accounts for all 32 bytes. No fields are missing: the 0x5A response contains no more than the 10 measurements and 10 status bytes. Individual cell voltages, individual temperature sensors, cycle count, ambient and power section temperature, SOH and the charge/discharge current limits are **not** transmitted over the pack bus. For those, the slaves must be queried directly with 0x42/0x44.
 
 ## Real captures (test data)
 
-24 responses from 10 packs (addresses 1, 2, 4–11) of a 12-pack system (firmware 16.06, captured on the pack bus). All checksums are correct. The mapping above fits every frame, including the thresholds of the system status bits: `10` standby down to −0.19 A, `01` discharging from −0.52 A, `02` charging from +1.49 A, `82` from +3.01 A (still set at +2.92 A, hysteresis down to 2.81 A). At SOC 98.2 % and 3.40–3.49 V per cell, alarm event 2 shows `01` (cell high alarm) or `11` (additionally pack high alarm).
+24 responses from 10 packs (addresses 1, 2, 4–11) of a multi-pack system (firmware 16.06, captured on the pack bus). All checksums are correct. The mapping above fits every frame, including the thresholds of the system status bits: `10` standby down to −0.19 A, `01` discharging from −0.52 A, `02` charging from +1.49 A, `82` from +3.00 A (still set at +2.92 A, hysteresis down to 2.80 A). At SOC 98.2 % and 3.40–3.49 V per cell, alarm event 2 shows `01` (cell high alarm) or `11` (additionally pack high alarm).
 
 | Frame | Pack | Cell max / min (V) | Current (A) | Pack (V) | SOC (%) | Events 1–6 | System status |
 |---|---|---|---|---|---|---|---|
@@ -225,4 +237,4 @@ This accounts for all 32 bytes. No fields are missing: the 0x5A response contain
 |---|---|
 | 16.04.06 | present, identical 32-byte format (handler `0x106e`) |
 | 16.06.03 – 16.06.12 | unchanged |
-| 16.06.13 | format unchanged; the snapshot is located 8 bytes further on (`0x20000524`), and the 0x5A case has moved into the jump table of the ASCII dispatcher instead of being handled as a single comparison. New in the same area: CID2 0xAA/0xAB (see [undocumented-commands.md](undocumented-commands.md)). |
+| 16.06.13 | format unchanged; the snapshot is located 8 bytes further on (`0x20000524`), In the ASCII dispatcher 0x5A remains a single comparison (`0x1152`); new is a second jump table for CID2 0xA0–0xAB instead of the comparison chain in 06.12. New in the same area: CID2 0xAA/0xAB (see [undocumented-commands.md](undocumented-commands.md)). |

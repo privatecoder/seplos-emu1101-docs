@@ -1,6 +1,6 @@
 # Configuration file (BatteryMonitor parameter export) explained
 
-Guide to [`config/parameter-export-example.xml`](../config/parameter-export-example.xml) (module `1101-SP75`; annotated copy: [`config/parameter-export-example-annotated.xml`](../config/parameter-export-example-annotated.xml)): what each entry really means, what the firmware does with it, what follows from it, and where the English label is misleading. Based on firmware 16.06.12/16.06.13 (see [Firmware analysis §7](firmware-analysis.md#7-parameters-and-function-switches), [States and triggers](states-and-triggers.md)).
+Guide to [`config/parameter-export-example.xml`](../config/parameter-export-example.xml) (annotated copy: [`config/parameter-export-example-annotated.xml`](../config/parameter-export-example-annotated.xml)): what each entry really means, what the firmware does with it, what follows from it, and where the English label is misleading. Based on firmware 16.06.12/16.06.13 (see [Firmware analysis §7](firmware-analysis.md#7-parameters-and-function-switches), [States and triggers](states-and-triggers.md)).
 
 Labelling: all effects have been **verified in the code of 06.12 and 06.13** (as of Oct. 2026). Only where the firmware drives hardware whose purpose it does not reveal itself is the **interpretation** marked *(probable)*. "Cycle" = 1 s (main loop, confirmed).
 
@@ -11,13 +11,13 @@ Labelling: all effects have been **verified in the code of 06.12 and 06.13** (as
 ```xml
 <paraGroup>
   <filetype>Parameter</filetype>
-  <modualName>1101-SP75 </modualName>      ← device name (10 characters, "modual" = typo for module)
+  <modualName>1101-SPxx </modualName>      ← device name (10 characters, "modual" = typo for module)
   <parameter><Name>…</Name><Value>…</Value><Unit>…</Unit></parameter>   × 87
   <param_bit_group><Name>BitGroup0</Name><Value>FF</Value></param_bit_group>   × 8
 </paraGroup>
 ```
 
-- The **order** is exactly the order inside the BMS: 60 × u16 (parameters 0–59, RAM `0x20001300`), then 27 × u8 (parameters 60–86, RAM `0x200013F0`), then 8 function switch bytes (`0x20000028`–`2F`). This is how BatteryMonitor reads them with ASCII command 0x47. *(confirmed)*
+- The **order** is exactly the order inside the BMS: 60 × u16 (parameters 0–59, RAM `0x20001300`, 06.13; up to 06.12 `0x200012F8`), then 27 × u8 (parameters 60–86, RAM `0x200013F0`, 06.13; up to 06.12 `0x200013E8`), then 8 function switch bytes (`0x20000028`–`2F`). This is how BatteryMonitor reads them with ASCII command 0x47. *(confirmed)*
 - **The names are not evaluated**, only the position. An export from a different BatteryMonitor version with a different order therefore does not fit.
 - The values in the file are already converted (V, A, °C, Ah). Internally the BMS stores mV, 10 mV, 0.1 K, 10 mA, 10 mAh. *(confirmed)*
 - `N` below = parameter 65 (cells in series, 16 in the example configuration).
@@ -67,7 +67,7 @@ The English names were machine-translated from Chinese. The most common errors:
 | 6 | Monomer undervoltage protection | **cell undervoltage protection** (UVP) | 2.700 V | Discharge MOSFET off, SOC := 0 %. |
 | 7 | Monomer undervoltage recovery | return of cell UVP | 3.100 V | |
 | 8 | Equalization opening voltage | **balancing start voltage** | 3.400 V | A cell is only balanced if it is ≥ P8. With 3.40 V the BMS practically only balances at the end of a charge. *(confirmed)* |
-| 9 | Battery low voltage forbidden charging | **charging forbidden below (cell)** | 1.500 V | Event 6 bit 4 (charging forbidden) as long as a cell ≤ P9. **Only if BitGroup6 bit 4 = 0** – in the example configuration (`BF`) bit 4 is on, so the lock is **ineffective**. Also an abort condition for charge activation (P72). |
+| 9 | Battery low voltage forbidden charging | **charging forbidden below (cell)** | 1.500 V | Event 6 bit 4 (charging forbidden) as long as a cell ≤ P9. **Only if BitGroup6 bit 4 = 0** – in the example configuration bit 4 is on, so the lock is **ineffective**. Also an abort condition for charge activation (P72). |
 
 ### 3.2 Pack voltage and charger
 
@@ -86,14 +86,14 @@ The English names were machine-translated from Chinese. The most common errors:
 
 ### 3.3 Temperatures (cell sensors)
 
-The **reported** charge-temperature warnings and protections (event 3) are masked by the current direction: charge bits only while charging, discharge bits only while discharging. The **MOSFET control** does not use that masked byte: from 16.06.11 the charge lock tests the raw charge-protection bits (`0x200000BB` & `0x0A`) and the discharge lock the raw discharge-protection bits (`& 0xA0`) regardless of the current direction (16.06.13 `0x7050`, `0x71D4`). *(confirmed)*
+The **reported** charge-temperature warnings and protections (event 3) are masked by the current direction: charge bits are reported while charging or with a detected charger (system status bit 1/2), discharge bits while discharging; in standby the charge bits stay reported if they were reported before, otherwise the discharge bits (`0x6756`–`0x6786`). The **MOSFET control** does not use that masked byte: from 16.06.11 the charge lock tests the raw charge-protection bits (`0x200000BB` & `0x0A`) and the discharge lock the raw discharge-protection bits (`& 0xA0`) regardless of the current direction (16.06.13 `0x7050`, `0x71DA`). "Raw" only means not masked by current direction; from 16.06.12 `0x200000BB` is masked with BitGroup2, in 16.06.11 it is not (see [firmware changelog](firmware-changelog.md)). *(confirmed)*
 
 | # | Name | correct meaning | Example value |
 |---|---|---|---|
 | 20 / 21 | Charging high temperature warning / recovery | charging: over-temperature warning / return | 50.0 / 47.0 °C |
 | 22 / 23 | Charging low temperature warning / recovery | charging: under-temperature warning / return | 2.0 / 5.0 °C |
 | 24 / 25 | Charging over temperature protection / recovery | charging: over-temperature **protection** (charging forbidden) / return | 55.0 / 50.0 °C |
-| 26 / 27 | Charging under-temperature protection / recovery | charging: under-temperature **protection** / return | −10.0 / 0.0 °C |
+| 26 / 27 | Charging under-temperature protection / recovery | charging: under-temperature **protection** / return | −5.0 / 0.0 °C |
 | 28 / 29 | Discharge high temperature warning / recovery | discharging: over-temperature warning / return | 52.0 / 47.0 °C |
 | 30 / 31 | Discharge low temperature warning / recovery | discharging: under-temperature warning / return | −10.0 / 3.0 °C |
 | 32 / 33 | Discharge over temperature protection / recovery | discharging: over-temperature protection / return | 55.0 / 50.0 °C |
@@ -103,7 +103,7 @@ The **reported** charge-temperature warnings and protections (event 3) are maske
 
 Notes:
 - The heating (36/37) only acts if a heating element is fitted and BitGroup3 bit 6 is on. In the example configuration this bit is **off** (§5). *(confirmed)*
-- Notable: the charging under-temperature **warning** (2 °C) is above the protection (−10 °C). This is correct: first the warning (CCL 10 A if all packs), then the lock. For LiFePO4, charging below 0 °C is critical; with −10 °C as the lock, the configuration relies on the inverter or the CCL reduction.
+- Notable: the charging under-temperature **warning** (2 °C) is above the protection (−5 °C). This is correct: first the warning (CCL 10 A if all packs), then the lock. For LiFePO4, charging below 0 °C is critical; with −5 °C as the lock, the configuration relies on the inverter or the CCL reduction.
 
 ### 3.4 Ambient and power stage
 
@@ -122,10 +122,10 @@ Notes:
 
 | # | Name | correct meaning | Example value | what the firmware does with it |
 |---|---|---|---|---|
-| 50 | Charging overcurrent warning | **charge overcurrent warning** | 150 A | **Basis of the CCL:** per pack P50 / 2 (BitGroup7 bit 7 = 0, as in the example configuration) or P50 − 10 A (bit 7 = 1). In the example system 75 A × 12 = **900 A**. *(confirmed)* |
-| 51 | Charging overcurrent recovery | return | 145 A | |
-| 52 | Discharge overcurrent warning | **discharge overcurrent warning** | −155 A | **Basis of the DCL:** \|P52\| − 10 A (above 20 A) per pack. In the example system 145 A × 12 = **1,740 A**. *(confirmed)* |
-| 53 | Discharge overcurrent recovery | return | −153 A | |
+| 50 | Charging overcurrent warning | **charge overcurrent warning** | 100 A | **Basis of the CCL:** per pack P50 / 2 (BitGroup7 bit 7 = 0, as in the example configuration) or P50 − 10 A (bit 7 = 1). In a 4-pack example 50 A × 4 = **200 A**. Factor: packs able to charge without a charge-related warning; every warning pack drops out of the sum, only when none is left does 10 A total apply (`0x96CE`, `0x98D4`). *(confirmed)* |
+| 51 | Charging overcurrent recovery | return | 95 A | |
+| 52 | Discharge overcurrent warning | **discharge overcurrent warning** | −105 A | **Basis of the DCL:** \|P52\| − 10 A (above 20 A) per pack. In a 4-pack example 95 A × 4 = **380 A**. Factor: packs able to discharge without a discharge-related warning (P2/P12, P28/P30, P38/P40, P46, P52, P78); if all packs warn, DCL = 0, no 10 A floor (`0x96CE`, `0x98A8`/`0x99B0`). *(confirmed)* |
+| 53 | Discharge overcurrent recovery | return | −103 A | |
 | 54 | Charge overcurrent protection | **charge overcurrent protection** | 160 A | charge MOSFET off after P66 seconds |
 | 55 | Discharge overcurrent protection | **discharge overcurrent protection** | −160 A | discharge MOSFET off after P67 seconds |
 | 56 | Transient overcurrent protection | **short-term overcurrent protection** (discharging) | −300 A | off after P68 ms |
@@ -136,7 +136,7 @@ Notes:
 | # | Name | correct meaning | Example value | what the firmware does with it |
 |---|---|---|---|---|
 | 58 | Battery rated capacity | **rated capacity** | 280.00 Ah | Reported in 0x42 as "Rated capacity". **Caution:** writing P58 can also reset the **learned full capacity**: the single command 0x49 sets it directly to the new value (if the remaining capacity is not above it); writing the whole parameter block 0xA1 resets it only if P58 differs from the learned full capacity by **≥ 10 Ah**. *(confirmed)* |
-| 59 | SOC | **remaining capacity (set value)**, not a percentage | 75.00 Ah | The value in the file is **not the current state of charge**, but the last stored set value. Writing it with single command 0x49 sets the remaining capacity to this value (only if ≤ full capacity). When the whole block is written, it is not applied to the counter. *(confirmed)* |
+| 59 | SOC | **remaining capacity (set value)**, not a percentage | 50.00 Ah | The value in the file is **not the current state of charge**, but the last stored set value. Writing it with single command 0x49 sets the remaining capacity to this value (only if ≤ full capacity). When the whole block is written, it is not applied to the counter. *(confirmed)* |
 
 ---
 
@@ -159,10 +159,10 @@ Notes:
 | 72 | Charge activation delay | **charge activation: window duration** (minutes) | 1 min | For this long after an undervoltage or SOC protection shutdown, the protection is cleared every second so that the MOSFETs close and a charger can charge (event 7 bit 4/5). |
 | 73 | Charging activation interval | **charge activation: interval** (hours) | 10 h | Automatic activation every P73 h as long as UVP/SOC 0 %/SOC protection persists (BitGroup6 bit 4) |
 | 74 | Charge activation times | **charge activation: max. attempts** | 10 | Counter is reset on charging ≥ 3 A (5 s) or lowest cell > P7 |
-| 75 | Work record interval | history entry during operation every | 30 min | EEPROM history (max. 500 entries), readable with 0x4B |
+| 75 | Work record interval | history entry during operation every | 30 min | EEPROM history (max. 500 entries), readable with 0x4B. In addition an entry at once on every change of system status or messages; the counter then restarts (undocumented commands §1.6) |
 | 76 | Standby recording interval | history entry in standby every | 240 min | |
 | 77 | Standby shutdown delay | **self-shutdown after … hours of standby** | 48 h | Only with BitGroup7 bit 1 (**on** in the example configuration). Conditions: continuous standby **without external voltage at the port**, highest cell < P5. Then 60 s "charging forbidden", then "off" (discharge MOSFET off), save state to internal flash, switch off supply *(switching off the supply probable)*. A charger (port > P15) or the push button aborts. |
-| 78 | Remaining capacity alarm | **SOC warning below** | 15 % | Event 6 bit 2. Part of the 10 % SOC rule ((P78+P79)/2) and reset of the empty mark |
+| 78 | Remaining capacity alarm | **SOC warning below** | 15 % | Event 6 bit 2. Part of the 10 % SOC rule ((P78+P79)/2) and reset of the empty flag (UVP → 0 %). Event 6 bit 2 removes the pack from the DCL sum. If all packs are below P78, the master reports DCL = 0; the inverter therefore stops discharging already at P78, not only at P79. |
 | 79 | Remaining capacity protection | **SOC protection below** | 5 % | Event 6 bit 3 → **discharge MOSFET off** (charging remains allowed). Discharge SOC holds at (P79 + 1) % = 6 % until a cell is ≤ P2. Charge activation (P72–P74) briefly lifts the protection periodically. |
 | 80 | Interval charge capacity | **intermittent recharge: charge again only below** | 96 % | After 100 % charging is locked (event 6 bit 1) until SOC ≤ P80; all packs locked → CCL = 0 (except heating minimum). Only with BitGroup5 bit 1. Above P80, 0.2 A SOC drift in standby. |
 | 81 | Cycle cumulative capacity | **a cycle counts after cumulative … % discharge** | 80 % | |
@@ -178,14 +178,14 @@ Incidentally in the code: if a cell voltage jumps by ≥ 200 mV, the firmware on
 
 **BitGroup1–5 are enable masks for alarm events 2–6:** immediately after an event byte is generated, it is bitwise ANDed with its BitGroup **before** charge lock, discharge lock, SOC logic, CCL or protocols read it. **Bit = 0 disables reporting and reaction completely.** **BitGroup0 is not a mask** (only bit 1 has an effect). BitGroup6/7 are function switches. Order and addresses: [Firmware analysis §7.3](firmware-analysis.md#73-function-switches-0x200000282f--bitgroup07).
 
-### BitGroup0 = `FF` (event 1, faults)
+### BitGroup0 (event 1, faults)
 
 | Bit | Function | example config |
 |---|---|---|
-| 1 | **Plausibility check of the temperature sensors**: sensor < −45 °C or ≥ 100 °C, or spread ≥ 20 K → event 1 bit 1 (temperature sensor fault), heating off | on |
+| 1 | **Plausibility check of the temperature sensors**: sensor < −45 °C or ≥ 100 °C (MOS sensor ≥ 130 °C), or spread ≥ 20 K → event 1 bit 1 (temperature sensor fault), heating off (`0x68F2`) | on |
 | 0, 2–7 | **no function** (only stored and reported). Event 1 bit 3 (push button) and bit 4 (cell difference, P60/P61) are always evaluated | – |
 
-### BitGroup1 = `DF` (event 2, voltage)
+### BitGroup1 (event 2, voltage)
 
 | Bit | Function | example config |
 |---|---|---|
@@ -200,10 +200,10 @@ Incidentally in the code: if a cell voltage jumps by ≥ 200 mV, the firmware on
 
 **Consequence of bit 5 = 0** *(06.12 `0x64BA` / 06.13 `0x6686`)*: the pack overvoltage protection never triggers. P14 (56.0 V) only acts as CVL. Protection against overcharging is provided by the cell OVP (3.65 V). A SOC reset to 100 % via pack OVP does not take place; the reset comes via the voltage rule (55.20 V for 30 min).
 
-### BitGroup2 = `FF` (event 3, cell temperature): all on
+### BitGroup2 (event 3, cell temperature): all on
 Bit 0/1 charging high warning/protection (P20/P24), 2/3 charging low (P22/P26), 4/5 discharging high (P28/P32), 6/7 discharging low (P30/P34).
 
-### BitGroup3 = `3F` (event 4)
+### BitGroup3 (event 4)
 
 | Bit | Function | example config |
 |---|---|---|
@@ -212,7 +212,7 @@ Bit 0/1 charging high warning/protection (P20/P24), 2/3 charging low (P22/P26), 
 | 6 | **cell heating** (P36/P37): heating output only on demand **and** while charging or with a detected charger; also enables the minimum CCL packs × 10 A for heating | **off** |
 | 7 | **severe fault report** (event 4 bit 7: sensor fault, cell ≥ P4 + 50 mV, cell ≤ P6 − 200 mV, overcurrent protection at current beyond P54/P55; persists until restart). If bit 6 is off, it switches the heating/relay output (GPIO 11) *(purpose "alarm contact" probable)* | **off** |
 
-### BitGroup4 = `BF` (event 5, current)
+### BitGroup4 (event 5, current)
 
 | Bit | Function | example config |
 |---|---|---|
@@ -223,7 +223,7 @@ Bit 0/1 charging high warning/protection (P20/P24), 2/3 charging low (P22/P26), 
 | 6 | **lockout** after P70 short-term overcurrent events | **off** |
 | 7 | lockout after P70 short-circuit events | on |
 
-### BitGroup5 = `9F` (event 6, miscellaneous)
+### BitGroup5 (event 6, miscellaneous)
 
 | Bit | Function | example config |
 |---|---|---|
@@ -238,7 +238,7 @@ Bit 0/1 charging high warning/protection (P20/P24), 2/3 charging low (P22/P26), 
 
 **Consequence of bit 1 = 1:** after a SOC reset to 100 % the pack reports "Intermittent recharge waiting". Once all packs are in this state, **CCL = 0** is sent to the inverter (unless a heating request raises it to the heating minimum, see [can.md §3](protocols/can.md#3-limits-and-data-source-master-aggregation-confirmed)) until a pack drops to ≤ 96 % (P80). If this is not wanted, switch bit 1 off.
 
-### BitGroup6 = `BF` (functions)
+### BitGroup6 (functions)
 
 | Bit | Function | example config |
 |---|---|---|
@@ -248,10 +248,10 @@ Bit 0/1 charging high warning/protection (P20/P24), 2/3 charging low (P22/P26), 
 | 3 | balancing lock on ambient temperature warning/protection | on |
 | 4 | **automatic charge activation** (P72–P74) **and** disabling of the charge lock "cell ≤ P9" | on |
 | 5 | **manual charge activation** once after power-on | on |
-| 6 | **"Active current limiting"**: charging from **10 A** immediately through the current limiter (event 7 bit 6) | **off** |
+| 6 | **"Active current limiting"**: current limiter as soon as charging is detected (from +0.60 A), from **10 A** immediately in the 5 ms path (event 7 bit 6); with bit 6 set it clears event 7 bit 7 every time, so passive limiting (bit 7) has no effect (`0x710A`–`0x711E`, `0x6B82`) | **off** |
 | 7 | **"Passive current limiting"**: current limiter after charge overcurrent warning (P50 for P66/2 s), duration P71 (event 7 bit 7) | on |
 
-### BitGroup7 = `1F` (functions)
+### BitGroup7 (functions)
 
 | Bit | Function | example config |
 |---|---|---|
@@ -261,22 +261,22 @@ Bit 0/1 charging high warning/protection (P20/P24), 2/3 charging low (P22/P26), 
 | 3 | binary protocol on RS232/TTL, *probably* the **LCD display** port (Seplos specification: "LCD screen ON"; the code cannot identify the device) | on |
 | 4 | binary protocol in extended format A | on |
 | 5 | ignore DIP address, address assignment via pulse chain (GPIO 7/8/9), master adjusts slave count *(hardware interpretation probable)* | off |
-| 6 | no function (no reader) | off |
+| 6 | only with bit 5: an address 0 determined by pulse becomes 1, the pack never becomes master (`0x9466`) | off |
 | 7 | **CCL mode:** 1 = P50 − 10 A, 0 = P50 / 2 | **off** (→ half the warning threshold) |
 
-**Note on bit 0:** if no switch is connected to the input, the idle level of the pin decides. Since the packs of the example system are running, it is evidently low (= on).
+**Note on bit 0:** if no switch is connected to the input, the idle level of the pin decides. If the packs run without a switch connected, it is evidently low (= on).
 
 ---
 
 ## 6. What follows from the example configuration
 
-| Quantity | Formula | Result (12 packs) |
+| Quantity | Formula | Result (example: 4 packs) |
 |---|---|---|
 | CVL sent to the inverter | P14 | **56.0 V** |
 | DVL | P12 | 46.4 V |
-| CCL normal | P50 / 2 × packs | **900 A** |
+| CCL normal | P50 / 2 × packs without a charge-related warning (every warning pack drops out) | **200 A** |
 | CCL when all packs have a charge warning (P0, P10, temperature, charge OC) | fixed | **10 A total** |
-| DCL | (\|P52\| − 10 A) × packs | **1,740 A** |
+| DCL | (\|P52\| − 10 A) × packs without a discharge-related warning; all warning: 0 A | **380 A** |
 | SOC 98 % | pack ≥ N × P0 (3.45–3.50 V), lowest cell ≥ 3.35 V, 30 s, < 3 A charge current | 55.20 V |
 | SOC 100 % | same, 30 min | 55.20 V for 30 min |
 | SOC 100 % via OVP | cell OVP P4 while charging (pack OVP masked in the example configuration) | 3.65 V on one cell |
@@ -293,12 +293,12 @@ Detailed derivation: [States and triggers](states-and-triggers.md).
 
 ## 7. Notable points and remarks
 
-1. **P58/P59 when writing back:** writing P58 with 0x49, or the whole block (0xA1) with P58 at least 10 Ah away from the learned full capacity, resets the learned full capacity to P58. Since the packs of the example system are at 280.00 Ah anyway (never re-learned), this has no consequences there. P59 (75 Ah) is an old set value, not a measured value.
+1. **P58/P59 when writing back:** writing P58 with 0x49, or the whole block (0xA1) with P58 at least 10 Ah away from the learned full capacity, resets the learned full capacity to P58. If the packs are still at the rated 280.00 Ah anyway (never re-learned), this has no consequences. P59 (50 Ah) is an old set value, not a measured value.
 2. **Pack OVP off, CVL = pack OVP value:** intended or not, the combination works: the inverter charges up to 56.0 V, the cells are protected by the cell OVP of 3.65 V. At 56.0 V / 16 = 3.50 V on average there is a margin to 3.65 V as long as the cells do not drift far apart.
-3. **P10 = 16 × P0 (55.20 V):** from 55.20 V every pack warns, the CCL drops to 10 A total as soon as all 12 warn. With 12 packs this is ~0.8 A per pack. This is at the same time the condition (< 3 A per pack) under which the SOC reset to 100 % takes effect.
-4. **Balancing from 3.40 V (P8)** with start from 30 mV spread (P62): with well-matched cells balancing is almost never active. This is the behaviour observed on the example system.
+3. **P10 = 16 × P0 (55.20 V):** from 55.20 V every pack warns; with each warning pack the CCL drops by P50 / 2 (50 A in the example), as soon as all packs warn, 10 A total applies. With 4 packs this is 2.5 A per pack. This is at the same time the condition (< 3 A per pack) under which the SOC reset to 100 % takes effect.
+4. **Balancing from 3.40 V (P8)** with start from 30 mV spread (P62): with well-matched cells balancing is almost never active. This matches the behaviour observed in practice.
 5. **Cell heating off (BitGroup3 bit 6):** P36/P37 have no effect. If no heating foil is fitted, this is correct.
 6. **Reverse polarity and connection fault (BitGroup5 bit 5/6) off:** the reverse polarity report is not implemented in the firmware at all; the connection fault would be a hardware input (P82 has no effect).
 7. **Deep discharge lock P9 ineffective:** BitGroup6 bit 4 (automatic charge activation) disables the charge lock "cell ≤ 1.5 V". Anyone who wants the lock must switch off bit 4 (and then loses automatic charge activation).
-8. **Standby self-shutdown after 48 h active** (BitGroup7 bit 1): a pack that sits in standby for 48 h without a charger at the port and whose highest cell is < 3.45 V shuts itself down. In the example system with an inverter this practically never happens; after a longer shutdown of the inverter, however, the packs have to be woken up with the push button.
-9. **Current limiter after charge overcurrent warning** (BitGroup6 bit 7): if 150 A (P50) flow for 5 s, the pack charges for 5 min (P71) only through the hardware limiter. With 75 A CCL per pack this is not reached in normal operation.
+8. **Standby self-shutdown after 48 h active** (BitGroup7 bit 1): a pack that sits in standby for 48 h without a charger at the port and whose highest cell is < 3.45 V shuts itself down. In a system with an inverter this practically never happens; after a longer shutdown of the inverter, however, the packs have to be woken up with the push button.
+9. **Current limiter after charge overcurrent warning** (BitGroup6 bit 7): if 100 A (P50) flow for 5 s, the pack charges for 5 min (P71) only through the hardware limiter. With 50 A CCL per pack this is not reached in normal operation.

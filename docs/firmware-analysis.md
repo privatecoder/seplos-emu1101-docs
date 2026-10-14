@@ -70,7 +70,7 @@ The header is the only difference from regular Intel HEX. Removing the first 16 
 | after that | Constants: version, strings, NTC table, CRC tables, Keil runtime |
 | End | Keil region table / RW init (`…0106000100366e01 18000000`, identical in all versions) |
 
-- **Link address 0x00000000.** The application therefore sits at the start of flash. How the update over RS485 at 19200 baud works (section 9) cannot be determined from the image: either the SWM181 has an ISP loader in ROM, or a bootloader resides in another flash region. *(open)*
+- **Link address 0x00000000.** The application therefore sits at the start of flash. How the update over RS485 at 19200 baud works (section 9) cannot be determined from the image: either the SWM181 has an ISP loader in ROM, or a bootloader resides in another flash region *(location open)*. It is reached by an application reset (0x45 type 6); protocol and measurements in section 9.1.
 - **RAM:** The stack top is at `0x20001A98` (06.13), and at `0x200017D8` in 04.06. The RAM is therefore at least 6.8 KB, and the used region has grown across versions.
 - **Compiler:** Keil MDK / ARMCC. Evidence: `__main` at 0xC0, `__ARM_common_switch8` jump tables (06.13 at `0xCBE4`), division via `__aeabi_uidiv`/`idiv` (06.13 `0xC9DC`/`0xCA08`), region table. *(confirmed)*
 - **Peripherals:** The base addresses `0x4000_0000`, `0x4100_0000`, `0x4300_0000`, `0x4500_0000`, `0x5000_0000…0x5004_0000` and SCB/NVIC `0xE000_E000` are used. The set is **identical in all versions**, so the updates change only logic and protocols, not hardware usage. *(confirmed)*
@@ -94,6 +94,8 @@ From `0xCC1C` (06.13; 06.11 `0xC9A4`, 06.04 `0xBFC0`, 06.03 `0xB854`, 04.06 `0xB
 | +0x52 | `CAN:GINLONG         ` | Protocol 5 |
 | +0x66 | `CAN:Studer          ` | Protocol 6 |
 | +0x7A | `CAN:MUST            ` | Protocol 7, **only from 06.11** |
+
+In 04.06, 8 more bytes follow the version (`4F 4B 6A 6B 00 48 08 48`); the CAN names start at +0x0A there. *(confirmed)*
 | +0x8E | `SH-EnergyTCH Co.,Ltd` | Manufacturer name, **from 06.04** (20 characters) |
 | after that | `05 07 06 04 00 03 01 02` | **Channel order of the 8-way analog multiplexer**: in steps 16–23 (after the 16 cell channels), the measurement sequencer `0x1ABA` selects these channels via GPIO `0x50004000` bits 4–6. Which sensor is connected to which channel is determined by the hardware. *(confirmed)* |
 | after that | `8B7C F979 A579 …` | descending uint16 table = **NTC curve** (ADC → temperature), identical in all versions |
@@ -101,7 +103,7 @@ From `0xCC1C` (06.13; 06.11 `0xC9A4`, 06.04 `0xBFC0`, 06.03 `0xB854`, 04.06 `0xB
 Further strings:
 - `EMU110110E` (10 characters): default device name. It is copied to RAM `0x20000042` and output in CID2 0x47/0x51 and Modbus.
 - `EMU110110S-XXXX-20220120-00001` (three times): default/placeholder serial number (barcode), identical in all versions.
-- New in 06.13 is a short byte table (`0C 36 33 42 45 48 4B 4F 73 …`, at `0x117E`). This is not a data table but the **jump table of the ASCII dispatcher** for CID2 0xA0–0xAB (behind `bl 0xCBE4`, Keil `switch8`). *(confirmed)*
+- New in 06.13 is a short byte table (`0C 36 33 42 45 48 4B 4F 73 …`, from `0x1182`). This is not a data table but the **jump table of the ASCII dispatcher** for CID2 0xA0–0xAB (behind `bl 0xCBE4` at `0x117E`, Keil `switch8`). *(confirmed)*
 
 ---
 
@@ -159,7 +161,7 @@ Further strings:
 | `0x13F6` | Master: send next 0x5A request or 0x45 broadcast | confirmed |
 | `0x14AE` | Master: response evaluation, online bitmask, slave count | confirmed |
 | `0x1FCA` | Determine max/min cell voltage (`0xcc8+0/+2`) | confirmed |
-| `0x2112` | Take over temperatures from ADC/NTC; with ≤ 8 cells, sensors 3/4 = sensor 2 | confirmed |
+| `0x2112` | Take over temperatures from ADC/NTC (with ≤ 8 cells, sensors 3/4 = sensor 2) **and** decode the DIP switches → address `0x20000027` (`0x219C`), slave count `0x20000026` (`0x21BE`); runs every second | confirmed |
 | `0x2600` | Pylontech RS485 CID2 0x60 system basic info (name, "SH-EnergyTCH Co.,Ltd", version, up to 4 serial numbers) | confirmed |
 | `0x26A8` / `0x278C` / `0x2882` | Pylontech RS485 CID2 0x61 / 0x62 / 0x63 | confirmed (mapping) |
 | `0x28F0` | Inverter port: decode frame | confirmed |
@@ -192,16 +194,25 @@ Further strings:
 | `0x7350` | Forced heating (counter `0x200000C8`) | confirmed |
 | `0x8A24` | On/off edge → master broadcast 0x45 | confirmed |
 | `0xCBE4` | Keil `__ARM_common_switch8` | confirmed |
+| `0x496A` | **Load the parameter block from flash into the live tables** (flash block 0 via `0x47A8` → `0x20001300` 60×u16, `0x200013F0` 27 B, `0x20000042` 10 B switches); defaults on an invalid record. Called in the deferred 1 s init `0x6032` | confirmed (role) |
+| `0x5260` | Load a flash record (calibration/capacities, `0x47A8`), called at `0x6036` | confirmed (role) |
+| `0x1914` | **Measurement acquisition** from ADC/peripheral (`0x41000040`) into the measurement buffers `0x200007B8`/`0x20000B58`; called in the fast measurement cycle `0x6054` | confirmed (role) |
+| `0x5DB2` | History trigger: record on a change of system status/events 1–7, otherwise interval P75/P76 (writer `0x5998`), called at `0x621E` in the 1-s block | certain |
+| `0x9E0A` | CAN alarm frame from the alarm OR `0x2000161E` into the CAN buffer `0x20001680` | confirmed (role) |
+| `0x7F82` | Persist capacity/parameters (block-6 save `0x5564`, plausibility `0x4C3C`) | probable |
+| `0x62DC` | LED driving (GPIO, calls the driver `0xB3A8` repeatedly), called at `0x60F4` | probable |
+| `0x01AA` / `0x24A8` / `0x5FF0` | ISRs: UART0 RX / UART1 RX / 5 ms timer | confirmed |
+| `0xB900`–`0xCF64` (selection) | Keil/compiler runtime (division, memcpy/memset, drivers), not documented individually | confirmed (role) |
 
 ---
 
 ## 6. RAM usage (06.13)
 
-In 06.13, many variables above approx. `0x200000C0` are shifted by **+8 bytes** compared to 06.12. The low addresses have been stable since 06.03.
+In 06.13, many variables above approx. `0x200000C0` are shifted by **+7 or +8 bytes** compared to 06.12 (e.g. pin 9 flag `0x200000EF` → `0x200000F6`: +7). The low addresses have been stable since 06.03.
 
 | Address | Type | Content | Confidence |
 |---|---|---|---|
-| `0x20000000` | u8 | Master's pack bus: bit 0 request sent/response expected, bit 1 request finished (timeout 150 ms), bit 2 polling round over all slaves complete (then aggregation `0x99BA`, reset once per second), bit 3 pack communication error (30 consecutive rounds with fewer packs online than configured), bits 4/5 broadcast 0x45 type 4 off/on pending | confirmed |
+| `0x20000000` | u8 | Master's pack bus: bit 0 request sent/response expected, bit 1 request finished (timeout 150 ms), bit 2 polling round over all slaves complete (then aggregation `0x99BA`, reset once per second; at address 0 without slaves, `0x12E2` sets it every second, aggregate then only from its own pack), bit 3 pack communication error (30 consecutive rounds with fewer packs online than configured), bits 4/5 broadcast 0x45 type 4 off/on pending | confirmed |
 | `0x20000005` | u8 | **Alarm event 8** (bit 0 EEPROM, 1 RTC, 2–4 calibration, **bit 6 = internal request "charging forbidden"**) | confirmed |
 | `0x20000006/07` | u8 | Balancing status cells 1–8 / 9–16 | confirmed |
 | `0x20000024` | u8 | **active CAN protocol** 1…7 (1 = PNG_DYE_Luxp_TBB/Pylontech) | confirmed |
@@ -212,8 +223,8 @@ In 06.13, many variables above approx. `0x200000C0` are shifted by **+8 bytes** 
 | `0x20000030…35` | u8 ×6 | **Alarm events 1…6** | confirmed |
 | `0x20000036` | u8 | **Alarm event 7** | confirmed |
 | `0x20000042` | char[10] | Device name (`EMU110110E`) | confirmed |
-| `0x2000004C` | char[30] | String 1, **pack serial number** (ASCII 0xA2/0xA3; in Modbus FC04 0x0000 and Pylontech 0x60) | confirmed (meaning probable) |
-| `0x2000006A` | char[30] | String 2 (ASCII 0xA4/0xA5) | confirmed (meaning open) |
+| `0x2000004C` | char[30] | String 1, **battery serial number** (BatteryMonitor "Battery_SN"; ASCII 0xA2/0xA3; in Modbus FC04 0x0000 and Pylontech 0x60) | confirmed |
+| `0x2000006A` | char[30] | String 2, **BMS / board serial number** (BatteryMonitor "BMS_SN"; only ASCII 0xA4/0xA5 on UART0). Both persist in flash block 4 (`0x29000`) | confirmed |
 | `0x200000C8` | u16 | Remaining time of forced heating (ASCII 0x45 type 3, start value 3600) | confirmed |
 | `0x200000E9` | u8 | (06.13) shadow of the system status for the off/on edge (binary 0xA2/0xA3) | confirmed |
 | `0x200000F8` | u8 | Bit 2 = heater minimum charge current active (CCL ≥ packs × 10 A) | confirmed |
@@ -234,8 +245,8 @@ In 06.13, many variables above approx. `0x200000C0` are shifted by **+8 bytes** 
 | `0x20000CC8` | struct | **Measurements**, see 6.1 | confirmed |
 | `0x20000DDC` | u8[] | Byte alarms (0x44): cells 0–15, +0x10–13 cell temp., +0x14 ambient, +0x15 power stage, +0x16 pack voltage, +0x18 current | confirmed |
 | `0x20000DFE` | buf | Modbus RTU: receive buffer (response from `+0x120`) | confirmed |
-| `0x20001300` | u16 ×60 | **Parameters 0…59**, see 7.1 | confirmed |
-| `0x200013F0` | u8 ×27 | **Parameters 60…86**, see 7.2 | confirmed |
+| `0x20001300` | u16 ×60 | **Parameters 0…59**, see 7.1 (06.13; up to 06.12 `0x200012F8`) | confirmed |
+| `0x200013F0` | u8 ×27 | **Parameters 60…86**, see 7.2 (06.13; up to 06.12 `0x200013E8`) | confirmed |
 | `0x20001426` / `0x200014E6` | buf | Binary protocol: transmit/receive buffer | confirmed |
 | `0x2000164C` | struct | System values for the inverter protocols (current int32 `+0xC`, voltage `+0x10`, … as well as u32 `+0x2C`/`+0x30`), see Modbus RTU §2 | confirmed |
 
@@ -267,11 +278,11 @@ Temperatures are always stored internally in 0.1 K, °C = (x − 2731)/10. Fixed
 
 ## 7. Parameters and function switches
 
-The response to ASCII CID2 0x47 is: 60 × u16 from `0x20001300`, then 27 × u8 from `0x200013F0`, then the 8 switch bytes `0x20000028…2F`, then the 10-byte device name. The order corresponds exactly to the parameter list in BatteryMonitor and in the XML export. *(confirmed)*
+The response to ASCII CID2 0x47 is: 60 × u16 from `0x20001300`, then 27 × u8 from `0x200013F0` (06.13; up to 06.12 `0x200012F8`/`0x200013E8`), then the 8 switch bytes `0x20000028…2F`, then the 10-byte device name. The order corresponds exactly to the parameter list in BatteryMonitor and in the XML export. *(confirmed)*
 
 ### 7.1 Parameters 0…59 (u16, `0x20001300 + 2·i`)
 
-Column "Value" = the example configuration export `Parameter 20260419_1308.xml` (module "1101-SP75"; [config/parameter-export-example.xml](../config/parameter-export-example.xml)). Raw value units *(confirmed, from comparisons with the measurements)*: P0–P9 mV, P10–P19 10 mV, P20–P49 0.1 K, P50–P56 10 mA (discharging negative), P57 ms, P58/P59 10 mAh, P60/P61 10 mV, P62/P63 mV, P64/P73/P77 h, P66/P67/P69 s, P68 ms, P71/P72/P75/P76 min, P84/P86 0.1 mΩ.
+Column "Value" = the example configuration ([config/parameter-export-example.xml](../config/parameter-export-example.xml)). Raw value units *(confirmed, from comparisons with the measurements)*: P0–P9 mV, P10–P19 10 mV, P20–P49 0.1 K, P50–P56 10 mA (discharging negative), P57 ms, P58/P59 10 mAh, P60/P61 10 mV, P62/P63 mV, P64/P73/P77 h, P66/P67/P69 s, P68 ms, P71/P72/P75/P76 min, P84/P86 0.1 mΩ.
 
 | i | RAM | Parameter (BatteryMonitor) | Value |
 |---|---|---|---|
@@ -295,22 +306,22 @@ Column "Value" = the example configuration export `Parameter 20260419_1308.xml` 
 | 17 | 0x1322 | … recovery | 48.00 V |
 | 18 | 0x1324 | Charger overvoltage protection | 63.00 V |
 | 19 | 0x1326 | … recovery | 61.00 V |
-| 20–27 | 0x1328–0x1336 | Charging: overtemp. alarm/rec., undertemp. alarm/rec., overtemp. protection/rec., undertemp. protection/rec. | 50/47, 2/5, 55/50, −10/0 °C |
+| 20–27 | 0x1328–0x1336 | Charging: overtemp. alarm/rec., undertemp. alarm/rec., overtemp. protection/rec., undertemp. protection/rec. | 50/47, 2/5, 55/50, −5/0 °C |
 | 28–35 | 0x1338–0x1346 | Discharging: same | 52/47, −10/3, 55/50, −15/0 °C |
 | 36 | 0x1348 | Cell heater on | 0.0 °C |
 | 37 | 0x134A | Cell heater off | 10.0 °C |
 | 38–45 | 0x134C–0x135A | Ambient: high alarm/rec., low alarm/rec., overtemp. protection/rec., undertemp. protection/rec. | 50/47, 0/3, 60/55, −10/0 °C |
 | 46–49 | 0x135C–0x1362 | Power stage: alarm/rec., protection/rec. | 90/85, 100/85 °C |
-| 50 | 0x1364 | Charge overcurrent alarm | 150 A |
-| 51 | 0x1366 | … recovery | 145 A |
-| 52 | 0x1368 | Discharge overcurrent alarm | −155 A |
-| 53 | 0x136A | … recovery | −153 A |
+| 50 | 0x1364 | Charge overcurrent alarm | 100 A |
+| 51 | 0x1366 | … recovery | 95 A |
+| 52 | 0x1368 | Discharge overcurrent alarm | −105 A |
+| 53 | 0x136A | … recovery | −103 A |
 | 54 | 0x136C | Charge overcurrent protection | 160 A |
 | 55 | 0x136E | Discharge overcurrent protection | −160 A |
 | 56 | 0x1370 | Transient overcurrent protection | −300 A |
 | 57 | 0x1372 | Soft start delay | 2000 ms |
 | 58 | 0x1374 | **Rated capacity** (in 0x42 as "Rated capacity") | 280.00 Ah |
-| 59 | 0x1376 | SOC / remaining capacity (set value) | 75.00 Ah |
+| 59 | 0x1376 | SOC / remaining capacity (set value) | 50.00 Ah |
 
 ### 7.2 Parameters 60…86 (u8, `0x200013F0 + (i−60)`)
 
@@ -343,7 +354,7 @@ Column "Value" = the example configuration export `Parameter 20260419_1308.xml` 
 
 ### 7.3 Function switches (`0x20000028…2F` = BitGroup0…7)
 
-**Switch bytes 1…5 (BitGroup1–5) are the enable masks for alarm events 2…6.** Proven for byte 1 ↔ event 2 *(confirmed, see below)*, byte 2 ↔ event 3 and byte 5 ↔ event 6 *(confirmed)*; analogously for 3, 4 *(probable)*. **BitGroup0 is not a mask**: only its bit 1 is used, as the enable for the sensor plausibility check (16.06.13 `0x68A0`); event 1 is not ANDed with it. The function `0x6894` is not a mask function; it checks sensor/connection faults (BitGroup0 bit 1, BitGroup5 bit 6).
+**Switch bytes 1…5 (BitGroup1–5) are the enable masks for alarm events 2…6.** Proven for byte 1 ↔ event 2 *(confirmed, see below)*, byte 2 ↔ event 3 and byte 5 ↔ event 6 *(confirmed)*; analogously byte 3 ↔ event 4 and byte 4 ↔ event 5 *(probable)*. **BitGroup0 is not a mask**: only its bit 1 is used, as the enable for the sensor plausibility check (16.06.13 `0x68A0`); event 1 is not ANDed with it. The function `0x6894` is not a mask function; it checks sensor/connection faults (BitGroup0 bit 1, BitGroup5 bit 6).
 
 **Event 2 / BitGroup1 in detail** (06.13 `0x6686`, 06.12 `0x64BA`, identical) *(confirmed)*:
 1. The voltage evaluation (06.13 `0x647E` → `0x6400`) sets or clears the bits of event 2 (`0x20000031`) without delay: warning or protection when the measured value is ≥ the parameter, return below the recovery parameter.
@@ -351,27 +362,27 @@ Column "Value" = the example configuration export `Parameter 20260419_1308.xml` 
 3. Then each warning is cleared if the associated protection is active (bit 1 → bit 0, bit 3 → bit 2, bit 5 → bit 4, bit 7 → bit 6).
 4. Only after that do the charge lock (`0x6FFA`), SOC logic (`0x8F56`, `0x9044`), system flags and all protocols read the byte. Between evaluation and mask, only balancing (`0x653C`) reads, and it does not read event 2.
 
-A cleared bit in BitGroup1 therefore switches off the quantity **completely**: no message, no MOSFET switching, no SOC reaction, no effect on CCL/alarm flags. The hysteresis state is lost in every cycle. A cleared bit therefore switches off the corresponding alarm or protection. The bit meaning corresponds to the alarm table in [Intra-pack protocol](protocols/intra-pack.md) (bit meanings from SEPLOS BMS Communication Protocol_v2.0.pdf, table 13).
+A cleared bit in BitGroup1 therefore switches off the quantity **completely**: no message, no MOSFET switching, no SOC reaction, no effect on CCL/alarm flags. The hysteresis state is lost in every cycle. A cleared bit therefore switches off the corresponding alarm or protection. The bit meaning corresponds to the alarm table in [Intra-pack protocol](protocols/intra-pack.md) (bit meanings from Seplos MODBUS-ASCII Protocol V2.0 (2019-10-15).pdf, table 13).
 
-| Byte | RAM | masks | Example value | Switched off (bit = 0) |
-|---|---|---|---|---|
-| BitGroup0 | 0x28 | **no mask**; only bit 1 = plausibility check of the temperature sensors | `FF` | – |
-| BitGroup1 | 0x29 | Event 2 | `DF` | **Bit 5 = pack overvoltage protection: completely deactivated in the example configuration** *(confirmed)*; the cell OVP remains active |
-| BitGroup2 | 0x2A | Event 3 | `FF` | – |
-| BitGroup3 | 0x2B | Event 4 | `3F` | Bit 6 cell heater, bit 7 severe fault message/relay |
-| BitGroup4 | 0x2C | Event 5 | `BF` | Bit 6 transient overcurrent lock |
-| BitGroup5 | 0x2D | Event 6 | `9F` | Bit 5 reverse polarity (never set anyway), bit 6 output connection fault |
-| BitGroup6 | 0x2E | Functions (see below) | `BF` | Bit 6 charging via current limiter from 10 A |
-| BitGroup7 | 0x2F | Functions (see below) | `1F` | Bits 5–7 off |
+| Byte | RAM | masks | Switched off (bit = 0) in the example configuration |
+|---|---|---|---|
+| BitGroup0 | 0x28 | **no mask**; only bit 1 = plausibility check of the temperature sensors | – |
+| BitGroup1 | 0x29 | Event 2 | **Bit 5 = pack overvoltage protection: completely deactivated in the example configuration** *(confirmed)*; the cell OVP remains active |
+| BitGroup2 | 0x2A | Event 3 | – |
+| BitGroup3 | 0x2B | Event 4 | Bit 6 cell heater, bit 7 severe fault message/relay |
+| BitGroup4 | 0x2C | Event 5 | Bit 6 transient overcurrent lock |
+| BitGroup5 | 0x2D | Event 6 | Bit 5 reverse polarity (never set anyway), bit 6 output connection fault |
+| BitGroup6 | 0x2E | Functions (see below) | Bit 6 charging via current limiter from 10 A |
+| BitGroup7 | 0x2F | Functions (see below) | Bits 5–7 |
 
-Masks and order in the 1 s block (06.13) *(confirmed, 06.12 same structure)*: voltage `0x647E` → **BitGroup1 → event 2** (`0x6686`) → temperature `0x66C2` → sensor/connection `0x6894` → **BitGroup2 → event 3, BitGroup3 → event 4** (`0x6946`) → current `0x69BA`/`0x6CBC`/`0x6D62` → **BitGroup4 → event 5** (`0x6DB0`) → SOC `0x8E4C`/`0x8F56` → event 6 and **BitGroup5 → event 6** (end `0x9190`) → charge/discharge lock `0x6FFA`/`0x7184`. Each mask comes after the producer and before all consumers; a cleared bit switches off the message **and** the reaction. **BitGroup0 is not a mask:** only bit 1 is read (temperature sensor plausibility: sensor < −45 °C or ≥ 100 °C, or spread ≥ 20 K → event 1 bit 1, heater off); the other 7 bits have no effect.
+Masks and order in the 1 s block (06.13) *(confirmed, 06.12 same structure)*: voltage `0x647E` → **BitGroup1 → event 2** (`0x6686`) → temperature `0x66C2` → sensor/connection `0x6894` → **BitGroup2 → event 3, BitGroup3 → event 4** (`0x6946`) → current `0x69BA`/`0x6CBC`/`0x6D62` → **BitGroup4 → event 5** (`0x6DB0`) → SOC `0x8E4C`/`0x8F56` → event 6 and **BitGroup5 → event 6** (end `0x9190`) → charge/discharge lock `0x6FFA`/`0x7184`. Each mask comes after the producer and before all consumers; a cleared bit switches off the message **and** the reaction. **BitGroup0 is not a mask:** only bit 1 is read (temperature sensor plausibility: sensor < −45 °C or ≥ 100 °C (MOS sensor ≥ 130 °C, `0x68F2`), or spread ≥ 20 K → event 1 bit 1, heater off); the other 7 bits have no effect.
 
 Individual bits with their own function *(all confirmed, code addresses 06.13)*:
 - `0x2B` (BitGroup3) bit 6: cell heater; heater output only if event 4 bit 6 **and** (charging or external voltage at the port, system status bit 1/2) (`0x7350`); also enables the **heater minimum charge current** (CCL ≥ packs × 10 A). Bit 7: if bit 6 is off and bit 7 is on, the heater/relay output (GPIO 11) switches on event 4 bit 7 "severe fault" *(use as an alarm contact probable)*.
 - `0x2C` (BitGroup4) bit 4: transient detection (5 ms path `0x6AB8`), bit 5: short-circuit detection (comparator `0x6C44`, soft start check), bits 6/7: lock after parameter 70 transient or short-circuit events (`0x6CBC`).
 - `0x2D` (BitGroup5) bit 1: intermittent recharge (`0x9190`); bit 6: output connection fault check via GPIO `0x50001000` pin 10 (`0x6904`).
-- `0x2E` (BitGroup6): bit 0 balancing on; bit 1 balancing also at idle; bit 2 time limit parameter 64 h; bit 3 balancing lock at ambient temperature; **bit 4 automatic charge activation** (`0x6E30`) and at the same time **charge lock "cell < parameter 9" off** (`0x64D2`); **bit 5 manual charge activation** after power-on (`0x6DC4`); **bit 6** charging from 10 A via the current limiter (`0x6AB8`, `0x70F4`); **bit 7** current limiter after charge overcurrent warning for parameter 71 minutes (`0x69BA`, `0x70F4`).
-- `0x2F` (BitGroup7): **bit 0** external on/off switch (GPIO `0x50001000` pin 0, high = off; `0x89E8`); **bit 1** standby shutdown after parameter 77 (`0x88D0`); bit 2 and bit 6 **without function** (no reader); bit 3 binary protocol (UART2); bit 4 binary format A; bit 5 ignore DIP address, pulse addressing and slave count adjustment in the master (§8.2d; hardware interpretation probable); **bit 7 CCL mode** (1 = parameter 50 − 10 A, 0 = parameter 50 / 2; 0 in the example configuration).
+- `0x2E` (BitGroup6): bit 0 balancing on; bit 1 balancing also at idle; bit 2 time limit parameter 64 h; bit 3 balancing lock at ambient temperature; **bit 4 automatic charge activation** (`0x6E30`) and at the same time **charge lock "cell < parameter 9" off** (`0x64D2`); **bit 5 manual charge activation** after power-on (`0x6DC4`); **bit 6** current limiter as soon as charging is detected (from +0.60 A, system status bit 1; `0x710A`–`0x711E`), from 10 A immediately in the 5 ms path (`0x6B82`); with bit 6 set, event 7 bit 7 is cleared every time, so passive limiting (bit 7) has no effect (`0x6FFA`, `0x70AE`); **bit 7** current limiter after charge overcurrent warning for parameter 71 minutes (`0x69BA`, `0x70F4`).
+- `0x2F` (BitGroup7): **bit 0** external on/off switch (GPIO `0x50001000` pin 0, high = off; `0x89E8`); **bit 1** standby shutdown after parameter 77 (`0x88D0`); bit 2 **without function** (no reader); **bit 6** only together with bit 5: an address 0 determined by pulse is replaced by 1 (`0x9466`), so the pack cannot become master *(code confirmed, purpose probable)*; bit 3 binary protocol (UART2); bit 4 binary format A; bit 5 ignore DIP address, pulse addressing and slave count adjustment in the master (§8.2d; hardware interpretation probable); **bit 7 CCL mode** (1 = parameter 50 − 10 A, 0 = parameter 50 / 2; 0 in the example configuration).
 
 Meaning of each parameter and bit with the example configuration values: [Configuration parameters](configuration-parameters.md).
 
@@ -397,7 +408,7 @@ The function sets or clears **alarm event 8 bit 6** ("charging forbidden"). From
    - internal flag (`0x200000EA` in 06.05) bit 6
 4. Afterwards: on-off bit 1 → GPIO pin of the charge MOSFET. If current limiting (bit 2) is off, GPIO bit 10 is cleared.
 
-The bit masks are identical in all versions, **except SP80**. The **source of the temperature condition** changed in 16.06.11: up to 16.06.05 it tests the reported event 3 (`0x20000032`, masked by the current direction), from 16.06.11 the raw protection byte `0x200000BB` (not masked by direction). *(confirmed: 16.06.05 `0x6576`, 16.06.11 `0x6E84`, 16.06.13 `0x7050`)*
+The bit masks are identical in all versions, **except SP80**. The **source of the temperature condition** changed in 16.06.11: up to 16.06.05 it tests the reported event 3 (`0x20000032`, masked by the current direction), from 16.06.11 the raw protection byte `0x200000BB` (not masked by direction; from 16.06.12, however, masked with BitGroup2, 06.13 `0x6946`–`0x6952`, not in 16.06.11, see [changelog](firmware-changelog.md)). *(confirmed: 16.06.05 `0x6576`, 16.06.11 `0x6E84`, 16.06.13 `0x7050`)*
 
 Additionally (06.12/06.13): if event 7 bit 6 or 7 is set (current limiting, see §8.1b) and the pack is charging, the **charge MOSFET is switched off and the current limiter switched on**. The standby shutdown (§8.1c) also sets "charging forbidden" 60 s before shutting down. *(confirmed)*
 
@@ -459,7 +470,7 @@ Full description (enable conditions, cell selection, neighbor lock, reasons why 
 - **Energy counter** (`0x9044`, timer ISR with period `SystemCoreClock` = 1 s): every second, with system status "charging", `I(0.01 A) × U_Pack(0.01 V) / 10000` (= watts) is added to an accumulator; with "discharging", the absolute value. From 360,000 W·s (100 Wh), `cc8+0x58` (charged) or `cc8+0x5C` (discharged) is incremented by 1. **Unit 0.1 kWh.** *(confirmed)*
   - Output: ASCII 0x42 "Reserved 3/4" (u16, fixed 6500 from 65,000), Victron CAN 0x378 (u32).
   - Reset: ASCII 0x45 type 5 ("clear history").
-  - Practice (the example system's packs, Oct. 2026): master 1,103.3 kWh charged / 984.3 kWh discharged (≈ 89 % energy efficiency).
+  - Practice (counters of a real master pack): discharged / charged ≈ 89 % energy efficiency.
 - **Cycle counter** (`0x9250`): during discharging, the SOC decrease since the start of discharge is summed up. When the sum reaches **parameter 81 "Cycle cumulative capacity"** (e.g. 80 %), `cc8+0x60` is incremented by 1 and saved. A cycle is therefore a cumulative SOC decrease of e.g. 80 %, not a full charge/discharge. *(confirmed)*
 
 ### 8.2e What is stored persistently *(confirmed, 06.12 = 06.13)*
@@ -486,8 +497,8 @@ Byte `0x200000AC`, checked in 06.12 and 06.13 (logic identical). All current thr
 | 3 | – | **never** (no write access sets it) | – | – |
 | 4 | **Standby** | neither bit 0 nor bit 1 | bit 0 or 1 set; on "off" | `0x84A0` / `0x870C` |
 | 5 | **Off (shutdown)** | button > 3 s, external switch (BitGroup7 bit 0), standby shutdown (parameter 77, BitGroup7 bit 1) or control command 0x45 type 4 | charging detected (bit 1), button, switch low, control command type 4 with value 0x10 | `0x870C`, `0x87B8`, `0x0A3C` / `0x8978`, `0x8A24`, `0x0A3C` |
-| 6 | **Discharge current ≥ 3 A** | I ≤ −3.01 A | I > −2.81 A | `0x84A0` / `0x870C` |
-| 7 | **Charge current ≥ 3 A** | I ≥ +3.01 A | I < +2.81 A | same |
+| 6 | **Discharge current ≥ 3 A** | I ≤ −3.00 A | I > −2.80 A | `0x84A0` / `0x870C` |
+| 7 | **Charge current ≥ 3 A** | I ≥ +3.00 A | I < +2.80 A | same |
 
 - Bit 7 is evaluated by the SOC calibration: the voltage rules for 98/100 % only take effect after there has been no charging with ≥ 3 A for 30 s (see [States and triggers §2](states-and-triggers.md), SOC calibration). No reader was found for bit 6. Both are only visible in the intra-pack response 0x5A. In 0x44 the firmware only reports `& 0x33` (bits 0, 1, 4, 5).
 - Bits 0/1 are the basis for everything that requires "charging"/"discharging", e.g. the energy counters (§8.2b) and the charge/discharge temperature limits.
@@ -498,13 +509,13 @@ Byte `0x200000AC`, checked in 06.12 and 06.13 (logic identical). All current thr
 
 Bit 7 of alarm event 8 exists only in the intra-pack response 0x5A (06.13 `0x1348`). It is **1 if bit 3 of `0x200000F6` is cleared** (06.12: `0x200000EF`). *(confirmed)*
 
-- **Source of bit 3** (06.13 `0x93D0`): debounced input **GPIO `0x50002000` pin 9**. Pin low for 10 cycles → bit 3 = 1, pin high for 200 cycles → bit 3 = 0. Event 8 bit 7 = 1 therefore means **"pin 9 is high"**. *(confirmed)*
+- **Source of bit 3** (06.13 `0x93D0`, only called with `0x2F` bit 5, `0x607C`): debounced input **GPIO `0x50002000` pin 9**. Pin low for 10 cycles → bit 3 = 1, pin high for 200 cycles → bit 3 = 0. Event 8 bit 7 = 1 therefore means **"pin 9 is high"**. *(confirmed)*
 - **Who else uses pin 9** (06.13 `0x944C`, only if function switch `0x2F` bit 5 is set): *(code confirmed)*
   - `0x9334` measures the length of a low pulse on **pin 8** and converts it into a number (÷ 10, rounded; no pulse or too long → 21).
   - This number is taken over as the **RS485 address** (`0x20000027`) instead of the DIP address.
   - If **pin 9** goes low (and no pulse is running yet), the pack outputs a low pulse of length (own address + 1) × 10 on **pin 7** (`0x9410`).
 - **Interpretation** *(probable)*: a **pulse chain for automatic address assignment**. Pin 8 = input from the predecessor, pin 7 = output to the successor, pin 9 = request from the successor. Each pack reads its address from the pulse length and passes on address + 1. Which socket wires these are is open; one candidate is pins 4/5 of the RS485 sockets, which the Seplos specification labels "Internal communication (NC)".
-- **Practical consequence:** with normal DIP addressing (`0x2F` bit 5 off), pin 9 is high at rest, which is why event 8 in 0x5A almost always shows `0x80`. This is not a fault. It is set in all 24 captures of a 12-pack system.
+- **Practical consequence:** with normal DIP addressing (`0x2F` bit 5 off), pin 9 is not evaluated at all: `0x93D0` only runs with bit 5, bit 3 of `0x200000F6` stays 0, and event 8 in 0x5A **always** shows `0x80`, regardless of pin 9. This is not a fault. It is set in all 24 captures of a multi-pack system.
 - Function switch `0x2F` bit 5 thus gets a second meaning: besides the automatic adjustment of the slave count in the master, it also enables this pulse addressing.
 
 ### 8.3 Miscellaneous
@@ -523,10 +534,22 @@ Summary of the enclosed guide (English, without changelog):
 - **Procedure:**
   1. Disconnect the parallel connection, switch off the pack.
   2. Set DIP switch 1 to ON, then back to OFF (described this way).
-  3. Switch on the pack. This must happen before the update, otherwise reading the pack capacity fails.
+  3. Switch on the pack. This must happen before the update, otherwise reading the pack capacity fails. *Presumably* this means the bootloader's package size: `FirmwareUpdate.exe` reports "Get package capacity fail" (.NET `#US` heap, file offset `0x8845`) when the first bootloader query `R F L` after the reset fails; the download sequence does not read the battery capacity from the app.
   4. In the "Firmware Update" tool, connect via a USB-RS485 adapter at **19200 baud**.
   5. Select the `.ehex`, "Download". In case of errors, press the reset button or repeat.
 - The 19200 baud matches the header field `RS485Y19200…`.
+
+### 9.1 Bootloader and update protocol *(measured on a bench board, Oct. 2026)*
+
+- **Entry by software:** ASCII 0x45 type 6 (watchdog reset, `0x0A22`) is enough; the DIP sequence from the guide is not needed. VER and INFO byte 0 do not matter (`~20004645A006000600FC6E` and the updater's variant `~26004645A006010600FC67` behave the same).
+- **Window:** the bootloader accepts the first request only ≈ 0.65–0.8 s after the reset; without a command the application starts by itself (first application reply after ≈ 4.8 s).
+- **Frames (binary):** `::::` CID1 CID2 CID3, LEN (u16 BE), ADR (u16 BE), data, checksum = −Σ(CID1 … last data byte) (u16 BE), `\r\r\r\r`. ADR is a flash address, **not a pack address**: only one pack on a shared bus may be in the bootloader.
+- **Sequence:** `R F L` → reply `R F B` with packet size **256** → `W F E` → `W F D` with 256 bytes each (ADR = 16 × block index) → `W F G`. The data stream is the data fields of **all** `.ehex` records in file order (256-byte header + application + 4 bytes of type-05 data), last block padded with `0x00`. Every request is acknowledged with `W F B`, errors with `R F N`.
+- **Timing:** the bootloader acknowledges only after writing (`W F D` ≈ 156 ms from start of transmission, ≈ 142 ms of which is transfer time); no pause between frames is needed. An update of 16.06.13 thus takes ≈ 33 s (the vendor tool with its fixed 350 ms pause ≈ 108 s).
+- **Erasing:** `W F E` is acknowledged after 23 ms; slower are block 0 and every 16th block from block 1. *Probably* the bootloader writes the application from flash address 0 (= stream offset 256) and erases one 4 KiB sector at the first block on a sector boundary.
+- **Parameters are kept:** after the update the parameter block (0x47) is byte-identical; the flash records from `0x25000` are not touched.
+- **Master, slave or single pack makes no difference:** only the address in the reset command matters (the pack's own DIP address; `FF` would reset every pack and must be avoided). Tested with address 0 (no slaves) and address 1 (slave configuration). A changed DIP address is taken over by the running application without a restart (cyclic read in `0x2112`). **Exception: a master with configured slaves (DIP 5–8 ≠ 0).** It polls and does not call the UART0 dispatcher (`0x6264–0x628A`), so it ignores 0x45 as well *(measured: after the command the polls continued at the 1 s pace without a gap)*. For this pack, set DIP 5–8 to OFF first or stop the polling by other means.
+- **Other packs on the same bus** (application 16.06.13, master silent): they do not answer the bootloader traffic. Random frames starting at a `0x7E` inside the data are discarded without a reply at the latest at the length check (`0xF90`); computed for all 7 vendor images *(confirmed for this code; not yet measured on a real multi-pack bus)*. Never have more than one pack in the bootloader **at the same time** (no reset to `FF`, no second reset while an update is running). One after another is fine: after `W F G` the pack starts its application, and likewise if no `R F L` arrives within ≈ 0.7 s after the reset.
 
 ---
 

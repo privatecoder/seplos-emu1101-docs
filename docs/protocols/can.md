@@ -6,25 +6,25 @@ Confidence: **confirmed** = directly from the code · **probable** · **assumpti
 
 ---
 
-## 1. Summary for Deye
+## 1. Summary for protocol 1
 
 - **Only the master pack (DIP address 0) sends CAN.** Slaves are silent on CAN. *(confirmed)*
-- **Almost all values are system values across all online packs** (exceptions: the cycle count in 0x35C and the GINLONG ambient temperature in 0x356 are the master's own values). The master collects them via the intra-pack protocol (0x5A): voltage = average, current and capacity = sum, cell extremes across all packs. *(confirmed)*
+- **Almost all values are system values across all online packs** (exceptions: the cycle count in 0x35C and the ambient temperature and cycles in 0x356 for GINLONG and Victron/SMA are the master's own values, `0x9C9A`–`0x9CB2`). The master collects them via the intra-pack protocol (0x5A): voltage = average, current and capacity = sum, cell extremes across all packs. *(confirmed)*
 - **500 kbit/s**, 11-bit IDs. Roughly once per main loop tick, the set **0x351 → 0x355 → 0x356 → 0x359 → 0x370 → 0x371 → 0x35E → 0x35C** is sent *(confirmed; period presumably approx. 1 s)*.
-- **The BMS receives nothing via CAN.** Heartbeat 0x305 and other frames from the Deye are ignored; there is no timeout. *(confirmed)*
+- **The BMS receives nothing via CAN.** Heartbeat 0x305 and other frames from the inverter are ignored; there is no timeout. *(confirmed)*
 - **Manufacturer name in 0x35E: "SHEnergy"**, not "PYLON". *(confirmed)*
 - **0x359 bytes 0/1 (the Pylontech "Protection" fields) are always 0.** Some protection states are nevertheless mapped into the alarm bytes: cell/pack under-voltage protection (event 2 bits 3/7) and charge over-current protection (event 5 bit 1). *(confirmed, 16.06.13 `0x9CE0`)*
 - **SOC stays at 98 %** until every pack is at least 98 % (and the system SOC is above 98 %). *(confirmed)*
 - **CVL is fixed** to the parameter "pack overvoltage protection". There is no absorption/float reduction. Throttling happens only via the charge current limit (CCL). *(confirmed)*
 
-**With the example configuration** (`config/parameter-export-example.xml`, module 1101-SP75, BitGroup7 = `1F` → bit 7 = 0 = "passive" limiting), per pack able to charge:
+**With the example configuration** (`config/parameter-export-example.xml`, BitGroup7 bit 7 = 0 = "passive" limiting), per pack able to charge:
 
 | Quantity | Formula | Result |
 |---|---|---|
 | CVL | parameter 14 (pack OVP) | **56.0 V** |
 | DVL | parameter 12 (pack undervoltage alarm) | **46.4 V** |
-| CCL | parameter 50 (charge OC warning 150 A) / 2 | **75.0 A** |
-| DCL | \|parameter 52\| (155 A) − 10 A | **145.0 A** |
+| CCL | parameter 50 (charge OC warning 100 A) / 2 | **50.0 A** |
+| DCL | \|parameter 52\| (105 A) − 10 A | **95.0 A** |
 
 In addition, the CCL is set to 10 A total on warnings and to 0 A when a cell is > 3.65 V + 30 mV (details in section 3).
 
@@ -79,7 +79,7 @@ For a capture this means: once per second, a packet of 4–16 frames arrives, sp
 
 ## 3. Limits and data source (master aggregation) *(confirmed)*
 
-Before each CAN cycle, function `0x99BA` calls `0x94D2` (sums/extremes), `0x96CE` (counts/flags) and `0x98A8` (limits) in sequence. The source is the 30-byte pack records `0x20000524 + 30·i` (see [intra-pack.md](intra-pack.md)). The structures `0x2000164C` (system values), `0x20001634` (extremes) and `0x2000161E` (OR of the alarm events of all packs) are described in [modbus-rtu.md, section 2](modbus-rtu.md#2-data-source-system-aggregate-0x2000164c).
+Function `0x99BA` runs before each CAN cycle, but only calls `0x94D2` (sums/extremes), `0x96CE` (counts/flags) and `0x98A8` (limits) once a polling round over all slaves is complete (`0x20000000` bit 2, `0x99C0`; without slaves, `0x12E2` sets the bit every second). In between, CAN resends the last computed values. At 150 ms per slave, the system values with 11 slaves are therefore refreshed about every 2 s, not every second. *(confirmed)* The source is the 30-byte pack records `0x20000524 + 30·i` (see [intra-pack.md](intra-pack.md)). The structures `0x2000164C` (system values), `0x20001634` (extremes) and `0x2000161E` (OR of the alarm events of all packs) are described in [modbus-rtu.md, section 2](modbus-rtu.md#2-data-source-system-aggregate-0x2000164c).
 
 | Limit | Calculation |
 |---|---|
@@ -94,7 +94,7 @@ Before each CAN cycle, function `0x99BA` calls `0x94D2` (sums/extremes), `0x96CE
 3. Otherwise, per pack able to charge:
    - Function switch `0x2000002F` **bit 7 = 1** (official name unknown; according to the Seplos specification, "Active/Passive current limiting" are BitGroup6 bit 6/7, i.e. something else): parameter 50 "charge OC warning", above 20 A minus 10 A
    - **Bit 7 = 0** (*"Passive"*): parameter 50 / 2
-   - in each case × number of packs able to charge
+   - in each case × number of packs able to charge **without a charge-related warning**; every warning pack drops out of the sum, only when none is left does item 2 apply (10 A total) (`0x96CE`, `0x98D4`)
 4. **Heating:** function switch `0x2B` bit 6, highest cell temp. < 25 °C and lowest ≤ parameter 36 (off > parameter 37) → **at least pack count × 10.0 A**. This also applies if step 1 took effect. (06.11: 5 A per pack)
 5. Highest cell > **parameter 4 (cell OVP) + 30 mV** → **0, immediately**.
 6. **Ramp:** The CCL changes per cycle by at most (packs online × 1.0 A), both upward and downward.
@@ -196,7 +196,7 @@ Not sent: 0x35A, 0x35F, 0x372–0x37F and extended IDs.
 
 ### Practical consequences
 
-- Deye charges up to the **pack OVP threshold** (CVL). Throttling comes only via the CCL (10 A on warning, 0 A when a cell is > OVP + 30 mV). Anyone wanting a lower end-of-charge voltage has to lower parameter 14. *(code confirmed, assessment assumption)*
+- The inverter charges up to the **pack OVP threshold** (CVL). Throttling comes only via the CCL (10 A on warning, 0 A when a cell is > OVP + 30 mV). Anyone wanting a lower end-of-charge voltage has to lower parameter 14. *(code confirmed, assessment assumption)*
 - Because the Protection fields of 0x359 stay 0, an inverter that only evaluates those fields does not shut down because of a protection bit; some protection states still appear in the alarm bytes. The BMS protects itself via its MOSFETs and CCL = 0. *(code confirmed, inverter reaction assumption)*
 - During "Intermittent recharge waiting" (charging stopped after 100 % until SOC < parameter 80), the pack counts as charge-blocked. If all packs are affected, **CCL = 0** and Charge Enable = 0 follow, even without the SP80 MOSFET shutdown, unless a heating request raises the CCL to the heating minimum (step 4); the ramp (step 6) applies in both cases. *(confirmed)*
 

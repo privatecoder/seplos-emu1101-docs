@@ -1,7 +1,7 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <paraGroup>
   <filetype>Parameter</filetype>
-  <modualName>1101-SP75 </modualName>
+  <modualName>1101-SPxx </modualName>
   <parameter>
     <Name>Monomer high voltage alarm</Name>
     <Value>3.450</Value>
@@ -134,7 +134,7 @@
   </parameter>
   <parameter>
     <Name>Charging under-temperature protection</Name>
-    <Value>-10.0</Value>
+    <Value>-5.0</Value>
     <Unit>℃</Unit>
   </parameter>
   <parameter>
@@ -254,22 +254,22 @@
   </parameter>
   <parameter>
     <Name>Charging overcurrent warning</Name>
-    <Value>150.00</Value>
+    <Value>100.00</Value>
     <Unit>A</Unit>
   </parameter>
   <parameter>
     <Name>Charging overcurrent recovery</Name>
-    <Value>145.00</Value>
+    <Value>95.00</Value>
     <Unit>A</Unit>
   </parameter>
   <parameter>
     <Name>Discharge overcurrent warning</Name>
-    <Value>-155.00</Value>
+    <Value>-105.00</Value>
     <Unit>A</Unit>
   </parameter>
   <parameter>
     <Name>Discharge overcurrent recovery</Name>
-    <Value>-153.00</Value>
+    <Value>-103.00</Value>
     <Unit>A</Unit>
   </parameter>
   <parameter>
@@ -299,7 +299,7 @@
   </parameter>
   <parameter>
     <Name>SOC</Name>
-    <Value>75.00</Value>
+    <Value>50.00</Value>
     <Unit>Ah</Unit>
   </parameter>
   <parameter>

@@ -151,7 +151,11 @@ All other parameters can only be changed via the complete block 0xA1. 0x49 only 
 
 ### 1.6 CID2 0x4B: History *(confirmed)*
 
-- **Storage:** external I²C EEPROM (device 0xA4), ring buffer with 128 bytes per record, **max. 500 records**, header at 0xFF00. Written by `0x5998`, at the interval of parameters 75/76 (operation/standby).
+- **Storage:** external I²C EEPROM (device 0xA4), ring buffer with 128 bytes per record, **max. 500 records**, header at 0xFF00. Written by `0x5998`, triggered by `0x5DB2` (called at `0x621E` in the main loop's 1-s block) *(certain, 06.13; 04.06/06.11/06.12 identical)*:
+  - **at once on a change** of the system status (`0x2000003A`: `0x20`/`0x02`/`0x01`/`0x10`) or of event bytes 1–5, 6 (without bit 7) and 7 (bits 4–7 only) since the last trigger; event 8 does not count. Hence records one second apart when messages change (bench board);
+  - **otherwise at the interval** of parameter 75 (operation) or 76 (standby) in minutes; raw status bits 0/1 select the running counter. Both counters restart after every trigger.
+  - A record triggered by a change still holds the **events from before the change** in E1–E7 (`0x5998` reads the previous values `0x20000030…36`; only afterwards `0x5DB2` copies the new ones there). The new state appears in the next record.
+  - If the RTC cannot be read over I²C, the record is skipped and not made up later; a clock marked invalid (event 8 bit 5) does not prevent it.
 - **Request:** INFO `[1]` = 0 → oldest record, ≠ 0 → next one. No records → empty response. Read error → RTN 8.
 - **Response (97 bytes):** `01`, flag "last record" (1/0), year u16 BE, followed by record bytes 1…93:
 
@@ -212,24 +216,33 @@ Sequence:
 
 ### 1.10 CID2 0xA0: Calibration *(confirmed)*
 
-Request INFO: `[0]` subcode, `[1…2]` reference value u16/s16 BE. Saved via `0x5174`.
+Request INFO: `[0]` subcode, `[1…2]` reference value u16/s16 BE. Saved via `0x5174` into the **calibration flash block 2** (`0x27000`, mirror `0x28000`), not into parameter block 0 of 0xA1.
 
 | Sub | Function | Acceptance condition | clears event 8 |
 |---|---|---|---|
-| 0 | Current zero point | both current ADC raw values \|x\| < 1000 | bit 4 |
+| 0 | Current zero point | both converted current channels \|x\| < 1000 mA | bit 4 |
 | 1 | Current gain (reference 0.01 A) | \|measured value − reference\| < 3.01 A | bit 3 |
 | 2 | Voltage (reference cell voltage mV) | cell difference < 20 mV, \|avg. cell − ref\| < 30 mV, \|port voltage − ref·cells\| < 2 V | bit 2 |
 
 Rejection → RTN 6. Unknown subcode → RTN 4.
 
+Effects in detail *(certain)* *(Codex review 2026-10-14)*:
+- **Factors:** sub 1/2 store absolute factors computed from the previous factor and the ratio reference/measured (current `0x2392 → 0x2284`, factor `0x20000C78+0x0C`; voltage `0x1F38 → 0x1CA0`, cell factors `0x20000B64+12·i+8` and pack voltage factor `0x20000C24+8`). A new calibration with a good measurement therefore corrects an old error, within the acceptance limit. **No UART command reads the factors**; they live only in flash block 2 (cells from record offset `+3+2·i`, voltage `+37`, current A `+39`/`+41`, current B `+45`/`+47`; `0x5174–0x5234`, load `0x5260–0x5328`).
+- **Sub 0 with current flowing:** only |channel| < 1000 mA is checked, then the momentary ADC bases become the zero point (`0x2348–0x2386`). A residual current (e.g. 0.8 A) stays as a **permanent offset** and skews current, SOC counting and current-dependent logic. The 0x42 current reads 0 in standby (`0x03A4–0x0452`), so it does not prove that no current flows.
+- **Sub 1 without a minimum current:** only |BMS − reference| < 3.01 A (`0x2392–0x23B0`). Example: BMS 2 A, reference 0.01 A is accepted and divides the factor by 200; because of the 3-A limit a single new calibration cannot undo that.
+- **Sub 2:** reference = mV per cell, compared with the arithmetic mean of the cell voltages (`0x20000D08`) and with the **port voltage P+/P−** (`0x20000CDA`), not B+/B− (`0x1EC0–0x1F88`). With the MOSFETs off the port reads 0 V and the calibration is refused.
+- **Storage:** `0x4748` writes `0x27000` first, then the mirror; at boot `0x47A8` checks both CRCs and repairs a broken copy (`0x47D0–0x4888`). `0x5174` does not verify the write: a success answer and changed readings prove the RAM value, not the stored one.
+- 06.04/06.05: same logic at shifted addresses (`0x0BAA`, `0x1E14`, `0x225E`, `0x4690`).
+
 ### 1.11 CID2 0xA2–0xA5: Two 30-byte strings *(confirmed)*
 
 | CID2 | Effect |
 |---|---|
-| 0xA2 / 0xA3 | read / write string 1 (`0x2000004C`): **pack serial number** *(probable; also output by Modbus FC04 `0x0000` and Pylontech 0x60)* |
-| 0xA4 / 0xA5 | read / write string 2 (`0x2000006A`) *(assumption: BMS serial number or similar)* |
+| 0xA2 / 0xA3 | read / write string 1 (`0x2000004C`): **battery serial number** (BatteryMonitor: "Battery_SN") *(certain)*; output via Modbus FC04 `0x0000` (first 22 characters) and Pylontech 0x60 (first 15 characters per entry) |
+| 0xA4 / 0xA5 | read / write string 2 (`0x2000006A`): **BMS / protection board serial number** (BatteryMonitor: "BMS_SN") *(certain)*; no other output in the app code. On a bench board it held `SEPLOS-<11 digits>` *(measured)*, while string 1 held the image placeholder |
 
-- Writing saves immediately (`0x53D8`).
+- Writing saves immediately (`0x53D8`): both strings and a third 30-byte area (`0x20000088`) are stored together in **flash block 4 = `0x29000`** (mirror `0x2A000`) and loaded at start-up via `0x603A → 0x549E`. Without a stored block the image placeholder `EMU110110S-XXXX-20220120-00001` stays *(certain)*.
+- Pack bus (UART0) only: on the CAN socket (UART1) the master answers 0xA2/0xA4 with **RTN 04** *(measured)*. There, string 1 is reachable only through Modbus FC04 `0x0000`×21 (first 22 characters).
 - **From 06.11** 0xA3/0xA5 take the length from LENGTH (max. 30) and pad with spaces. Up to 06.05 exactly 30 bytes were always read.
 
 ### 1.12 CID2 0xA6: Set CAN inverter protocol *(confirmed)*
@@ -248,6 +261,8 @@ Rejection → RTN 6. Unknown subcode → RTN 4.
 
 - Sequence: index to `0x20000024`, `0x55` to `0x20000025`, save.
 - **From 06.11:** When switching to or from 7, `0x9A88` is additionally called (CAN re-initialisation). An unchanged value is not saved.
+- **8…20** are stored and treated like 1 (`0x0EA6–0x0ED4`, `0x0ACA`, `0xAEBA`) *(Codex review 2026-10-14)*.
+- **7 on 06.04/06.05:** accepted and stored, but runs as protocol 1 (no MUST code, no switch to 100 kbit/s; `0x0E3E–0x0E64`, `0xA0A8`). After a later update to ≥ 06.11 the stored value switches to MUST/100 kbit/s at boot, and any other inverter loses CAN. The 0x51 version (`10 06`) does not tell 06.04/06.05 from 06.11/06.13.
 - Counterpart in the binary protocol: command 0x63.
 
 ### 1.13 CID2 0xAA / 0xAB: Tunnel to the binary port (new in 06.13) *(sequence confirmed, purpose assumption)*
