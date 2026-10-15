@@ -272,6 +272,8 @@ Meaning, RAM location and units of all parameters and switches: [firmware-analys
 
 Other indices → RTN 04. All other parameters can only be set via 0xA1.
 
+The value set lives in RAM only and is only a starting point: the 1 s SOC logic goes on from there and sets full or zero under the full/empty conditions (`0x8F70–0x8F98`, `0x8DC8–0x8E08`); below P79 the SOC protection blocks discharging. *(confirmed; measured: on a bench board without cells, i.e. at undervoltage, 75 Ah was accepted with RTN 00 and was back at 0 after 1.5 s)*
+
 ### 5.6 CID2 0x4B: Read history
 
 **Request:** INFO 2 bytes: `[0]` unused, `[1]` = `00` oldest record, otherwise next.
