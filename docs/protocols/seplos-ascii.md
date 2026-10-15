@@ -353,7 +353,7 @@ Rejection → RTN 06, unknown subcode → RTN 04. Stored in calibration flash bl
 - **Request:** INFO 169 bytes, layout as the 0x47 response. Byte 0 is ignored, the markers `3C`/`1B`/`08` are mandatory (otherwise RTN 04).
 - Plausibility check (alarm < protection, limits) → on error RTN 06.
 - ⚠ Function switches and device name are applied **before the check**. With RTN 06 they are therefore changed in RAM, but not saved.
-- On success, the data is written to the internal flash parameter block (mirrored). If the rated capacity deviates from the full capacity by ≥ 10 Ah, the full capacity is reset.
+- On success, the data is written to the internal flash parameter block (mirrored). If the rated capacity sent deviates from the learned full capacity by ≥ 10 Ah, the full capacity is set to it, **on every 0xA1, also with an unchanged rated capacity**. Rules: [undocumented-commands §1.9](undocumented-commands.md#19-cid2-0xa1-write-parameter-block-confirmed).
 
 ### 5.13 CID2 0xA2–0xA5: Two 30-byte strings
 

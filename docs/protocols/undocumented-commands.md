@@ -212,7 +212,21 @@ Sequence:
 2. Plausibility check `0x4C3C` (e.g. alarm < protection, limit values). Failure → **RTN 6**.
    - ⚠ Function switches and name have **nevertheless already been changed** in RAM in that case, but are not saved.
 3. On success: transfer into the live tables and write to the **internal flash** parameter block (mirrored). The I²C EEPROM holds only the history.
-4. If the new rated capacity deviates from the full capacity by ≥ 10.00 Ah, the **full capacity is reset to the rated capacity**.
+4. If the P58 sent deviates from the learned full capacity by ≥ 10.00 Ah, **full capacity and coulomb maximum are set to P58** and flash block 6 is written (`0x08FC–0x09A8`). **This happens on every successful 0xA1, also when P58 is unchanged**; the SOC jumps.
+5. No CAN re-init, no reset of protection counters. The next 1-s protection run uses the new thresholds and switches at once (MOSFETs, balancing, heating, CAN limits may change).
+
+Rules of `0x4C3C` (16.06.13, raw values, equality allowed, first failure → RTN 06; `0x4C42–0x514C`) *(confirmed; code review 2026-10-14)*:
+
+| Group | Rule |
+|---|---|
+| Cell | P0 ≥ P1 ≥ P3 ≥ P2 ≥ 2000, P0 ≤ 4300; P4 ≥ P5 ≥ P7 ≥ P6 ≥ 2000, P4 ≤ 4300; 3330 ≤ P8 ≤ P4; 1000 ≤ P9 ≤ P6 |
+| Pack | P10 ≥ P11 ≥ P13 ≥ P12 ≥ 1600, P10 ≤ 6000; P14 ≥ P15 ≥ P17 ≥ P16 ≥ 1600, P14 ≤ 6000; P14 ≤ P19 ≤ P18 ≤ 6500 |
+| Temperature (0.1 K) | each group P20–23, P24–27, P28–31, P32–35, P38–41, P42–45: a ≥ b ≥ d ≥ c ≥ 2431 (−30 °C), a ≤ 3531 (80 °C); heating P26 ≤ P36 ≤ P37 ≤ 2931 (20 °C); power 3231 ≤ P47 ≤ P46 ≤ P48 ≤ 3931 and 3231 ≤ P49 ≤ P48 |
+| Current (0.01 A, signed) | P55 ≤ P52 ≤ P53 ≤ P51 ≤ P50 ≤ P54 ≤ 30000; −30000 ≤ P56 ≤ P55 |
+| Other | 500 ≤ P57 ≤ 5000; P59 ≤ P58 ≤ 65000; 10 ≤ P61 ≤ P60 ≤ 100; 10 ≤ P63 ≤ P62 ≤ 100 |
+| Ranges | P64 1–18, P65 7–16, P66/67 3–180, P68 5–250, P69 10–250, P70–72 1–30, P73 1–24, P74 1–100, P75 1–250, P76 30–250, P77 1–250, 1 ≤ P79 ≤ P78 ≤ 30, P80 70–99, P81 10–150, P82 0–100, P83 1–9, P84 0–50, P85 10–16, P86 0–50 |
+
+Not checked: function switches, cell chemistry, P65 against the actual wiring.
 
 ### 1.10 CID2 0xA0: Calibration *(confirmed)*
 
