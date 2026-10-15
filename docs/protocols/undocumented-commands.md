@@ -120,7 +120,7 @@ Request INFO, 3 bytes: `[0]` unused (sent as 0x00 by the master), `[1]` **type**
 
 - The master mirrors its on/off state to all slaves via **broadcast `~20FF4645…` with INFO `00 04 10` or `00 04 1F`** as soon as system status bit 5 changes (`0x8A24` detects the edge, sent by `0x13F6`). This holds for every trigger (button, switch, standby shutdown, undervoltage), only with slaves configured and only once per edge. A polling master does not process 0x45 from the pack bus itself.
 - A slave switched off by unicast stays off while the master is on (no cyclic override).
-- Undervoltage or the empty flag without charging set "off" after 60 s (`0x887C`–`0x88C2`) and again every second after that; "on" does not hold against it. Details: [seplos-ascii §5.3](seplos-ascii.md#53-cid2-0x45-remote-control).
+- Undervoltage or the empty flag without charging set "off" after 60 s (`0x887C`–`0x88C2`) and again every second after that; "on" does not hold against it. A restart resets the counter; within the 60 s after it, off and on work normally *(measured)*. Details: [seplos-ascii §5.3](seplos-ascii.md#53-cid2-0x45-remote-control).
 - No pack responds to broadcasts (ADR FF) with type 4.
 
 ### 1.4 CID2 0x47: Read parameters *(confirmed)*
