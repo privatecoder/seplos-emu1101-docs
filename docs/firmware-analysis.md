@@ -496,7 +496,7 @@ Byte `0x200000AC`, checked in 06.12 and 06.13 (logic identical). All current thr
 | 2 | **"Float"** = charger/external voltage detected at the port | immediately with bit 1 (charging) or port voltage ≥ pack voltage + 1.00 V; otherwise after 5 s if at least one MOSFET is off and port ≥ pack − 0.20 V (on-off bit 6). Difference port − pack: 06.12 `0x20000D0E`, 06.13 `0x20000D16` (`cc8+0x4E`, 0.01 V) | after 5 s without this condition | `0x856E` / `0x87DA` |
 | 3 | – | **never** (no write access sets it) | – | – |
 | 4 | **Standby** | neither bit 0 nor bit 1 | bit 0 or 1 set; on "off" | `0x84A0` / `0x870C` |
-| 5 | **Off (shutdown)** | button > 3 s, external switch (BitGroup7 bit 0), standby shutdown (parameter 77, BitGroup7 bit 1) or control command 0x45 type 4 | charging detected (bit 1), button, switch low, control command type 4 with value 0x10 | `0x870C`, `0x87B8`, `0x0A3C` / `0x8978`, `0x8A24`, `0x0A3C` |
+| 5 | **Off (shutdown)** | button > 3 s, external switch (BitGroup7 bit 0), standby shutdown (parameter 77, BitGroup7 bit 1), control command 0x45 type 4 or 60 s of undervoltage/empty flag without charging (`0x887C`–`0x88C2`); blocks only the discharge MOSFET | charging detected (bit 1), button, switch low, control command type 4 with value 0x10 | `0x870C`, `0x87B8`, `0x0A3C` / `0x8978`, `0x8A24`, `0x0A3C` |
 | 6 | **Discharge current ≥ 3 A** | I ≤ −3.00 A | I > −2.80 A | `0x84A0` / `0x870C` |
 | 7 | **Charge current ≥ 3 A** | I ≥ +3.00 A | I < +2.80 A | same |
 

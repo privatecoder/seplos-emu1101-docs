@@ -113,12 +113,14 @@ Request INFO, 3 bytes: `[0]` unused (sent as 0x00 by the master), `[1]` **type**
 |---|---|---|
 | **0x03** | 0x10 | **Force heating ON**: counter `0x200000C8` = 3600. While it is running, on-off bit 3 (heater) is set. The counter runs in the 1 s main cycle, so the duration is **1 h** *(confirmed)* |
 | 0x03 | ≠ 0x10 | Force heating OFF |
-| **0x04** | 0x10 | **Switch on**: clear system status bit 5 ("off"). On the master additionally broadcast "0x10" to all slaves |
-| 0x04 | ≠ 0x10 (master sends 0x1F) | **Switch off**: set system status bit 5. Master broadcast "0x1F" |
+| **0x04** | 0x10 | **Switch on**: clear system status bit 5 ("off") |
+| 0x04 | ≠ 0x10 (master sends 0x1F) | **Switch off**: set system status bit 5; acts only on the discharge MOSFET (next 1 s evaluation), charging stays possible |
 | **0x05** | – | **Clear history and reset counters**: EEPROM history header, record count, cumulative charged/discharged amount (`cc8+0x58/0x5C`) and **cycle count = 0** |
-| **0x06** | – | **Restart** (interrupts off, briefly configure watchdog `0x50009000`, endless loop → WDT reset) |
+| **0x06** | – | **Restart** (interrupts off, briefly configure watchdog `0x50009000`, endless loop → WDT reset); **no response** *(measured)* |
 
-- The master mirrors its on/off state to all slaves via **broadcast `~20FF4645…` with INFO `00 04 10` or `00 04 1F`** as soon as system status bit 5 changes (`0x8A24` detects the edge).
+- The master mirrors its on/off state to all slaves via **broadcast `~20FF4645…` with INFO `00 04 10` or `00 04 1F`** as soon as system status bit 5 changes (`0x8A24` detects the edge, sent by `0x13F6`). This holds for every trigger (button, switch, standby shutdown, undervoltage), only with slaves configured and only once per edge. A polling master does not process 0x45 from the pack bus itself.
+- A slave switched off by unicast stays off while the master is on (no cyclic override).
+- Undervoltage or the empty flag without charging set "off" after 60 s (`0x887C`–`0x88C2`) and again every second after that; "on" does not hold against it. Details: [seplos-ascii §5.3](seplos-ascii.md#53-cid2-0x45-remote-control).
 - No pack responds to broadcasts (ADR FF) with type 4.
 
 ### 1.4 CID2 0x47: Read parameters *(confirmed)*

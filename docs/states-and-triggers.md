@@ -313,10 +313,12 @@ The specification describes the same BMS family, but lists **factory settings** 
 | Button | pressed > 3 s (> 301 s → event 1 bit 3 button fault) | Button, charging |
 | External switch | BitGroup7 bit 0, input GPIO `0x50001000` pin 0 high | Pin low, charging |
 | Control command | ASCII 0x45 type 4, value ≠ 0x10 | Type 4 with 0x10, charging |
+| **Undervoltage / empty** | cell or pack UVP (event 2 bit 3/7) or empty flag, not charging, no pending charge activation: after **60 s** (`0x887C`–`0x88C2`, counter `0x200015D0`), then again every second | Charging; "on" holds only once the reason is gone |
 | **Standby shutdown** | BitGroup7 bit 1; **P77 hours** of continuous standby without external voltage at the port (system status bit 4 and not bit 2), highest cell < P5, no pending charge activation; 5 s outside standby reset the counter | Charger (port > P15), button, charging |
 
 - Sequence of the standby shutdown: 60 s "charging forbidden", then "off". After 30 s "off" and without voltage at the port: save state to internal flash (block 6), then GPIO `0x50001000` bit 1 = 0. That this switches off the BMS supply (self-holding circuit) is *probable*.
-- "Off" opens the discharge MOSFET (§7a).
+- "Off" opens only the discharge MOSFET (§7a); charging stays possible.
+- A master with slaves reports every change as a broadcast to the slaves, whatever the trigger ([seplos-ascii §5.3](protocols/seplos-ascii.md#53-cid2-0x45-remote-control)). *(confirmed)*
 - **In the example configuration:** BitGroup7 bit 1 on, **shutdown after 48 h of standby** without a charger. In a system with an inverter that keeps the port permanently energized or charges regularly, this practically never happens.
 
 ## 15. Overcurrent: shutdown, reconnection, lock

@@ -221,14 +221,18 @@ Temperature in °C = (x − 2731) / 10. Fixed ASCII offsets for 16 cells (within
 | Type | Parameter | Effect | Example (address 1) |
 |---|---|---|---|
 | 03 | `10` / other | force heating on for 3600 s = **1 h** (counter in the 1 s main cycle) / off | `~20014645A006000310FC6F` |
-| 04 | `10` / other | **switch on / switch off** (clear/set system status bit 5 "Off"). The master sends this as a broadcast to all slaves on a state change | on: `~20014645A006000410FC6E`, off: `~20014645A00600041FFC58`; broadcast on/off: `~20FF4645A006000410FC43` / `~20FF4645A00600041FFC2D` |
+| 04 | `10` / other | **switch on / switch off** (clear/set system status bit 5 "Off"). A master with slaves reports every change of bit 5 as a broadcast to all slaves (see below) | on: `~20014645A006000410FC6E`, off: `~20014645A00600041FFC58`; broadcast on/off: `~20FF4645A006000410FC43` / `~20FF4645A00600041FFC2D` |
 | 05 | – | **clear history + reset cycle and cumulative counters** | |
-| 06 | – | **restart** (watchdog) | `~20014645A006000600FC6D` |
+| 06 | – | **restart** (watchdog); **no response**, the board resets first *(measured)* | `~20014645A006000600FC6D` |
 | other | | RTN 04 | |
 
 Regarding "Off" (type 4):
-- The firmware keeps running afterwards. It detects the edges, sends the broadcasts and can be switched on again with type 4/`10`. *(confirmed)*
-- "Off" opens the **discharge MOSFET** (discharge lock `0x7184`) and clears the discharging/standby states. Charging cancels "Off" at any time. *(confirmed)*
+- The firmware keeps running afterwards and answers normally on the bus. It detects the edges, sends the broadcasts and can be switched on again with type 4/`10`. *(confirmed; measured on a bench board)*
+- The handler changes the bit immediately (`0x0A86–0x0ABC`); the output follows at the next 1 s evaluation (`0x61B0–0x61C0`). *(confirmed)*
+- "Off" opens **only the discharge MOSFET** (discharge lock `0x7184`, check `0x7204–0x720A`) and clears the discharging/standby states. The charge decision (`0x6FFA–0x7082`) does not check bit 5: a pack switched off can still charge, and charging cancels "Off". Precharge, current limiter and heater do not depend on bit 5. *(confirmed)*
+- If a reason for "Off" persists, the firmware sets the bit again right after "On": with undervoltage or the empty flag and no charging, `0x887C` counts 60 s and then sets "Off" every second (`0x88BC`, `0x8A42`). "On" clears only the bit, not the expired counter; a restart resets it. *(confirmed; measured: about 1 s after "On", a little over 60 s after a restart)*
+- **Passing it on to the slaves:** the master compares bit 5 with its previous value in the 1 s block (`0x8A24`) and on every edge sends the broadcast `00 04 1F` or `00 04 10` to `FF` once on the pack bus (`0x13F6`, between two 0x5A polls), whether the change came from the button, the switch, the standby shutdown, undervoltage or 0x45. Only with slaves configured (address 0, DIP 5–8); no cyclic repetition. A polling master does not process 0x45 from the pack bus itself. *(confirmed)*
+- A slave applies the broadcast to its own bit 5 and does not answer. A slave switched off by unicast stays off while the master is on, until the next "On" broadcast, charging, the button or the switch. *(confirmed)*
 - Further triggers for "Off": button > 3 s, external switch (BitGroup7 bit 0, GPIO `0x50001000` bit 0 high; low switches back on) and the standby shutdown after parameter 77 (BitGroup7 bit 1). *(confirmed)*
 - After "Off" via button or standby shutdown, the BMS saves its state to internal flash and sets GPIO `0x50001000` bit 1 to 0, provided no voltage is present at the port and the button is not pressed. That this drops the self-hold of the power supply (BMS completely off) is *probable*. Details: [states-and-triggers.md §14](../states-and-triggers.md#14-onoff-standby-shutdown-and-external-switch).
 - Physical access to the button should be ensured before the first test.
