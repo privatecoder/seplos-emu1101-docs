@@ -371,6 +371,12 @@ Rejection → RTN 06, unknown subcode → RTN 04. Stored in calibration flash bl
 
 Writing: up to 06.05 always 30 bytes are read; from 06.11 only LENGTH/2 bytes (max. 30), the rest is padded with spaces.
 
+**Labels on the board** (photos of five EMU1101 PCBA-V16 boards, built 2022–2023; one of them read on the bus) *(observed)*: every board carries two labels.
+- **Seplos barcode label:** model line `Model:<voltage><capacity>-1101-10E-SP<nn>-<cells>S` (e.g. `48150-1101-10E-SP85-16S`) and below it `SEPLOS-YYMMDD<4-digit counter>`. On the board that was read, exactly this number was in **string 2** (BMS serial number). String 1 (battery serial number) is set by the pack maker; on this board it had been set by hand to the value of string 2 afterwards, so in finished packs it presumably holds a number of its own. `SP<nn>` is the identifier 0x51 reports (`1101-SP85`).
+- **Assembler's QR/DataMatrix label:** bill of materials/variant (e.g. `1101-48150-10E-V16-JC`) and its own number `HG…`/`HX…` + YYMMDD + sequence, dated a few weeks before the Seplos number (assembled, then programmed at Seplos). This number is not in 0xA2/0xA4. One product photo shows a different format (`V16SM…`).
+
+Consequence: if a pack has no BMS serial number (string 2) or a placeholder, the right one can be read off the barcode label and written with 0xA5.
+
 ### 5.14 CID2 0xA6: Set CAN inverter protocol
 
 - **Request:** INFO 1 byte: 1 PNG_DYE_Luxp_TBB (Pylontech/Deye/Luxpower), 2 Growatt_SPF_SPH, 3 Victron, 4 SMA_SOFAR, 5 GINLONG, 6 Studer, 7 MUST (from 06.11).
