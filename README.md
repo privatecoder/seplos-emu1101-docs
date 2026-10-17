@@ -39,6 +39,7 @@ Everything here is derived from the firmware code unless marked otherwise. It is
 6. **SOC logic:** coulomb counting with a hold at 98.2 % until a cell reaches the cell high-voltage warning, voltage-based recalibration (100 % after 30 min at ≥ N × cell high-voltage warning with < 3 A per pack), capacity learning only over a full charge-to-empty discharge.
 7. **SP80 (16.06.05)** differs from 16.06.04 by exactly one byte (charge MOSFET also off during "intermittent recharge waiting"); not carried into later versions.
 8. **Most important improvements:** 16.06.11 MUST protocol and cleaner charge-enable/CCL logic; 16.06.12 temperature-hysteresis bug fix and "active" CCL mode for multi-pack systems; 16.06.13 Modbus current fix. ⚠ 16.06.13 changes Modbus `0x9000` from 21 to 26 registers; masters reading 21 get exception 03.
+9. **No parameter proxy in a multi-pack bank:** the display/Bluetooth port (binary protocol) and the CAN socket change only the pack itself; the master forwards nothing to slaves and caches no slave parameters. Slaves can be configured only with the master stopped, over RS485-1/2 ([undocumented commands §2.4](docs/protocols/undocumented-commands.md)).
 
 ## Confidence tags
 

@@ -341,7 +341,7 @@ Format B (ohne ADR):    55 | CMD | LEN | DATA[LEN] | CRC_hi | CRC_lo | AA
 | 0xA3 | BMS → device | spontaneous | once on **switching back on** (bit 5: 1 → 0) | 04.06 |
 | 0xAA / 0xAB | BMS → device | spontaneous | tunnel requests (§1.13) | **06.13** |
 
-**Sequence per main loop tick:** If a received frame is pending, it is processed. Otherwise the BMS sends exactly one spontaneous frame, with priority **A2 > A3 > tunnel > 0x46**. Edge detection uses a shadow byte: `0x200000E8` up to 06.12, `0x200000E9` from 06.13.
+**Sequence in the main loop's 1-s block** (`0x8288`, called at `0x6202`; not on every fast loop pass): If a received frame is pending, it is processed. Otherwise the BMS sends exactly one spontaneous frame, with priority **A2 > A3 > tunnel > 0x46**. Edge detection uses a shadow byte: `0x200000E8` up to 06.12, `0x200000E9` from 06.13.
 
 **Status frame 0x46:**
 - **Short** (`0x761E`, format B, switch `0x2F` bit 4 = 0): `N`, N × cell mV, `06`, 4 cell temperatures, ambient, power section (0.1 K), current (0 when idle), pack voltage, remaining capacity, `03`, full capacity, cycles, port voltage, system status & 0x33, on-off & 0x0F, `06`, event 1–5, event 6 & 0x7F, RS485 address, slave count. **No SOC.** *(confirmed)*
@@ -357,6 +357,21 @@ Format B (ohne ADR):    55 | CMD | LEN | DATA[LEN] | CRC_hi | CRC_lo | AA
   9. **Name of the active CAN protocol** (20 bytes) – only this one, on every pack
   10. Device name (10 bytes), FW version `10 06`, CAN protocol number (u8), byte `0x200000A6`, constant `0x46`
   11. **Only master with slaves:** system block (max./min. cell voltage and temperature, total current, average voltage, Σ remaining and full capacity, system SOC, 1000, average port voltage, online bitmask of the packs, charge/discharge enable flags, OR of all alarm events). Otherwise 46 zero bytes; the length stays the same.
+
+### 2.4 Own pack only: no parameter proxy in a multi-pack bank *(confirmed; display hardware assumption)*
+
+Forum posts say the Bluetooth display or its app can change slave settings while packs run as master and slaves (DIP 5–8 set). The seven original images (04.06 … 06.13) have no way to do that:
+
+- **Binary port (UART2):** the dispatcher `0x8288` knows only 0x47, 0xA1, 0x63, 0x64 (06.13 also 0xAA/0xAB). 0x47 reads the pack's **own** parameter block `0x20001300` and switches `0x20000028…2F` (`0x7EA2–0x7F80`); 0xA1 writes exactly these (`0x7F82–0x80A4`, stored via `0x4890`). The ADR of a received frame is neither checked nor used as a target (`0x8140–0x820A`): a display on the master changes the **master** whatever ADR it sends.
+- **Also while polling:** `0x8288` runs in the 1-s block at `0x6202`, **before** the master/slave branch `0x6264–0x628A`, so the master stays configurable through its display while it polls the slaves.
+- **CAN socket (UART1):** only 0x42/0x44/0x4F/0x51/0x60–0x63 (`0x2AF2:0x2B0E–0x2B7A`); a 0x47 ends in RTN 04 (`0x2B3E`), a 0xA1 already exceeds the 230-character receive limit (`0x24E4–0x24F8`). A host there can send read commands straight to single slaves because every slave listens on the CAN socket itself; that is no forwarding by the master.
+- **Polling caches no parameters:** the master asks only 0x5A (`0x13F6:0x1454–0x145E`) and keeps 30 status bytes per pack (`0x1384`); the slaves' 0x47/0xA1 never reach it.
+- **No window for another host on RS485-1/2:** after the last slave the master pauses until the next second (bit 2, set at `0x14AE:0x1568`, cleared at `0x99BA:0x9A34`). The pause has no fixed length or position and there is no arbitration; a 0xA1 (~358 characters, ~186 ms at 19200 Bd) can collide with the next 0x5A request. *(Usability: assumption, unusable.)*
+
+- **All cells of all packs:** of its slaves the master knows only max/min (30 bytes from 0x5A, table `0x20000524`), not the 16 single voltages. Every pack delivers its own cells: 0x42 at its DIP address on the RS485 pair of the CAN socket (UART1), also while the master polls. On CAN only the master transmits, and only system values.
+- **One display per pack works in a bank:** `0x8288` runs on every pack before the master/slave branch, slaves included. With its own device on each pack's binary port, every pack (master included) can be read and written through its device without changing the multi-pack mode; the binary port is a separate point-to-point line and does not disturb the pack bus. Preconditions: function switch `0x2F` bit 3 on (factory default on), and the device speaks `55 … AA` (*assumption* for the Seplos display, not visible in the code). The same holds for a USB adapter on the RS232/TTL socket; its level (RS232 or TTL) cannot be read from the firmware and must be measured before connecting.
+
+Consequence: over RS485-1/2, slave parameters only with the master stopped (DIP 5–8 = 0 or a maintenance marker), directly over RS485-1/2. *Assumption* about the forum reports: the master was changed, or other hardware was used (e.g. EMU1203 V16, for which Seplos's app guide describes a pack selection „Single“; a BLE read script uses frames `7E 10 00 46 61 …`, not `55 … AA`), or the link cable was unplugged.
 
 ---
 
