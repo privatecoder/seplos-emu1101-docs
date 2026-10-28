@@ -120,7 +120,7 @@ was not established here.
 ## 5. Repeatable counterexample probe
 
 [Probe script](../../mod/tools/firmware-analysis/probe_uart1_receive_gap.py),
-[final report](../../local/research/uart1-reception/evidence/UART1-Empfangspause-2026-10-21-final.json).
+final report (`UART1-Empfangspause-2026-10-21-final.json`, local reference, not published).
 The report is local evidence and is unavailable in a fresh public clone.
 
 There are 228 passed cases. The probe executes actual SHA-bound Thumb routines

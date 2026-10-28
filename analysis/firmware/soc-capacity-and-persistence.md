@@ -7,13 +7,13 @@ Historical comparison images: OEM 16.06.13 and the fixed MAINT 1.6 build
 exception in the compared A1 region is the known call to the 1.6 parameter
 serializer at `0x08F8`, which protects the individual pack lock.
 
-Evidence: [79 executable counterexamples](../../local/research/soc/evidence/SOC-2026-10-21-final.json)
+Evidence: 79 executable counterexamples (`SOC-2026-10-21-final.json`, local reference, not published)
 and the [persistent analysis tool](../../mod/tools/firmware-analysis/probe_soc.py).
 No serial ports were opened and no real parameters or firmware were changed.
 The CPU executes the actual routines; acceptance/storage of IAP block6 is
 modeled. This is not a physical NVM dump or a complete bootloader/hardware test. The probe requires the retained fixed MAINT 1.6 release and its build report under ignored `local/`; a fresh checkout lacks these historical fixtures.
 
-Evidence: [24 SOC cutoff counterexamples](../../local/research/soc/evidence/SOC-Abschaltung-2026-10-21-final.json).
+Evidence: 24 SOC cutoff counterexamples (`SOC-Abschaltung-2026-10-21-final.json`, local reference, not published).
 The [reusable code profile](../../mod/tools/firmware-analysis/soc_profile_v16.py) records
 addresses, units, formulas, threshold rules and persistence triggers.
 [Tool usage and reuse](../../mod/docs/tools/README.md).

@@ -8,4 +8,4 @@
 - [MAINT capabilities by port](../mod/docs/firmware/uart-write-capabilities.md)
 - [MAINT and patcher changelog](../mod/firmware/CHANGELOG.md)
 
-Reference firmware is 16.06.13 unless a version is stated explicitly. Original images are under [vendor firmware](../vendor/firmware/); code-derived addresses, version differences and uncertainty are recorded with the relevant subject. Private raw captures, laboratory records and working notes are retained under the ignored `local/` directory.
+Reference firmware is 16.06.13 unless a version is stated explicitly. Original images are under [vendor firmware](../vendor/firmware/); code-derived addresses, version differences and uncertainty are recorded with the relevant subject. Private raw captures, laboratory records and working notes are not published.

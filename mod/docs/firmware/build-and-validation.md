@@ -27,6 +27,7 @@ For a fresh patcher environment, `sh "$SEPLOS_PATCHER/setup_venv.sh"` installs t
 Output directories must be new and their parent must exist. Inputs are never overwritten. Generated artifacts belong in project-relative `local/builds`; use separate fresh directories for each invocation.
 
 ```sh
+mkdir -p "$SEPLOS_PROJECT/local/builds/runs"
 SEPLOS_INPUT="$SEPLOS_PROJECT/vendor/firmware/CAN1101[V16.06.13_PN01_250607].ehex"
 "$SEPLOS_PYTHON" -I "$SEPLOS_PATCHER/seplos_patch.py" analyze "$SEPLOS_INPUT" \
   --maint-version 1.5.3 --base-revision 13 \

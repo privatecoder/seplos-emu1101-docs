@@ -147,7 +147,7 @@ inspection of the vendor image. For the source conditions see
 [On/off, standby shutdown and external switch](states-and-triggers.md#onoff-standby-shutdown-and-external-switch),
 and [ASCII45](../protocols/seplos-ascii.md#53-cid2-0x45-remote-control).
 
-The [saved results of five OEM counterexamples](../../local/research/pack-lock/evidence/Ein-Aus-Originalfirmware-2026-10-18/oem-cutoff.json)
+The saved results of five OEM counterexamples (`oem-cutoff.json`, local reference, not published)
 cover ordinary off, 4 A charging recovery, recalculated charging inhibition,
 discharge recovery and eligible port wakeup after 30 calls. The existing
 [offline reproduction helper](../../mod/tools/firmware-analysis/probe_pack_cutoff.py)

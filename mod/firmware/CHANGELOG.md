@@ -48,7 +48,7 @@
 - The new main matrix covers OEM.13/1.5.2/1.6.2 only, with EHEX SHA256s for all three images. Read, action and Group0 tables compare those same images.
 - Not flashed or hardware-tested; no commit or push.
 
-[Contract](../../local/history/snapshots/mod-before-rebuild-2026-10-26/mod/docs/en/maint152-storage-diagnostics.md) · [Manifest](../../local/releases/MAINT1.5.2-Diagnose.json).
+Contract (`maint152-storage-diagnostics.md`, local reference, not published) · Manifest (`MAINT1.5.2-Diagnose.json`, local reference, not published).
 
 ## MAINT 1.6.2: storage diagnostics and verified reset, 2026-10-24
 
@@ -61,7 +61,7 @@
 - The local laboratory updater now uses one reset with bounded RFL probes instead of assuming a single 50 ms delay. It collects fragmented RFB responses completely and strictly requires WFB write acknowledgements. The separate OpenBMS updater was unchanged and still needs the documented host adaptation.
 - Only offline verification: no flash, hardware timing/load evidence or measured flash-time guarantee.
 
-[Contract and evidence limits](../../local/history/snapshots/mod-before-rebuild-2026-10-26/mod/docs/en/maint162-service-diagnostics.md) · [Manifest](../../local/releases/MAINT1.6.2-Service.json).
+Contract and evidence limits (`maint162-service-diagnostics.md`, local reference, not published) · Manifest (`MAINT1.6.2-Service.json`, local reference, not published).
 
 ## MAINT 1.5.1/1.6.1 capability matrix, 2026-10-24
 
@@ -90,7 +90,7 @@
 - Additionally checked full UART0 45 chains, FF-on, nonhex input, RTN08 and marker/pack-lock independence. No parameter conversion or flashing.
 - The existing OEM receive-buffer fix remains; UART1 still requires an inter-frame gap.
 
-[Contract, operation and MNT04](../../local/history/snapshots/mod-before-rebuild-2026-10-26/mod/docs/en/maint-revision1-uart0-marker.md) · [Releases and hashes](releases/README.md) · [Evidence](../../local/builds/runs/patcher/Checks-UART0-Marker-2026-10-22/README.md).
+Contract, operation and MNT04 (`maint-revision1-uart0-marker.md`, local reference, not published) · [Releases and hashes](releases/README.md) · Evidence (`Checks-UART0-Marker-2026-10-22`, local reference, not published).
 
 ## MAINT 1.5/1.6: included OEM UART1 receive-buffer fix verified, 2026-10-21
 
@@ -112,7 +112,7 @@
 - Added mandatory checks for polarity, soft off without a latch, persistence, mode deactivation and unchanged older images. Clients and laboratory helpers were adapted. Passed 223 mandatory checks.
 - The new image was verified offline only and was not flashed.
 
-[Contract, hashes and reproducible build](../../local/history/snapshots/mod-before-rebuild-2026-10-26/mod/docs/en/maint16-positive-flags.md).
+Contract, hashes and reproducible build (`maint16-positive-flags.md`, local reference, not published).
 
 ## UART write capability matrix, 2026-10-21
 
@@ -147,7 +147,7 @@
 - Internal foreign-address RTN05 in the old probe is not a wire response: UART0 remains silent.
 - Added the persistent counterexample `tools/Analyse/probe_cutoff_uart0_errors.py`. No firmware change or flashing, and no real flash failures were induced.
 
-[Evidence](../../local/builds/runs/patcher/Checks-UART0-Power-Errors-2026-10-18/README.md).
+Evidence (`Checks-UART0-Power-Errors-2026-10-18`, local reference, not published).
 
 ## MAINT 1.6: flash and hardware as master0, 2026-10-18
 
@@ -159,7 +159,7 @@
 - Added persistent `cutoff_lab.py` and `cutoff_audit.py` tools with baselines and raw data.
 - Hardware scope: master0 without polling or slaves. Electrical gate measurements, real slave/master-broadcast/12-pack counterexamples and supply isolation remain open.
 
-[Laboratory report](../../local/devices/lab/Patchtests/Packsperre-1.6/Labor-2026-10-18/README.md).
+Laboratory report (`Labor-2026-10-18`, local reference, not published).
 
 ## MAINT 1.6: persistent pack lock, 2026-10-18
 
@@ -177,7 +177,7 @@
 - Full16-image/48-profile corpus:22 passes,26 expected refusals and6,740 Thumb checks. Additionally18 UART0 parser-chain cases at0/1/11 cover unicast,FF,foreign and invalid ADR.
 - At this release-validation stage no ports were opened, no flash was performed, and no hardware/12-pack evidence was yet available. The separate same-day hardware entry records the later authorized bench test.
 
-[Details](../../local/history/snapshots/mod-before-rebuild-2026-10-26/mod/docs/patcher/Packsperre-1.6.md) · [Releases](releases/README.md) · [Corpus matrix](../../local/builds/runs/patcher/Validation-Cutoff-Final-2026-10-18/README.md).
+Details (`Packsperre-1.6.md`, local reference, not published) · [Releases](releases/README.md) · Corpus matrix (`Validation-Cutoff-Final-2026-10-18`, local reference, not published).
 
 ## Power/RTC with a shared gate, still MAINT 1.5, 2026-10-18
 
@@ -189,7 +189,7 @@
 - New structural role detection, original action/RTC-BCD probes and56 additional mandatory checks per MAINT output. Still four OEM hooks and existing UART1 buffers/sender; UART0 buffer unchanged, with eight bytes of temporary stack.
 - Passed31 patcher tests,14 tool tests,48 expected corpus profiles and7,949 named Thumb checks. Selected build `d75a7b24cb6e8590` passed164 mandatory checks. No flashing.
 
-[Release and manifest](releases/README.md) · [Implementation and contract](../../local/history/snapshots/mod-before-rebuild-2026-10-26/mod/docs/patcher/Power-RTC-1.5.md) · [Test matrix](../../local/builds/runs/patcher/Validation-Power-RTC-2026-10-18/README.md).
+[Release and manifest](releases/README.md) · Implementation and contract (`Power-RTC-1.5.md`, local reference, not published) · Test matrix (`Validation-Power-RTC-2026-10-18`, local reference, not published).
 
 ## Addressed pack identity, still MAINT 1.5, 2026-10-18
 
