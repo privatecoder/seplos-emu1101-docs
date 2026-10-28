@@ -1,0 +1,45 @@
+{
+  "schema": 1,
+  "inputs": {
+    "power-rtc-1.5": {
+      "path": "local/builds/oem16.06.13/maint-1.5/d75a7b24cb6e8590/report.json",
+      "bytes": 127837,
+      "sha256": "fc379d669e9e594b9f2388299a9a994349ad41048040081b8b9ffb62890721f5"
+    },
+    "pack-lock-1.6": {
+      "path": "local/builds/oem16.06.13/maint-1.6/18daf61d8a93671d/report.json",
+      "bytes": 137989,
+      "sha256": "0b54874bbe292596cd0cd815f543331e29f34598421e87f6a229870044a3a142"
+    },
+    "pack-lock-positive-1.6": {
+      "path": "local/builds/oem16.06.13/maint-1.6/39e0c5d9ccf13396/report.json",
+      "bytes": 139035,
+      "sha256": "a9c8732143caff59b08f3e1819606bf95e10de13ec1717db72944dcff21219dc"
+    },
+    "marker-uart0-1.5.1": {
+      "path": "local/builds/oem16.06.13/maint-1.5.1/96cb4859ef3c3f3b/report.json",
+      "bytes": 130174,
+      "sha256": "6245344d17cbae59b1bedbd25f2cebcf9bdfeec092a41b9dcddfd64cbc5d938a"
+    },
+    "marker-uart0-1.6.1": {
+      "path": "local/builds/oem16.06.13/maint-1.6.1/cecca6889e95d5c8/report.json",
+      "bytes": 141120,
+      "sha256": "36b86b451a1d99cbe8ea14d94c647d2a0ee7fc3f0ce98f52e5065cf2c6f33974"
+    },
+    "hard-stop-1.6.3": {
+      "path": "local/builds/oem16.06.13/maint-1.6.3/baa01ecd5af4eb28/report.json",
+      "bytes": 146696,
+      "sha256": "aba68746e161b26fd6e49c8e5165868fdc76fa2e8dd22c21bdc964f52e672d45"
+    },
+    "uart0-fc03-16.04.06": {
+      "path": "local/research/topologies/evidence/Anschluesse-Topologien-2026-10-26/R/V16.04.06.facts.json",
+      "bytes": 3306,
+      "sha256": "5baec194fe2964d54d09653b40fb0a94757e42d943d8493fbc9e543e4d9fc941"
+    },
+    "uart0-fc03-16.06.03": {
+      "path": "local/research/topologies/evidence/Anschluesse-Topologien-2026-10-26/R/V16.06.03.facts.json",
+      "bytes": 3296,
+      "sha256": "72e1a51e9db9df50d59de1a00469fc9a162918703c7eed56e42746dc58656e03"
+    }
+  }
+}

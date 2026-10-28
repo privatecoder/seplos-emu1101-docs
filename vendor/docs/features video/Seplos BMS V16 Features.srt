@@ -1,0 +1,592 @@
+1
+00:00:00,000 --> 00:00:05,059
+this is ceplo's V16 upgraded BMS
+
+2
+00:00:07,150 --> 00:00:11,340
+[Music]
+
+3
+00:00:09,660 --> 00:00:13,320
+it has new feature of the Bluetooth
+
+4
+00:00:11,339 --> 00:00:14,939
+connection and you can monitor your
+
+5
+00:00:13,320 --> 00:00:17,339
+battery information through cell phone
+
+6
+00:00:14,939 --> 00:00:20,278
+app there are quality tests must be
+
+7
+00:00:17,339 --> 00:00:22,379
+passed before its release
+
+8
+00:00:20,278 --> 00:00:25,018
+the first test is the temperature rising
+
+9
+00:00:22,379 --> 00:00:27,178
+test to do the test we need to do some
+
+10
+00:00:25,018 --> 00:00:30,059
+preparation work attach the temperature
+
+11
+00:00:27,179 --> 00:00:31,858
+sensors to the BMS firstly and there are
+
+12
+00:00:30,059 --> 00:00:34,097
+11 Parts listed that we will monitor
+
+13
+00:00:31,859 --> 00:00:34,099
+later
+
+14
+00:00:34,259 --> 00:00:38,759
+after attaching the temperature sensors
+
+15
+00:00:36,539 --> 00:00:41,338
+adjust the BMS to the battery front
+
+16
+00:00:38,759 --> 00:00:44,238
+plate sort out the sensor wires with
+
+17
+00:00:41,340 --> 00:00:44,239
+insulation tape
+
+18
+00:00:45,719 --> 00:00:50,959
+now while the temperature sensors to the
+
+19
+00:00:47,939 --> 00:00:50,959
+temperature monitor device
+
+20
+00:01:00,520 --> 00:01:06,978
+[Music]
+
+21
+00:01:03,420 --> 00:01:06,979
+activate the battery pack
+
+22
+00:01:08,118 --> 00:01:12,658
+after connecting all the devices we need
+
+23
+00:01:10,859 --> 00:01:15,318
+set up parameters of the temperature
+
+24
+00:01:12,659 --> 00:01:15,320
+monitor
+
+25
+00:01:16,319 --> 00:01:19,379
+[Music]
+
+26
+00:01:21,019 --> 00:01:26,519
+now the tester is simulating the battery
+
+27
+00:01:23,700 --> 00:01:28,020
+charging discharging process and the
+
+28
+00:01:26,519 --> 00:01:30,358
+sensor device is monitoring the
+
+29
+00:01:28,019 --> 00:01:33,059
+real-time temperature
+
+30
+00:01:30,359 --> 00:01:34,798
+after one charge discharge cycle the
+
+31
+00:01:33,060 --> 00:01:36,419
+dynamic temperatures come to the highest
+
+32
+00:01:34,799 --> 00:01:38,819
+levels
+
+33
+00:01:36,420 --> 00:01:41,460
+record the test results and check if
+
+34
+00:01:38,819 --> 00:01:44,458
+they pass the test standard
+
+35
+00:01:41,459 --> 00:01:45,959
+the second test is performance test the
+
+36
+00:01:44,459 --> 00:01:48,079
+first of its kind is monomer over
+
+37
+00:01:45,959 --> 00:01:49,257
+discharge protection test
+
+38
+00:01:48,079 --> 00:01:52,498
+[Music]
+
+39
+00:01:49,259 --> 00:01:54,419
+now the battery is discharging
+
+40
+00:01:52,500 --> 00:01:56,399
+the circuit protection will be triggered
+
+41
+00:01:54,420 --> 00:01:59,599
+when any cell voltage is not more than
+
+42
+00:01:56,399 --> 00:01:59,600
+2.7 volts
+
+43
+00:02:03,799 --> 00:02:08,940
+the second performance test is monomer
+
+44
+00:02:06,540 --> 00:02:12,059
+over voltage protection test set the
+
+45
+00:02:08,939 --> 00:02:16,158
+charging current to 80 ampere
+
+46
+00:02:12,060 --> 00:02:16,159
+now the battery is being charged
+
+47
+00:02:17,280 --> 00:02:22,070
+action will be triggered when any cell
+
+48
+00:02:19,080 --> 00:02:25,129
+voltage is not less than 3.65 volts
+
+49
+00:02:22,069 --> 00:02:25,129
+[Music]
+
+50
+00:02:27,840 --> 00:02:32,649
+the third performance test is total
+
+51
+00:02:30,120 --> 00:02:34,200
+voltage over discharge protection test
+
+52
+00:02:32,650 --> 00:02:36,859
+[Music]
+
+53
+00:02:34,199 --> 00:02:39,359
+the battery is discharging now
+
+54
+00:02:36,860 --> 00:02:42,360
+the circuit protection will be triggered
+
+55
+00:02:39,360 --> 00:02:45,079
+when total voltage is not more than 43.5
+
+56
+00:02:42,360 --> 00:02:45,080
+volts
+
+57
+00:02:46,919 --> 00:02:52,199
+foreign
+
+58
+00:02:49,860 --> 00:02:55,919
+the fourth performance test is total
+
+59
+00:02:52,199 --> 00:02:59,159
+voltage over voltage protection test
+
+60
+00:02:55,919 --> 00:03:01,079
+the battery is being charged now
+
+61
+00:02:59,159 --> 00:03:03,899
+the circuit protection will be triggered
+
+62
+00:03:01,080 --> 00:03:06,379
+when the circuit voltage is over 57.6
+
+63
+00:03:03,900 --> 00:03:06,379
+volts
+
+64
+00:03:10,580 --> 00:03:16,318
+the fifth performance test is discharge
+
+65
+00:03:13,500 --> 00:03:19,080
+high temperature protection test
+
+66
+00:03:16,318 --> 00:03:21,058
+the battery is discharging now
+
+67
+00:03:19,080 --> 00:03:22,680
+the circuit protection will be triggered
+
+68
+00:03:21,060 --> 00:03:26,180
+when the cell temperature is higher than
+
+69
+00:03:22,680 --> 00:03:26,180
+55 degrees Centigrade
+
+70
+00:03:26,250 --> 00:03:31,799
+[Music]
+
+71
+00:03:29,340 --> 00:03:33,799
+the sixth performance test is charging
+
+72
+00:03:31,800 --> 00:03:36,899
+over current protection test
+
+73
+00:03:33,800 --> 00:03:38,399
+the battery is being charged now the
+
+74
+00:03:36,900 --> 00:03:40,080
+circuit protection will be triggered
+
+75
+00:03:38,400 --> 00:03:40,949
+when the circuit current is higher than
+
+76
+00:03:40,080 --> 00:03:45,360
+90 ampere
+
+77
+00:03:40,949 --> 00:03:47,758
+[Music]
+
+78
+00:03:45,360 --> 00:03:50,400
+the seventh performance test is
+
+79
+00:03:47,759 --> 00:03:52,438
+discharging over current protection test
+
+80
+00:03:50,400 --> 00:03:54,120
+the circuit protection will be triggered
+
+81
+00:03:52,439 --> 00:03:55,218
+when the circuit current is higher than
+
+82
+00:03:54,120 --> 00:03:58,270
+90 ampere
+
+83
+00:03:55,219 --> 00:03:58,268
+[Music]
+
+84
+00:03:58,919 --> 00:04:02,899
+the last performance test is charging
+
+85
+00:04:01,259 --> 00:04:05,999
+current limiting test
+
+86
+00:04:02,900 --> 00:04:07,440
+the battery is being charged now the
+
+87
+00:04:06,000 --> 00:04:09,000
+circuit protection will be triggered
+
+88
+00:04:07,439 --> 00:04:10,318
+when the circuit current is higher than
+
+89
+00:04:09,000 --> 00:04:11,879
+90 ampere
+
+90
+00:04:10,318 --> 00:04:15,377
+and the circuit current will be
+
+91
+00:04:11,878 --> 00:04:15,378
+constrained within 10 ampere
+
+92
+00:04:17,939 --> 00:04:22,498
+the third test is voltage temperature
+
+93
+00:04:19,858 --> 00:04:25,079
+detection accuracy test and we assess
+
+94
+00:04:22,500 --> 00:04:28,918
+the BMS voltage detection accuracy first
+
+95
+00:04:25,079 --> 00:04:31,918
+when there is no charging or discharging
+
+96
+00:04:28,918 --> 00:04:31,918
+foreign
+
+97
+00:04:33,079 --> 00:04:39,559
+voltage values we have from BMS with the
+
+98
+00:04:36,000 --> 00:04:39,560
+value we get from the multimeter
+
+99
+00:05:01,199 --> 00:05:05,820
+now we assess the BMS voltage detection
+
+100
+00:05:03,959 --> 00:05:08,478
+accuracy when there is charging or
+
+101
+00:05:05,819 --> 00:05:08,477
+discharging
+
+102
+00:05:11,839 --> 00:05:16,257
+compare the voltage values we have from
+
+103
+00:05:14,279 --> 00:05:18,328
+BMS with the value we get from the
+
+104
+00:05:16,259 --> 00:05:21,459
+multimeter
+
+105
+00:05:18,329 --> 00:05:21,458
+[Music]
+
+106
+00:05:37,439 --> 00:05:42,238
+now we will do the temperature detection
+
+107
+00:05:39,660 --> 00:05:46,198
+accuracy test the touch temperature
+
+108
+00:05:42,240 --> 00:05:48,360
+sensors to four electrode positions
+
+109
+00:05:46,199 --> 00:05:50,460
+compare the temperatures detected by the
+
+110
+00:05:48,360 --> 00:05:53,840
+BMS with the temperature values we get
+
+111
+00:05:50,459 --> 00:05:53,838
+from the temperature sensor device
+
+112
+00:05:54,660 --> 00:05:57,720
+[Music]
+
+113
+00:05:58,259 --> 00:06:01,880
+the following test is communication with
+
+114
+00:06:00,600 --> 00:06:04,739
+inverter
+
+115
+00:06:01,879 --> 00:06:07,379
+v16bms is designed to be compatible with
+
+116
+00:06:04,740 --> 00:06:10,139
+both 485 protocol and the can protocol
+
+117
+00:06:07,379 --> 00:06:12,779
+we will start with the 485 protocol
+
+118
+00:06:10,139 --> 00:06:13,269
+communication test
+
+119
+00:06:12,779 --> 00:06:24,917
+foreign
+
+120
+00:06:13,269 --> 00:06:27,909
+[Music]
+
+121
+00:06:24,918 --> 00:06:30,988
+parameters from the BMS with inverter
+
+122
+00:06:27,910 --> 00:06:30,989
+[Music]
+
+123
+00:06:34,120 --> 00:06:37,979
+[Music]
+
+124
+00:06:35,759 --> 00:06:40,340
+now we do the cam protocol communication
+
+125
+00:06:37,978 --> 00:06:40,339
+test
+
+126
+00:06:48,240 --> 00:06:53,240
+compare the parameters from the BMS with
+
+127
+00:06:50,759 --> 00:06:53,239
+inverter
+
+128
+00:06:54,418 --> 00:07:00,099
+foreign
+
+129
+00:06:57,019 --> 00:07:00,099
+[Music]
+
+130
+00:07:02,720 --> 00:07:09,319
+Bluetooth connection test there is no
+
+131
+00:07:05,639 --> 00:07:09,319
+need for manual dip operation anymore
+
+132
+00:07:13,439 --> 00:07:17,298
+now open the app
+
+133
+00:07:15,000 --> 00:07:17,299
+access
+
+134
+00:07:19,970 --> 00:07:27,779
+[Music]
+
+135
+00:07:25,579 --> 00:07:30,678
+you can find the tip number for
+
+136
+00:07:27,779 --> 00:07:30,678
+corresponding battery
+
+137
+00:07:34,978 --> 00:07:39,378
+compare the parameters in BMS with app
+
+138
+00:07:39,870 --> 00:07:42,930
+[Music]
+
+139
+00:07:49,620 --> 00:07:53,528
+[Music]
+
+140
+00:08:02,680 --> 00:08:05,759
+[Music]
+
+141
+00:08:06,500 --> 00:08:09,500
+thank you
+
+142
+00:08:10,730 --> 00:08:13,818
+[Music]
+
+143
+00:08:17,329 --> 00:08:20,429
+[Music]
+
+144
+00:08:24,800 --> 00:08:27,958
+[Music]
+
+145
+00:08:27,959 --> 00:08:32,067
+foreign
+
+146
+00:08:28,920 --> 00:08:32,069
+[Music]
+
+147
+00:08:44,700 --> 00:08:47,759
+[Music]
+
+148
+00:08:54,450 --> 00:08:58,378
+[Music]
+

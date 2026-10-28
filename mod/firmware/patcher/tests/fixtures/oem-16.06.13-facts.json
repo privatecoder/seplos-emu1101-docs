@@ -1,0 +1,123 @@
+{
+  "facts": {
+    "evidence": [
+      {
+        "hook": "hook_rx",
+        "opcode": "fff77cff",
+        "original_target": 9384,
+        "site": 9644
+      },
+      {
+        "hook": "hook_dispatch",
+        "opcode": "fcf72dfc",
+        "original_target": 10994,
+        "site": 25236
+      },
+      {
+        "hook": "hook_uart1",
+        "opcode": "fff7f5fe",
+        "original_target": 10480,
+        "site": 11010
+      },
+      {
+        "hook": "hook_dip",
+        "opcode": "fbf7d7ff",
+        "original_target": 8466,
+        "site": 24928
+      }
+    ],
+    "functions": {
+      "capacity_save": 21860,
+      "crc": 30182,
+      "dip": 8466,
+      "dispatch": 10994,
+      "iap_erase": 48264,
+      "iap_program": 48310,
+      "iap_read": 18344,
+      "iap_write": 18248,
+      "identity_serializer": 21464,
+      "irq": 9638,
+      "lcd_read": 32418,
+      "lcd_write": 32642,
+      "loader": 18794,
+      "main": 24816,
+      "modbus": 17836,
+      "parser": 10480,
+      "rx": 9384,
+      "serializer": 18576,
+      "tx_irq": 9556,
+      "uart1_send": 9650,
+      "validator": 19516
+    },
+    "hard_stop": {
+      "branch_target": 28796,
+      "enabled": false,
+      "entry": 28778,
+      "event6": 536870965,
+      "fallthrough": 28788,
+      "forbidden_flags": 536870917,
+      "function": 28666,
+      "offset": 28780,
+      "old_mask": 113
+    },
+    "hooks": {
+      "hook_dip": 24928,
+      "hook_dispatch": 25236,
+      "hook_rx": 9644,
+      "hook_uart1": 11010
+    },
+    "oracle": {
+      "base_version": [
+        16,
+        6
+      ]
+    },
+    "original_app_sha256": "5c36a7e08fb881b3c2ca6a22888ecb63585c3eb6811fb67b67cc9d0d0ecdde95",
+    "original_app_size": 53092,
+    "power_rtc": {
+      "control_flags": 536870912,
+      "power_action": 2694,
+      "power_handler": 2620,
+      "reset": 2594,
+      "rtc": 536875624,
+      "rtc_get_handler": 3232,
+      "rtc_read": 22754,
+      "rtc_set_handler": 3312,
+      "rtc_transfer": 22348,
+      "rtc_write": 22658,
+      "system_status": 536871084,
+      "uart0_rx": 536871684
+    },
+    "ram": {
+      "address": 536870951,
+      "command": 536874797,
+      "coulomb_max": 536876512,
+      "decoded_address": 536875108,
+      "group0": 536870952,
+      "iap_buffer": 536875112,
+      "info": 536874812,
+      "lcd_meta": 536876262,
+      "learned": 536874198,
+      "modbus_gate": 536871159,
+      "name": 536870978,
+      "rtn": 536875104,
+      "rx": 536874495,
+      "rx_limit": 230,
+      "rx_meta": 536874795,
+      "shadow_small": 536876043,
+      "shadow_words": 536875896,
+      "slaves": 536870950,
+      "small": 536876016,
+      "state": 536874494,
+      "string1": 536870988,
+      "string2": 536871018,
+      "tx": 536874798,
+      "tx_length": 536875098,
+      "words": 536875776
+    },
+    "sp": 536877720,
+    "version_address": 52252
+  },
+  "input": "vendor/firmware/CAN1101[V16.06.13_PN01_250607].ehex",
+  "input_sha256": "0ea75c9834cf19789a58f58db8cde1a2bbd722a8f5a7bde7f00106f59b91ccf6"
+}

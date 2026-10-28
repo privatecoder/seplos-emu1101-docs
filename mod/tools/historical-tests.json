@@ -1,0 +1,57 @@
+{
+  "schema": 1,
+  "product": "Seplos BMS 2.0/10E/V16 (EMU1101)",
+  "default_workspace": "local/history/snapshots/mod-before-current-cleanup-2026-10-26/project",
+  "inventory": "../source-manifest.json",
+  "requirements": [
+    "Python with the archived patcher/requirements.txt dependencies (Unicorn 2.1.4)",
+    "LLVM tools required by the frozen builders; historical source retains its original tool-path assumptions",
+    "Retained vendor firmware and local fixture/build data; no fixtures are downloaded",
+    "Native execution permissions must be provided by the caller; this runner never escalates"
+  ],
+  "jobs": [
+    {
+      "id": "patcher",
+      "suite": "patcher",
+      "directory": "firmware/patcher/tests",
+      "kind": "patcher",
+      "runner": "firmware/patcher/run_tests.py"
+    },
+    {
+      "id": "device",
+      "suite": "device",
+      "directory": "tools/device/tests",
+      "kind": "unittest"
+    },
+    {
+      "id": "Access-Control-Patch",
+      "suite": "legacy",
+      "directory": "tools/device/_compat/Access-Control-Patch/tests",
+      "kind": "unittest"
+    },
+    {
+      "id": "Maintenance-Patch",
+      "suite": "legacy",
+      "directory": "tools/device/_compat/Maintenance-Patch/tests",
+      "kind": "unittest"
+    },
+    {
+      "id": "Maintenance-Split-Patch",
+      "suite": "legacy",
+      "directory": "tools/device/_compat/Maintenance-Split-Patch/tests",
+      "kind": "unittest"
+    },
+    {
+      "id": "UART1-Identity-Patch",
+      "suite": "legacy",
+      "directory": "tools/device/_compat/UART1-Identity-Patch/tests",
+      "kind": "unittest"
+    },
+    {
+      "id": "UART1-Parameter-Patch",
+      "suite": "legacy",
+      "directory": "tools/device/_compat/UART1-Parameter-Patch/tests",
+      "kind": "unittest"
+    }
+  ]
+}
