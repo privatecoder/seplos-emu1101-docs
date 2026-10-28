@@ -1,3 +1,19 @@
+/local/
+
 .DS_Store
 __pycache__/
-*.pyc
+*.py[cod]
+*.log
+*.jsonl
+
+# Generated patch images belong in local/, never in Git.
+/mod/**/*.ehex
+/mod/**/*.bin
+/mod/**/*.raw
+/mod/**/*.elf
+/mod/**/*.o
+
+/AGENTS.md
+
+# Large original vendor video is retained locally.
+/vendor/docs/features video/Seplos BMS V16 Features.mp4

@@ -1,0 +1,10 @@
+#!/bin/sh
+set -eu
+script_dir=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
+seplos_python="${SEPLOS_TOOLS_PY:-$HOME/.local/share/seplos-firmware-tools/venv/bin/python}"
+if [ ! -x "$seplos_python" ]; then
+    echo 'Python environment missing; see device/README.md.' >&2
+    exit 1
+fi
+cd /private/tmp
+exec "$seplos_python" -I -B "$script_dir/restart_pack.py" "$@"

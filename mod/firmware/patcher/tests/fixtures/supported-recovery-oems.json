@@ -1,0 +1,71 @@
+{
+  "inputs": [
+    {
+      "expected_recovery_counter": 536871109,
+      "facts": {
+        "cutoff": {
+          "charge": 28206,
+          "measure": 536874176
+        },
+        "hard_stop": {
+          "branch_target": 28336,
+          "enabled": false,
+          "entry": 28318,
+          "event6": 536870965,
+          "fallthrough": 28328,
+          "forbidden_flags": 536870917,
+          "function": 28206,
+          "offset": 28320,
+          "old_mask": 113
+        }
+      },
+      "input": "vendor/firmware/CAN1101[V16.06.11_PN01_240713].ehex",
+      "input_sha256": "2dae963fd5aa11aa3eb6b97e20528e62fd0475d9964a5dae1f6284af711653a0"
+    },
+    {
+      "expected_recovery_counter": 536871108,
+      "facts": {
+        "cutoff": {
+          "charge": 28206,
+          "measure": 536874176
+        },
+        "hard_stop": {
+          "branch_target": 28336,
+          "enabled": false,
+          "entry": 28318,
+          "event6": 536870965,
+          "fallthrough": 28328,
+          "forbidden_flags": 536870917,
+          "function": 28206,
+          "offset": 28320,
+          "old_mask": 113
+        }
+      },
+      "input": "vendor/firmware/CAN1101[V16.06.12_PN01_241209].ehex",
+      "input_sha256": "46d25a5f565ae01445d34d05c35d5202d5fbe46dcf7dc474895e6a2c84109506"
+    },
+    {
+      "expected_recovery_counter": 536871108,
+      "facts": {
+        "cutoff": {
+          "charge": 28666,
+          "measure": 536874184
+        },
+        "hard_stop": {
+          "branch_target": 28796,
+          "enabled": false,
+          "entry": 28778,
+          "event6": 536870965,
+          "fallthrough": 28788,
+          "forbidden_flags": 536870917,
+          "function": 28666,
+          "offset": 28780,
+          "old_mask": 113
+        }
+      },
+      "input": "vendor/firmware/CAN1101[V16.06.13_PN01_250607].ehex",
+      "input_sha256": "0ea75c9834cf19789a58f58db8cde1a2bbd722a8f5a7bde7f00106f59b91ccf6"
+    }
+  ],
+  "profile": "1.6.2"
+}

@@ -1,0 +1,130 @@
+{
+  "fixtures": {
+    "oem-16.06.13-facts": {
+      "bytes": 2990,
+      "file": "oem-16.06.13-facts.json",
+      "sha256": "1a0cd065a8dc26314d6e9a8ca19485e0562ca6e9a25e2f7e1ae829dcac1c95fc",
+      "sources": [
+        {
+          "bytes": 130174,
+          "path": "local/builds/patcher/Build-UART0-Marker-1.5.1-2026-10-22/report.json",
+          "selected_fields": [
+            "facts.functions",
+            "facts.hooks",
+            "facts.sp",
+            "facts.original_app_size",
+            "facts.original_app_sha256",
+            "facts.hard_stop",
+            "facts.ram",
+            "facts.version_address",
+            "facts.power_rtc",
+            "facts.evidence[hook]",
+            "facts.oracle.base_version"
+          ],
+          "sha256": "6245344d17cbae59b1bedbd25f2cebcf9bdfeec092a41b9dcddfd64cbc5d938a"
+        },
+        {
+          "bytes": 141120,
+          "path": "local/builds/patcher/Build-UART0-Marker-1.6.1-2026-10-22/report.json",
+          "selected_fields": [
+            "facts.functions",
+            "facts.hooks",
+            "facts.sp",
+            "facts.original_app_size",
+            "facts.original_app_sha256",
+            "facts.hard_stop",
+            "facts.ram",
+            "facts.version_address",
+            "facts.power_rtc",
+            "facts.evidence[hook]",
+            "facts.oracle.base_version"
+          ],
+          "sha256": "36b86b451a1d99cbe8ea14d94c647d2a0ee7fc3f0ce98f52e5065cf2c6f33974"
+        },
+        {
+          "bytes": 132002,
+          "path": "local/builds/patcher/Build-Diagnose-1.5.2-2026-10-24/report.json",
+          "selected_fields": [
+            "facts.functions",
+            "facts.hooks",
+            "facts.sp",
+            "facts.original_app_size",
+            "facts.original_app_sha256",
+            "facts.hard_stop",
+            "facts.ram",
+            "facts.version_address",
+            "facts.power_rtc",
+            "facts.evidence[hook]",
+            "facts.oracle.base_version"
+          ],
+          "sha256": "a36cf6a0c8d4d8d726f5a0c35559658c79276d95b8f5ab527d5420d981e4daac"
+        },
+        {
+          "bytes": 144126,
+          "path": "local/builds/patcher/Build-Service-1.6.2-2026-10-24/report.json",
+          "selected_fields": [
+            "facts.functions",
+            "facts.hooks",
+            "facts.sp",
+            "facts.original_app_size",
+            "facts.original_app_sha256",
+            "facts.hard_stop",
+            "facts.ram",
+            "facts.version_address",
+            "facts.power_rtc",
+            "facts.evidence[hook]",
+            "facts.oracle.base_version"
+          ],
+          "sha256": "c0cedb2b29ff97d62b30a1267df98e718c19b77d87ab146f6e7d01bdc465d3cc"
+        }
+      ]
+    },
+    "supported-recovery-oems": {
+      "bytes": 1960,
+      "file": "supported-recovery-oems.json",
+      "sha256": "7311fdcdc12b24aedca38b3e4c6322a31fc821e2b2f6f6ea40f69649698b26a5",
+      "sources": [
+        {
+          "bytes": 24702,
+          "path": "local/builds/patcher/Checks-Service-1.6.2-Final-2026-10-24/matrix.json",
+          "selected_fields": [
+            "results[profile=maint162-preserve,status=passed,input=Original Firmware/*]"
+          ],
+          "sha256": "21909ea734b0b4570652da6a85f22cdf5cc7cc4a3df69f8e9a274ad02dd33d92"
+        },
+        {
+          "bytes": 142951,
+          "path": "local/builds/patcher/Checks-Service-1.6.2-Final-2026-10-24/04-maint162-preserve/report.json",
+          "selected_fields": [
+            "facts.hard_stop",
+            "facts.cutoff.charge",
+            "facts.cutoff.measure"
+          ],
+          "sha256": "5bfcb23f481f44f648bfce118e017d55cec193fb55997829f0096ec4c03ab21f"
+        },
+        {
+          "bytes": 142951,
+          "path": "local/builds/patcher/Checks-Service-1.6.2-Final-2026-10-24/05-maint162-preserve/report.json",
+          "selected_fields": [
+            "facts.hard_stop",
+            "facts.cutoff.charge",
+            "facts.cutoff.measure"
+          ],
+          "sha256": "623d25886a69a653a7135a08857751fe34681cc611c132110cf793480cb86c8b"
+        },
+        {
+          "bytes": 144090,
+          "path": "local/builds/patcher/Checks-Service-1.6.2-Final-2026-10-24/06-maint162-preserve/report.json",
+          "selected_fields": [
+            "facts.hard_stop",
+            "facts.cutoff.charge",
+            "facts.cutoff.measure"
+          ],
+          "sha256": "edb12c7521eadf1951e86f53ebd6c127d27e22ca2a5f59363f58d74e43fd453a"
+        }
+      ]
+    }
+  },
+  "product": "Seplos BMS 2.0/10E/V16 (EMU1101)",
+  "schema": 1
+}

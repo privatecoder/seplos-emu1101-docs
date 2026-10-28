@@ -1,0 +1,1340 @@
+{
+  "IMAGES": {
+    "OEM16.06.13": {
+      "path": "vendor/firmware/CAN1101[V16.06.13_PN01_250607].ehex",
+      "app_sha256": "5c36a7e08fb881b3c2ca6a22888ecb63585c3eb6811fb67b67cc9d0d0ecdde95"
+    },
+    "MAINT1.5": {
+      "path": "local/releases/CAN1101[V16.06.13_PN01_250607_MAINT_V1_5_POWER_RTC].ehex",
+      "app_sha256": "58f45b854822d1f06eabb663fb2cd8f55d41485dd003eb6d52c2585477d0ca7a",
+      "build_id": "d75a7b24cb6e8590",
+      "image_flags": 2
+    },
+    "MAINT1.6": {
+      "path": "local/releases/CAN1101[V16.06.13_PN01_250607_MAINT_V1_6_CUTOFF].ehex",
+      "app_sha256": "be2ecc7549c7ee16d46eed1f10c256d7231cc5ed961ec90f0bae87e0cfc40d2d",
+      "build_id": "18daf61d8a93671d",
+      "image_flags": 6
+    }
+  },
+  "ENTRY_POINTS": {
+    "uart0_dispatch": 4402,
+    "uart0_parser": 3820,
+    "uart0_a1": 1988,
+    "uart0_capacity": 2484,
+    "uart0_control": 2620,
+    "watchdog_reset": 2594,
+    "uart0_calibration": 3006,
+    "uart0_clock_write": 3312,
+    "uart0_string1_write": 3520,
+    "uart0_string2_write": 3654,
+    "uart0_CAN_write": 3750,
+    "uart2_dispatch": 33416,
+    "uart2_parser": 33088,
+    "uart2_a1": 32642,
+    "uart2_CAN_write": 32934,
+    "uart2_stub64": 32998,
+    "uart2_tunnel_AA": 33024,
+    "uart2_tunnel_AB": 33066,
+    "uart2_send": 30120
+  },
+  "PARAMETERS": [
+    {
+      "index": 0,
+      "name": "Cell: high-voltage warning",
+      "unit": "mV",
+      "width": 2,
+      "ram": 536875776,
+      "binary_payload_offset": 1,
+      "signed": false
+    },
+    {
+      "index": 1,
+      "name": "Cell: high-voltage warning recovery",
+      "unit": "mV",
+      "width": 2,
+      "ram": 536875778,
+      "binary_payload_offset": 3,
+      "signed": false
+    },
+    {
+      "index": 2,
+      "name": "Cell: low-voltage warning",
+      "unit": "mV",
+      "width": 2,
+      "ram": 536875780,
+      "binary_payload_offset": 5,
+      "signed": false
+    },
+    {
+      "index": 3,
+      "name": "Cell: low-voltage warning recovery",
+      "unit": "mV",
+      "width": 2,
+      "ram": 536875782,
+      "binary_payload_offset": 7,
+      "signed": false
+    },
+    {
+      "index": 4,
+      "name": "Cell: overvoltage protection",
+      "unit": "mV",
+      "width": 2,
+      "ram": 536875784,
+      "binary_payload_offset": 9,
+      "signed": false
+    },
+    {
+      "index": 5,
+      "name": "Cell: overvoltage protection recovery",
+      "unit": "mV",
+      "width": 2,
+      "ram": 536875786,
+      "binary_payload_offset": 11,
+      "signed": false
+    },
+    {
+      "index": 6,
+      "name": "Cell: undervoltage protection",
+      "unit": "mV",
+      "width": 2,
+      "ram": 536875788,
+      "binary_payload_offset": 13,
+      "signed": false
+    },
+    {
+      "index": 7,
+      "name": "Cell: undervoltage protection recovery",
+      "unit": "mV",
+      "width": 2,
+      "ram": 536875790,
+      "binary_payload_offset": 15,
+      "signed": false
+    },
+    {
+      "index": 8,
+      "name": "Balancing: start voltage",
+      "unit": "mV",
+      "width": 2,
+      "ram": 536875792,
+      "binary_payload_offset": 17,
+      "signed": false
+    },
+    {
+      "index": 9,
+      "name": "Charge inhibition below cell voltage",
+      "unit": "mV",
+      "width": 2,
+      "ram": 536875794,
+      "binary_payload_offset": 19,
+      "signed": false
+    },
+    {
+      "index": 10,
+      "name": "Pack: high-voltage warning",
+      "unit": "0.01 V",
+      "width": 2,
+      "ram": 536875796,
+      "binary_payload_offset": 21,
+      "signed": false
+    },
+    {
+      "index": 11,
+      "name": "Pack: high-voltage warning recovery",
+      "unit": "0.01 V",
+      "width": 2,
+      "ram": 536875798,
+      "binary_payload_offset": 23,
+      "signed": false
+    },
+    {
+      "index": 12,
+      "name": "Pack: low-voltage warning",
+      "unit": "0.01 V",
+      "width": 2,
+      "ram": 536875800,
+      "binary_payload_offset": 25,
+      "signed": false
+    },
+    {
+      "index": 13,
+      "name": "Pack: low-voltage warning recovery",
+      "unit": "0.01 V",
+      "width": 2,
+      "ram": 536875802,
+      "binary_payload_offset": 27,
+      "signed": false
+    },
+    {
+      "index": 14,
+      "name": "Pack: overvoltage protection / basis for CVL",
+      "unit": "0.01 V",
+      "width": 2,
+      "ram": 536875804,
+      "binary_payload_offset": 29,
+      "signed": false
+    },
+    {
+      "index": 15,
+      "name": "Pack: overvoltage protection recovery",
+      "unit": "0.01 V",
+      "width": 2,
+      "ram": 536875806,
+      "binary_payload_offset": 31,
+      "signed": false
+    },
+    {
+      "index": 16,
+      "name": "Pack: undervoltage protection",
+      "unit": "0.01 V",
+      "width": 2,
+      "ram": 536875808,
+      "binary_payload_offset": 33,
+      "signed": false
+    },
+    {
+      "index": 17,
+      "name": "Pack: undervoltage protection recovery",
+      "unit": "0.01 V",
+      "width": 2,
+      "ram": 536875810,
+      "binary_payload_offset": 35,
+      "signed": false
+    },
+    {
+      "index": 18,
+      "name": "Charger: overvoltage protection",
+      "unit": "0.01 V",
+      "width": 2,
+      "ram": 536875812,
+      "binary_payload_offset": 37,
+      "signed": false
+    },
+    {
+      "index": 19,
+      "name": "Charger: overvoltage protection recovery",
+      "unit": "0.01 V",
+      "width": 2,
+      "ram": 536875814,
+      "binary_payload_offset": 39,
+      "signed": false
+    },
+    {
+      "index": 20,
+      "name": "Charge: high-temperature warning",
+      "unit": "0.1 K; °C = (raw−2731)/10",
+      "width": 2,
+      "ram": 536875816,
+      "binary_payload_offset": 41,
+      "signed": false
+    },
+    {
+      "index": 21,
+      "name": "Charge: high-temperature warning recovery",
+      "unit": "0.1 K; °C = (raw−2731)/10",
+      "width": 2,
+      "ram": 536875818,
+      "binary_payload_offset": 43,
+      "signed": false
+    },
+    {
+      "index": 22,
+      "name": "Charge: low-temperature warning",
+      "unit": "0.1 K; °C = (raw−2731)/10",
+      "width": 2,
+      "ram": 536875820,
+      "binary_payload_offset": 45,
+      "signed": false
+    },
+    {
+      "index": 23,
+      "name": "Charge: low-temperature warning recovery",
+      "unit": "0.1 K; °C = (raw−2731)/10",
+      "width": 2,
+      "ram": 536875822,
+      "binary_payload_offset": 47,
+      "signed": false
+    },
+    {
+      "index": 24,
+      "name": "Charge: high-temperature protection",
+      "unit": "0.1 K; °C = (raw−2731)/10",
+      "width": 2,
+      "ram": 536875824,
+      "binary_payload_offset": 49,
+      "signed": false
+    },
+    {
+      "index": 25,
+      "name": "Charge: high-temperature protection recovery",
+      "unit": "0.1 K; °C = (raw−2731)/10",
+      "width": 2,
+      "ram": 536875826,
+      "binary_payload_offset": 51,
+      "signed": false
+    },
+    {
+      "index": 26,
+      "name": "Charge: low-temperature protection",
+      "unit": "0.1 K; °C = (raw−2731)/10",
+      "width": 2,
+      "ram": 536875828,
+      "binary_payload_offset": 53,
+      "signed": false
+    },
+    {
+      "index": 27,
+      "name": "Charge: low-temperature protection recovery",
+      "unit": "0.1 K; °C = (raw−2731)/10",
+      "width": 2,
+      "ram": 536875830,
+      "binary_payload_offset": 55,
+      "signed": false
+    },
+    {
+      "index": 28,
+      "name": "Discharge: high-temperature warning",
+      "unit": "0.1 K; °C = (raw−2731)/10",
+      "width": 2,
+      "ram": 536875832,
+      "binary_payload_offset": 57,
+      "signed": false
+    },
+    {
+      "index": 29,
+      "name": "Discharge: high-temperature warning recovery",
+      "unit": "0.1 K; °C = (raw−2731)/10",
+      "width": 2,
+      "ram": 536875834,
+      "binary_payload_offset": 59,
+      "signed": false
+    },
+    {
+      "index": 30,
+      "name": "Discharge: low-temperature warning",
+      "unit": "0.1 K; °C = (raw−2731)/10",
+      "width": 2,
+      "ram": 536875836,
+      "binary_payload_offset": 61,
+      "signed": false
+    },
+    {
+      "index": 31,
+      "name": "Discharge: low-temperature warning recovery",
+      "unit": "0.1 K; °C = (raw−2731)/10",
+      "width": 2,
+      "ram": 536875838,
+      "binary_payload_offset": 63,
+      "signed": false
+    },
+    {
+      "index": 32,
+      "name": "Discharge: high-temperature protection",
+      "unit": "0.1 K; °C = (raw−2731)/10",
+      "width": 2,
+      "ram": 536875840,
+      "binary_payload_offset": 65,
+      "signed": false
+    },
+    {
+      "index": 33,
+      "name": "Discharge: high-temperature protection recovery",
+      "unit": "0.1 K; °C = (raw−2731)/10",
+      "width": 2,
+      "ram": 536875842,
+      "binary_payload_offset": 67,
+      "signed": false
+    },
+    {
+      "index": 34,
+      "name": "Discharge: low-temperature protection",
+      "unit": "0.1 K; °C = (raw−2731)/10",
+      "width": 2,
+      "ram": 536875844,
+      "binary_payload_offset": 69,
+      "signed": false
+    },
+    {
+      "index": 35,
+      "name": "Discharge: low-temperature protection recovery",
+      "unit": "0.1 K; °C = (raw−2731)/10",
+      "width": 2,
+      "ram": 536875846,
+      "binary_payload_offset": 71,
+      "signed": false
+    },
+    {
+      "index": 36,
+      "name": "Cell heating on",
+      "unit": "0.1 K; °C = (raw−2731)/10",
+      "width": 2,
+      "ram": 536875848,
+      "binary_payload_offset": 73,
+      "signed": false
+    },
+    {
+      "index": 37,
+      "name": "Cell heating off",
+      "unit": "0.1 K; °C = (raw−2731)/10",
+      "width": 2,
+      "ram": 536875850,
+      "binary_payload_offset": 75,
+      "signed": false
+    },
+    {
+      "index": 38,
+      "name": "Ambient: high-temperature warning",
+      "unit": "0.1 K; °C = (raw−2731)/10",
+      "width": 2,
+      "ram": 536875852,
+      "binary_payload_offset": 77,
+      "signed": false
+    },
+    {
+      "index": 39,
+      "name": "Ambient: high-temperature warning recovery",
+      "unit": "0.1 K; °C = (raw−2731)/10",
+      "width": 2,
+      "ram": 536875854,
+      "binary_payload_offset": 79,
+      "signed": false
+    },
+    {
+      "index": 40,
+      "name": "Ambient: low-temperature warning",
+      "unit": "0.1 K; °C = (raw−2731)/10",
+      "width": 2,
+      "ram": 536875856,
+      "binary_payload_offset": 81,
+      "signed": false
+    },
+    {
+      "index": 41,
+      "name": "Ambient: low-temperature warning recovery",
+      "unit": "0.1 K; °C = (raw−2731)/10",
+      "width": 2,
+      "ram": 536875858,
+      "binary_payload_offset": 83,
+      "signed": false
+    },
+    {
+      "index": 42,
+      "name": "Ambient: high-temperature protection",
+      "unit": "0.1 K; °C = (raw−2731)/10",
+      "width": 2,
+      "ram": 536875860,
+      "binary_payload_offset": 85,
+      "signed": false
+    },
+    {
+      "index": 43,
+      "name": "Ambient: high-temperature protection recovery",
+      "unit": "0.1 K; °C = (raw−2731)/10",
+      "width": 2,
+      "ram": 536875862,
+      "binary_payload_offset": 87,
+      "signed": false
+    },
+    {
+      "index": 44,
+      "name": "Ambient: low-temperature protection",
+      "unit": "0.1 K; °C = (raw−2731)/10",
+      "width": 2,
+      "ram": 536875864,
+      "binary_payload_offset": 89,
+      "signed": false
+    },
+    {
+      "index": 45,
+      "name": "Ambient: low-temperature protection recovery",
+      "unit": "0.1 K; °C = (raw−2731)/10",
+      "width": 2,
+      "ram": 536875866,
+      "binary_payload_offset": 91,
+      "signed": false
+    },
+    {
+      "index": 46,
+      "name": "Power stage: high-temperature warning",
+      "unit": "0.1 K; °C = (raw−2731)/10",
+      "width": 2,
+      "ram": 536875868,
+      "binary_payload_offset": 93,
+      "signed": false
+    },
+    {
+      "index": 47,
+      "name": "Power stage: high-temperature warning recovery",
+      "unit": "0.1 K; °C = (raw−2731)/10",
+      "width": 2,
+      "ram": 536875870,
+      "binary_payload_offset": 95,
+      "signed": false
+    },
+    {
+      "index": 48,
+      "name": "Power stage: high-temperature protection",
+      "unit": "0.1 K; °C = (raw−2731)/10",
+      "width": 2,
+      "ram": 536875872,
+      "binary_payload_offset": 97,
+      "signed": false
+    },
+    {
+      "index": 49,
+      "name": "Power stage: high-temperature protection recovery",
+      "unit": "0.1 K; °C = (raw−2731)/10",
+      "width": 2,
+      "ram": 536875874,
+      "binary_payload_offset": 99,
+      "signed": false
+    },
+    {
+      "index": 50,
+      "name": "Charge overcurrent warning / basis for CCL",
+      "unit": "0.01 A; P52/53/55/56 signed",
+      "width": 2,
+      "ram": 536875876,
+      "binary_payload_offset": 101,
+      "signed": false
+    },
+    {
+      "index": 51,
+      "name": "Charge overcurrent warning recovery",
+      "unit": "0.01 A; P52/53/55/56 signed",
+      "width": 2,
+      "ram": 536875878,
+      "binary_payload_offset": 103,
+      "signed": false
+    },
+    {
+      "index": 52,
+      "name": "Discharge overcurrent warning / basis for DCL",
+      "unit": "0.01 A; P52/53/55/56 signed",
+      "width": 2,
+      "ram": 536875880,
+      "binary_payload_offset": 105,
+      "signed": true
+    },
+    {
+      "index": 53,
+      "name": "Discharge overcurrent warning recovery",
+      "unit": "0.01 A; P52/53/55/56 signed",
+      "width": 2,
+      "ram": 536875882,
+      "binary_payload_offset": 107,
+      "signed": true
+    },
+    {
+      "index": 54,
+      "name": "Charge overcurrent protection",
+      "unit": "0.01 A; P52/53/55/56 signed",
+      "width": 2,
+      "ram": 536875884,
+      "binary_payload_offset": 109,
+      "signed": false
+    },
+    {
+      "index": 55,
+      "name": "Discharge overcurrent protection",
+      "unit": "0.01 A; P52/53/55/56 signed",
+      "width": 2,
+      "ram": 536875886,
+      "binary_payload_offset": 111,
+      "signed": true
+    },
+    {
+      "index": 56,
+      "name": "Short-duration overcurrent protection",
+      "unit": "0.01 A; P52/53/55/56 signed",
+      "width": 2,
+      "ram": 536875888,
+      "binary_payload_offset": 113,
+      "signed": true
+    },
+    {
+      "index": 57,
+      "name": "Precharge / soft start: maximum duration",
+      "unit": "ms",
+      "width": 2,
+      "ram": 536875890,
+      "binary_payload_offset": 115,
+      "signed": false
+    },
+    {
+      "index": 58,
+      "name": "Nominal capacity P58",
+      "unit": "0.01 Ah",
+      "width": 2,
+      "ram": 536875892,
+      "binary_payload_offset": 117,
+      "signed": false
+    },
+    {
+      "index": 59,
+      "name": "Remaining capacity P59: boot fallback",
+      "unit": "0.01 Ah",
+      "width": 2,
+      "ram": 536875894,
+      "binary_payload_offset": 119,
+      "signed": false
+    },
+    {
+      "index": 60,
+      "name": "Cell difference fault",
+      "unit": "10 mV",
+      "width": 1,
+      "ram": 536876016,
+      "binary_payload_offset": 122,
+      "signed": false
+    },
+    {
+      "index": 61,
+      "name": "Cell difference fault recovery",
+      "unit": "10 mV",
+      "width": 1,
+      "ram": 536876017,
+      "binary_payload_offset": 123,
+      "signed": false
+    },
+    {
+      "index": 62,
+      "name": "Balancing: start spread",
+      "unit": "mV",
+      "width": 1,
+      "ram": 536876018,
+      "binary_payload_offset": 124,
+      "signed": false
+    },
+    {
+      "index": 63,
+      "name": "Balancing: per-cell difference from minimum",
+      "unit": "mV",
+      "width": 1,
+      "ram": 536876019,
+      "binary_payload_offset": 125,
+      "signed": false
+    },
+    {
+      "index": 64,
+      "name": "Idle balancing: time limit",
+      "unit": "h",
+      "width": 1,
+      "ram": 536876020,
+      "binary_payload_offset": 126,
+      "signed": false
+    },
+    {
+      "index": 65,
+      "name": "Cells in series",
+      "unit": "count",
+      "width": 1,
+      "ram": 536876021,
+      "binary_payload_offset": 127,
+      "signed": false
+    },
+    {
+      "index": 66,
+      "name": "Charge overcurrent protection: delay",
+      "unit": "s",
+      "width": 1,
+      "ram": 536876022,
+      "binary_payload_offset": 128,
+      "signed": false
+    },
+    {
+      "index": 67,
+      "name": "Discharge overcurrent protection: delay",
+      "unit": "s",
+      "width": 1,
+      "ram": 536876023,
+      "binary_payload_offset": 129,
+      "signed": false
+    },
+    {
+      "index": 68,
+      "name": "Short-duration overcurrent: delay",
+      "unit": "ms",
+      "width": 1,
+      "ram": 536876024,
+      "binary_payload_offset": 130,
+      "signed": false
+    },
+    {
+      "index": 69,
+      "name": "Overcurrent: release after",
+      "unit": "s",
+      "width": 1,
+      "ram": 536876025,
+      "binary_payload_offset": 131,
+      "signed": false
+    },
+    {
+      "index": 70,
+      "name": "Short-duration overcurrent/short-circuit lock after event count",
+      "unit": "count",
+      "width": 1,
+      "ram": 536876026,
+      "binary_payload_offset": 132,
+      "signed": false
+    },
+    {
+      "index": 71,
+      "name": "Current limiting after warning: duration",
+      "unit": "min",
+      "width": 1,
+      "ram": 536876027,
+      "binary_payload_offset": 133,
+      "signed": false
+    },
+    {
+      "index": 72,
+      "name": "Charge activation: window duration",
+      "unit": "min",
+      "width": 1,
+      "ram": 536876028,
+      "binary_payload_offset": 134,
+      "signed": false
+    },
+    {
+      "index": 73,
+      "name": "Charge activation: interval",
+      "unit": "h",
+      "width": 1,
+      "ram": 536876029,
+      "binary_payload_offset": 135,
+      "signed": false
+    },
+    {
+      "index": 74,
+      "name": "Charge activation: attempts",
+      "unit": "count",
+      "width": 1,
+      "ram": 536876030,
+      "binary_payload_offset": 136,
+      "signed": false
+    },
+    {
+      "index": 75,
+      "name": "History interval while operating",
+      "unit": "min",
+      "width": 1,
+      "ram": 536876031,
+      "binary_payload_offset": 137,
+      "signed": false
+    },
+    {
+      "index": 76,
+      "name": "History interval in standby",
+      "unit": "min",
+      "width": 1,
+      "ram": 536876032,
+      "binary_payload_offset": 138,
+      "signed": false
+    },
+    {
+      "index": 77,
+      "name": "Standby shutdown after",
+      "unit": "h",
+      "width": 1,
+      "ram": 536876033,
+      "binary_payload_offset": 139,
+      "signed": false
+    },
+    {
+      "index": 78,
+      "name": "SOC warning threshold",
+      "unit": "%",
+      "width": 1,
+      "ram": 536876034,
+      "binary_payload_offset": 140,
+      "signed": false
+    },
+    {
+      "index": 79,
+      "name": "SOC protection threshold",
+      "unit": "%",
+      "width": 1,
+      "ram": 536876035,
+      "binary_payload_offset": 141,
+      "signed": false
+    },
+    {
+      "index": 80,
+      "name": "Intermittent recharge: SOC release threshold",
+      "unit": "%",
+      "width": 1,
+      "ram": 536876036,
+      "binary_payload_offset": 142,
+      "signed": false
+    },
+    {
+      "index": 81,
+      "name": "Cycle: accumulated discharge",
+      "unit": "%",
+      "width": 1,
+      "ram": 536876037,
+      "binary_payload_offset": 143,
+      "signed": false
+    },
+    {
+      "index": 82,
+      "name": "Connection fault impedance: no code effect",
+      "unit": "0.1 mΩ",
+      "width": 1,
+      "ram": 536876038,
+      "binary_payload_offset": 144,
+      "signed": false
+    },
+    {
+      "index": 83,
+      "name": "Connector compensation 1: cell number",
+      "unit": "cell number",
+      "width": 1,
+      "ram": 536876039,
+      "binary_payload_offset": 145,
+      "signed": false
+    },
+    {
+      "index": 84,
+      "name": "Connector compensation 1: resistance",
+      "unit": "0.1 mΩ",
+      "width": 1,
+      "ram": 536876040,
+      "binary_payload_offset": 146,
+      "signed": false
+    },
+    {
+      "index": 85,
+      "name": "Connector compensation 2: cell number",
+      "unit": "cell number",
+      "width": 1,
+      "ram": 536876041,
+      "binary_payload_offset": 147,
+      "signed": false
+    },
+    {
+      "index": 86,
+      "name": "Connector compensation 2: resistance",
+      "unit": "0.1 mΩ",
+      "width": 1,
+      "ram": 536876042,
+      "binary_payload_offset": 148,
+      "signed": false
+    }
+  ],
+  "FUNCTION_BITS": [
+    {
+      "group": 0,
+      "bit": 0,
+      "mask": 1,
+      "name": "Allow UART1 writes (MAINT)",
+      "UART1_A1": "allowed when Group0.bit0=1",
+      "parameter_read_only_in_1_6": false
+    },
+    {
+      "group": 0,
+      "bit": 1,
+      "mask": 2,
+      "name": "Temperature sensor plausibility",
+      "UART1_A1": "allowed when Group0.bit0=1",
+      "parameter_read_only_in_1_6": false
+    },
+    {
+      "group": 0,
+      "bit": 2,
+      "mask": 4,
+      "name": "Allow UART1 maintenance start (MAINT)",
+      "UART1_A1": "E3",
+      "parameter_read_only_in_1_6": false
+    },
+    {
+      "group": 0,
+      "bit": 3,
+      "mask": 8,
+      "name": "Block UART1 Power/RTC (Power/RTC build)",
+      "UART1_A1": "E3",
+      "parameter_read_only_in_1_6": false
+    },
+    {
+      "group": 0,
+      "bit": 4,
+      "mask": 16,
+      "name": "Extended off disabled (1.6)",
+      "UART1_A1": "allowed when Group0.bit0=1",
+      "parameter_read_only_in_1_6": false
+    },
+    {
+      "group": 0,
+      "bit": 5,
+      "mask": 32,
+      "name": "No individual pack lock (1.6, status)",
+      "UART1_A1": "E3 in1.6",
+      "parameter_read_only_in_1_6": true
+    },
+    {
+      "group": 0,
+      "bit": 6,
+      "mask": 64,
+      "name": "Reserved, no OEM effect",
+      "UART1_A1": "allowed when Group0.bit0=1",
+      "parameter_read_only_in_1_6": false
+    },
+    {
+      "group": 0,
+      "bit": 7,
+      "mask": 128,
+      "name": "Reserved, no OEM effect",
+      "UART1_A1": "allowed when Group0.bit0=1",
+      "parameter_read_only_in_1_6": false
+    },
+    {
+      "group": 1,
+      "bit": 0,
+      "mask": 1,
+      "name": "Cell high-voltage warning",
+      "UART1_A1": "allowed when Group0.bit0=1",
+      "parameter_read_only_in_1_6": false
+    },
+    {
+      "group": 1,
+      "bit": 1,
+      "mask": 2,
+      "name": "Cell OVP",
+      "UART1_A1": "allowed when Group0.bit0=1",
+      "parameter_read_only_in_1_6": false
+    },
+    {
+      "group": 1,
+      "bit": 2,
+      "mask": 4,
+      "name": "Cell low-voltage warning",
+      "UART1_A1": "allowed when Group0.bit0=1",
+      "parameter_read_only_in_1_6": false
+    },
+    {
+      "group": 1,
+      "bit": 3,
+      "mask": 8,
+      "name": "Cell UVP",
+      "UART1_A1": "allowed when Group0.bit0=1",
+      "parameter_read_only_in_1_6": false
+    },
+    {
+      "group": 1,
+      "bit": 4,
+      "mask": 16,
+      "name": "Pack high-voltage warning",
+      "UART1_A1": "allowed when Group0.bit0=1",
+      "parameter_read_only_in_1_6": false
+    },
+    {
+      "group": 1,
+      "bit": 5,
+      "mask": 32,
+      "name": "Pack-OVP",
+      "UART1_A1": "allowed when Group0.bit0=1",
+      "parameter_read_only_in_1_6": false
+    },
+    {
+      "group": 1,
+      "bit": 6,
+      "mask": 64,
+      "name": "Pack low-voltage warning",
+      "UART1_A1": "allowed when Group0.bit0=1",
+      "parameter_read_only_in_1_6": false
+    },
+    {
+      "group": 1,
+      "bit": 7,
+      "mask": 128,
+      "name": "Pack-UVP",
+      "UART1_A1": "allowed when Group0.bit0=1",
+      "parameter_read_only_in_1_6": false
+    },
+    {
+      "group": 2,
+      "bit": 0,
+      "mask": 1,
+      "name": "Charge high-temperature warning",
+      "UART1_A1": "allowed when Group0.bit0=1",
+      "parameter_read_only_in_1_6": false
+    },
+    {
+      "group": 2,
+      "bit": 1,
+      "mask": 2,
+      "name": "Charge high-temperature protection",
+      "UART1_A1": "allowed when Group0.bit0=1",
+      "parameter_read_only_in_1_6": false
+    },
+    {
+      "group": 2,
+      "bit": 2,
+      "mask": 4,
+      "name": "Charge low-temperature warning",
+      "UART1_A1": "allowed when Group0.bit0=1",
+      "parameter_read_only_in_1_6": false
+    },
+    {
+      "group": 2,
+      "bit": 3,
+      "mask": 8,
+      "name": "Charge low-temperature protection",
+      "UART1_A1": "allowed when Group0.bit0=1",
+      "parameter_read_only_in_1_6": false
+    },
+    {
+      "group": 2,
+      "bit": 4,
+      "mask": 16,
+      "name": "Discharge high-temperature warning",
+      "UART1_A1": "allowed when Group0.bit0=1",
+      "parameter_read_only_in_1_6": false
+    },
+    {
+      "group": 2,
+      "bit": 5,
+      "mask": 32,
+      "name": "Discharge high-temperature protection",
+      "UART1_A1": "allowed when Group0.bit0=1",
+      "parameter_read_only_in_1_6": false
+    },
+    {
+      "group": 2,
+      "bit": 6,
+      "mask": 64,
+      "name": "Discharge low-temperature warning",
+      "UART1_A1": "allowed when Group0.bit0=1",
+      "parameter_read_only_in_1_6": false
+    },
+    {
+      "group": 2,
+      "bit": 7,
+      "mask": 128,
+      "name": "Discharge low-temperature protection",
+      "UART1_A1": "allowed when Group0.bit0=1",
+      "parameter_read_only_in_1_6": false
+    },
+    {
+      "group": 3,
+      "bit": 0,
+      "mask": 1,
+      "name": "Ambient high-temperature warning",
+      "UART1_A1": "allowed when Group0.bit0=1",
+      "parameter_read_only_in_1_6": false
+    },
+    {
+      "group": 3,
+      "bit": 1,
+      "mask": 2,
+      "name": "Ambient high-temperature protection",
+      "UART1_A1": "allowed when Group0.bit0=1",
+      "parameter_read_only_in_1_6": false
+    },
+    {
+      "group": 3,
+      "bit": 2,
+      "mask": 4,
+      "name": "Ambient low-temperature warning",
+      "UART1_A1": "allowed when Group0.bit0=1",
+      "parameter_read_only_in_1_6": false
+    },
+    {
+      "group": 3,
+      "bit": 3,
+      "mask": 8,
+      "name": "Ambient low-temperature protection",
+      "UART1_A1": "allowed when Group0.bit0=1",
+      "parameter_read_only_in_1_6": false
+    },
+    {
+      "group": 3,
+      "bit": 4,
+      "mask": 16,
+      "name": "Power stage high-temperature protection",
+      "UART1_A1": "allowed when Group0.bit0=1",
+      "parameter_read_only_in_1_6": false
+    },
+    {
+      "group": 3,
+      "bit": 5,
+      "mask": 32,
+      "name": "Power stage high-temperature warning",
+      "UART1_A1": "allowed when Group0.bit0=1",
+      "parameter_read_only_in_1_6": false
+    },
+    {
+      "group": 3,
+      "bit": 6,
+      "mask": 64,
+      "name": "Cell heating / heater minimum CCL",
+      "UART1_A1": "allowed when Group0.bit0=1",
+      "parameter_read_only_in_1_6": false
+    },
+    {
+      "group": 3,
+      "bit": 7,
+      "mask": 128,
+      "name": "Severe-fault latch / relay",
+      "UART1_A1": "allowed when Group0.bit0=1",
+      "parameter_read_only_in_1_6": false
+    },
+    {
+      "group": 4,
+      "bit": 0,
+      "mask": 1,
+      "name": "Charge overcurrent warning",
+      "UART1_A1": "allowed when Group0.bit0=1",
+      "parameter_read_only_in_1_6": false
+    },
+    {
+      "group": 4,
+      "bit": 1,
+      "mask": 2,
+      "name": "Charge overcurrent protection",
+      "UART1_A1": "allowed when Group0.bit0=1",
+      "parameter_read_only_in_1_6": false
+    },
+    {
+      "group": 4,
+      "bit": 2,
+      "mask": 4,
+      "name": "Discharge overcurrent warning",
+      "UART1_A1": "allowed when Group0.bit0=1",
+      "parameter_read_only_in_1_6": false
+    },
+    {
+      "group": 4,
+      "bit": 3,
+      "mask": 8,
+      "name": "Discharge overcurrent protection",
+      "UART1_A1": "allowed when Group0.bit0=1",
+      "parameter_read_only_in_1_6": false
+    },
+    {
+      "group": 4,
+      "bit": 4,
+      "mask": 16,
+      "name": "Short-duration overcurrent detection",
+      "UART1_A1": "allowed when Group0.bit0=1",
+      "parameter_read_only_in_1_6": false
+    },
+    {
+      "group": 4,
+      "bit": 5,
+      "mask": 32,
+      "name": "Short-circuit detection",
+      "UART1_A1": "allowed when Group0.bit0=1",
+      "parameter_read_only_in_1_6": false
+    },
+    {
+      "group": 4,
+      "bit": 6,
+      "mask": 64,
+      "name": "Lock after short-duration overcurrent",
+      "UART1_A1": "allowed when Group0.bit0=1",
+      "parameter_read_only_in_1_6": false
+    },
+    {
+      "group": 4,
+      "bit": 7,
+      "mask": 128,
+      "name": "Lock after short circuit",
+      "UART1_A1": "allowed when Group0.bit0=1",
+      "parameter_read_only_in_1_6": false
+    },
+    {
+      "group": 5,
+      "bit": 0,
+      "mask": 1,
+      "name": "Charger overvoltage protection",
+      "UART1_A1": "allowed when Group0.bit0=1",
+      "parameter_read_only_in_1_6": false
+    },
+    {
+      "group": 5,
+      "bit": 1,
+      "mask": 2,
+      "name": "Intermittent recharge",
+      "UART1_A1": "allowed when Group0.bit0=1",
+      "parameter_read_only_in_1_6": false
+    },
+    {
+      "group": 5,
+      "bit": 2,
+      "mask": 4,
+      "name": "SOC warning",
+      "UART1_A1": "allowed when Group0.bit0=1",
+      "parameter_read_only_in_1_6": false
+    },
+    {
+      "group": 5,
+      "bit": 3,
+      "mask": 8,
+      "name": "SOC protection",
+      "UART1_A1": "allowed when Group0.bit0=1",
+      "parameter_read_only_in_1_6": false
+    },
+    {
+      "group": 5,
+      "bit": 4,
+      "mask": 16,
+      "name": "Charge inhibition for a low cell",
+      "UART1_A1": "allowed when Group0.bit0=1",
+      "parameter_read_only_in_1_6": false
+    },
+    {
+      "group": 5,
+      "bit": 5,
+      "mask": 32,
+      "name": "Reverse polarity: no producer in OEM code",
+      "UART1_A1": "allowed when Group0.bit0=1",
+      "parameter_read_only_in_1_6": false
+    },
+    {
+      "group": 5,
+      "bit": 6,
+      "mask": 64,
+      "name": "Output connection fault",
+      "UART1_A1": "allowed when Group0.bit0=1",
+      "parameter_read_only_in_1_6": false
+    },
+    {
+      "group": 5,
+      "bit": 7,
+      "mask": 128,
+      "name": "Current limiter feedback",
+      "UART1_A1": "allowed when Group0.bit0=1",
+      "parameter_read_only_in_1_6": false
+    },
+    {
+      "group": 6,
+      "bit": 0,
+      "mask": 1,
+      "name": "Balancing",
+      "UART1_A1": "allowed when Group0.bit0=1",
+      "parameter_read_only_in_1_6": false
+    },
+    {
+      "group": 6,
+      "bit": 1,
+      "mask": 2,
+      "name": "Balancing also while idle",
+      "UART1_A1": "allowed when Group0.bit0=1",
+      "parameter_read_only_in_1_6": false
+    },
+    {
+      "group": 6,
+      "bit": 2,
+      "mask": 4,
+      "name": "Balancing time limit",
+      "UART1_A1": "allowed when Group0.bit0=1",
+      "parameter_read_only_in_1_6": false
+    },
+    {
+      "group": 6,
+      "bit": 3,
+      "mask": 8,
+      "name": "Balancing inhibition by ambient temperature",
+      "UART1_A1": "allowed when Group0.bit0=1",
+      "parameter_read_only_in_1_6": false
+    },
+    {
+      "group": 6,
+      "bit": 4,
+      "mask": 16,
+      "name": "Automatic charge activation; suppresses low-cell charge inhibition",
+      "UART1_A1": "allowed when Group0.bit0=1",
+      "parameter_read_only_in_1_6": false
+    },
+    {
+      "group": 6,
+      "bit": 5,
+      "mask": 32,
+      "name": "Manual charge activation after power-on",
+      "UART1_A1": "allowed when Group0.bit0=1",
+      "parameter_read_only_in_1_6": false
+    },
+    {
+      "group": 6,
+      "bit": 6,
+      "mask": 64,
+      "name": "Active current limiting",
+      "UART1_A1": "allowed when Group0.bit0=1",
+      "parameter_read_only_in_1_6": false
+    },
+    {
+      "group": 6,
+      "bit": 7,
+      "mask": 128,
+      "name": "Current limiting after charge overcurrent warning",
+      "UART1_A1": "allowed when Group0.bit0=1",
+      "parameter_read_only_in_1_6": false
+    },
+    {
+      "group": 7,
+      "bit": 0,
+      "mask": 1,
+      "name": "External on/off switch",
+      "UART1_A1": "allowed when Group0.bit0=1",
+      "parameter_read_only_in_1_6": false
+    },
+    {
+      "group": 7,
+      "bit": 1,
+      "mask": 2,
+      "name": "Standby shutdown",
+      "UART1_A1": "allowed when Group0.bit0=1",
+      "parameter_read_only_in_1_6": false
+    },
+    {
+      "group": 7,
+      "bit": 2,
+      "mask": 4,
+      "name": "Reserved, no OEM effect",
+      "UART1_A1": "allowed when Group0.bit0=1",
+      "parameter_read_only_in_1_6": false
+    },
+    {
+      "group": 7,
+      "bit": 3,
+      "mask": 8,
+      "name": "LCD/binary UART2 port enabled",
+      "UART1_A1": "allowed when Group0.bit0=1",
+      "parameter_read_only_in_1_6": false
+    },
+    {
+      "group": 7,
+      "bit": 4,
+      "mask": 16,
+      "name": "Extended display format",
+      "UART1_A1": "allowed when Group0.bit0=1",
+      "parameter_read_only_in_1_6": false
+    },
+    {
+      "group": 7,
+      "bit": 5,
+      "mask": 32,
+      "name": "Automatic pulse addressing / slave count adjustment",
+      "UART1_A1": "allowed when Group0.bit0=1",
+      "parameter_read_only_in_1_6": false
+    },
+    {
+      "group": 7,
+      "bit": 6,
+      "mask": 64,
+      "name": "Treat pulse address 0 as 1",
+      "UART1_A1": "allowed when Group0.bit0=1",
+      "parameter_read_only_in_1_6": false
+    },
+    {
+      "group": 7,
+      "bit": 7,
+      "mask": 128,
+      "name": "CCL-Modus",
+      "UART1_A1": "allowed when Group0.bit0=1",
+      "parameter_read_only_in_1_6": false
+    }
+  ]
+}

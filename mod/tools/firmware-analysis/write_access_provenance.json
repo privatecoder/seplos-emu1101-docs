@@ -1,0 +1,32 @@
+{
+  "product": "Seplos BMS 2.0/10E/V16 (EMU1101)",
+  "current_data": "write_access_data.json",
+  "historical_model": "historical_write_model.json",
+  "source_files_sha256": {
+    "write_access_revision1.py": "9d67303fef3c923e0f9fc9ae3a66c1a81b0b979d5eef2597b7a78a878fe4a972",
+    "write_access_revision2.py": "8313dc72fb19ffe4f614a98ee9fc29501663766b49befeaba3644875d8d43855",
+    "write_access_revision3.py": "8be1f29d157d9eba608290cd31f259047d15c9342908ad2a59580142ee4d26f5",
+    "write_access_revision4.py": "d669894f314ffede6895fc6427cd61e3aab8ac480345af8f2c68ea2816845cb5",
+    "write_access_revision5.py": "8b687ef9242302821f29df80cbe86a12617a99931c156bb2b4f160c26a212a03",
+    "write_access_v16.py": "1b732f0d015bb91681817f7d90f2a766e006e172a1110ad3ffac984af05021da"
+  },
+  "old_catalogue_json_sha256": "194dda69f984a3f9ea472ed8d5b614bf7eef2b836bf43286cab87e2a0fc0e44b",
+  "extraction": "Current catalogue values equal the revision5 JSON, except manifest locators now select authoritative public release identities. The probe model retains original OEM16.06.13/MAINT1.5/MAINT1.6 image bindings and bit meanings; it does not describe current releases.",
+  "archived_current_files": [
+    "write_access_revision1.py",
+    "write_access_revision1.template.md",
+    "write_access_revision2.py",
+    "write_access_revision2.template.md",
+    "write_access_revision3.py",
+    "write_access_revision3.template.md",
+    "write_access_revision4.py",
+    "write_access_revision4.template.md",
+    "write_access_revision5.template.md",
+    "write_access_v16.py",
+    "hardstop.py"
+  ],
+  "extracted_data_sha256": {
+    "write_access_data.json": "372ff4bec5ad4fd83bd0dc427df69c3c5756b5f7f8e999664289907da4bc0b8d",
+    "historical_write_model.json": "9464e066769f860ec6b9a6ff4e392510eefbfaca56df47696298134e7cfbdf62"
+  }
+}
