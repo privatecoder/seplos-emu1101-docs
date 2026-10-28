@@ -14,6 +14,3 @@ __pycache__/
 /mod/**/*.o
 
 /AGENTS.md
-
-# Large original vendor video is retained locally.
-/vendor/docs/features video/Seplos BMS V16 Features.mp4
