@@ -200,7 +200,7 @@ directly using 0x42/0x44 for its cells, sensors, cycles, SOH and actual gate sta
 
 ## Historical capture validation
 
-The private [structured capture fixtures](../../local/fixtures/emulation/intra-pack/README.md)
+The private structured capture fixtures (`intra-pack`, local reference, not published)
 retain 24 actual replies, the separately identified issue #116 example and decoder-log
 label mappings. Their JSON records preserve exact source tokens, source SHA-256/line
 provenance, checksum/LENGTH results and decoded expectations. Use these fixtures for

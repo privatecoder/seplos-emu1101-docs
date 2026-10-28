@@ -4,6 +4,8 @@
 
 ## 2026-10-28
 
+- The public Markdown checker validates Git-visible relative targets and anchors, rejects ignored private evidence links, and supports an index-path mode. It performs no network or firmware execution.
+
 - Patcher2.0.0 produces only MAINT1.5.3 and1.6.3. Explicit profile selection is required at CLI/worker/builder boundaries; positive permission polarity is automatic. The separate polarity option and standalone hard-stop build command are removed.
 - Storage diagnostics, service, configurable hard-stop and permission modules/tests use functional names. Retired-profile reproduction tests, their hash fixture, a standalone-only rendering helper and the obsolete capability-renderer alias are removed from active source. The complete prior source remains under ignored local history.
 - Current firmware bytes, build IDs, capability flags and runtime parameter semantics are unchanged. Both profiles are rebuilt and checked against the retained EHEX and application SHA256 identities.

@@ -4,6 +4,8 @@
 
 Firmware updates use **UART0 at RS485-1/2**. UART1 on the CAN socket's RS485 pair is not an update port. Use a complete offline-validated EHEX and its exact build report or release metadata. [Build instructions](../firmware/build-and-validation.md) create the image; [device tool help](../../tools/device/README.md) defines each retained updater's arguments.
 
+**Experimental firmware:** MAINT 1.5.3 and 1.6.3 have offline validation only and have not been flashed or hardware-tested. Incorrect firmware, wiring or interrupted programming can leave the BMS unusable and compromise battery protection. Use at your own risk; project-authored software is provided "AS IS", without warranty, under the [license](../../../LICENSE).
+
 Use a prepared device interpreter such as `SEPLOS_TOOLS_PY="$HOME/.local/share/seplos-firmware-tools/venv/bin/python"` for serial helpers; it must supply the dependencies listed in the [device setup](../../tools/device/README.md). The separate `SEPLOS_PYTHON` patcher interpreter stays at `~/.local/share/seplos-oem-patcher/venv/bin/python`.
 
 ## Before a write
