@@ -54,10 +54,12 @@ on may release it independently of that setting.
 
 ## Complete write and action matrix
 
+**Bold UART names** in the MAINT columns mark interfaces newly available for that operation compared with Original .13.
+
 | Value / action | Command | Original .13 | MAINT 1.5.4 | MAINT 1.6.4 |
 |---|---|---|---|---|
-| All 87 configuration parameters P0–P86 | A1, whole block | UART0, UART2 | UART0, UART1[W], UART2 | UART0, UART1[W], UART2 |
-| Function switches Group0–7, including display format | A1; exceptions below | UART0, UART2 | UART0, UART1[W], UART2 | UART0, UART1[W], UART2; bit 5 protected |
+| All 87 configuration parameters P0–P86 | A1, whole block | UART0, UART2 | UART0, **UART1**[W], UART2 | UART0, **UART1**[W], UART2 |
+| Function switches Group0–7, including display format | A1; exceptions below | UART0, UART2 | UART0, **UART1**[W], UART2 | UART0, **UART1**[W], UART2; bit 5 protected |
 | Device name, 10 bytes | ASCII A1 | UART0 | UART0 | UART0 |
 | Battery serial number / String1, up to 30 bytes | ASCII A3 | UART0 | UART0 | UART0 |
 | BMS serial number / String2, up to 30 bytes | ASCII A5 | UART0 | UART0 | UART0 |
@@ -67,18 +69,18 @@ on may release it independently of that setting.
 | Calibrate current zero | ASCII A0/00 | UART0 | UART0 | UART0 |
 | Calibrate current gain | ASCII A0/01 | UART0 | UART0 | UART0 |
 | Calibrate cell/port voltage gains | ASCII A0/02 | UART0 | UART0 | UART0 |
-| RTC time / date | ASCII 4E | UART0 | UART0, UART1[P] | UART0, UART1[P] |
-| Logical on/off | ASCII 45/04 | UART0 | UART0, UART1[P] | UART0, UART1[P] |
-| Set or release the stored individual pack lock | Addressed ASCII 45/04 | — | — | UART0, UART1[P]; [X] |
-| Local restart | ASCII 45/06 | UART0 | UART0, UART1[P] | UART0, UART1[P]; SOC checkpoint before reset, RTN08 on failure |
+| RTC time / date | ASCII 4E | UART0 | UART0, **UART1**[P] | UART0, **UART1**[P] |
+| Logical on/off | ASCII 45/04 | UART0 | UART0, **UART1**[P] | UART0, **UART1**[P] |
+| Set or release the stored individual pack lock | Addressed ASCII 45/04 | — | — | **UART0**, **UART1**[P]; [X] |
+| Local restart | ASCII 45/06 | UART0 | UART0, **UART1**[P] | UART0, **UART1**[P]; SOC checkpoint before reset, RTN08 on failure |
 | Force heater / set timer to 3600 s or 0 | ASCII 45/03 | UART0 | UART0 | UART0 |
 | Clear history, cycles and charge/discharge energy | ASCII 45/05 | UART0 | UART0 | UART0 |
-| Start maintenance: pause master polling | ASCII 64 / 01 C3 5A | — | UART1[M], master 0 only | UART1[M], master 0 only |
-| Clear maintenance marker / stop maintenance | ASCII 64 / 00 C3 5A | — | UART0: addressed pack; UART1: master 0 only | UART0: addressed pack; UART1: master 0 only |
+| Start maintenance: pause master polling | ASCII 64 / 01 C3 5A | — | **UART1**[M], master 0 only | **UART1**[M], master 0 only |
+| Clear maintenance marker / stop maintenance | ASCII 64 / 00 C3 5A | — | **UART0**: addressed pack; **UART1**: master 0 only | **UART0**: addressed pack; **UART1**: master 0 only |
 | Replace firmware | UART0 bootloader, separate flash procedure | UART0 | UART0 | UART0 |
 | Send six undecoded bytes to the display/dongle | ASCII AB → UART2-Tunnel | UART0 → UART2 | UART0 → UART2 | UART0 → UART2 |
-| Save SOC before a planned restart | Automatic before addressed ASCII 45/06 | — | — | UART0, UART1[P]; no separate write permission |
-| Configure hard stop during recharge waiting | A1, Group0.Bits6/7 | — | — | UART0, UART1[W], UART2; write together |
+| Save SOC before a planned restart | Automatic before addressed ASCII 45/06 | — | — | **UART0**, **UART1**[P]; no separate write permission |
+| Configure hard stop during recharge waiting | A1, Group0.Bits6/7 | — | — | **UART0**, **UART1**[W], **UART2**; write together |
 
 A1 always transmits a complete valid parameter block. UART0 uses ASCII with 169
 INFO bytes, including the device name. UART1/UART2 use binary with 158 DATA bytes,
@@ -88,18 +90,18 @@ without the name. Individual P values are not directly writable registers.
 
 | Read operation | Command | Original .13 | MAINT 1.5.4 | MAINT 1.6.4 |
 |---|---|---|---|---|
-| Read parameters, switches and device name | 47 | UART0: ASCII; UART2: binary; UART1: — | UART0: ASCII; UART1/UART2: binary | UART0: ASCII; UART1/UART2: binary |
-| Read battery serial number / String1 | A2 | UART0: ASCII; UART1/UART2: — | UART0: ASCII; UART1: binary; UART2: — | UART0: ASCII; UART1: binary; UART2: — |
-| Read BMS serial number / String2 | A4 | UART0: ASCII; UART1/UART2: — | UART0: ASCII; UART1: binary; UART2: — | UART0: ASCII; UART1: binary; UART2: — |
-| Read clock time / date | ASCII 4D | UART0; UART1/UART2: — | UART0, UART1; no power permission required | UART0, UART1; no power permission required |
+| Read parameters, switches and device name | 47 | UART0: ASCII; UART2: binary; UART1: — | UART0: ASCII; **UART1**/UART2: binary | UART0: ASCII; **UART1**/UART2: binary |
+| Read battery serial number / String1 | A2 | UART0: ASCII; UART1/UART2: — | UART0: ASCII; **UART1**: binary; UART2: — | UART0: ASCII; **UART1**: binary; UART2: — |
+| Read BMS serial number / String2 | A4 | UART0: ASCII; UART1/UART2: — | UART0: ASCII; **UART1**: binary; UART2: — | UART0: ASCII; **UART1**: binary; UART2: — |
+| Read clock time / date | ASCII 4D | UART0; UART1/UART2: — | UART0, **UART1**; no power permission required | UART0, **UART1**; no power permission required |
 | Read base device information | ASCII 51 | UART0, UART1; UART2: — | UART0, UART1; does not replace patch identity | UART0, UART1; does not replace patch identity |
-| Read firmware identity / version / build / image flags | ASCII 64 / 03 | — | UART0, UART1: each addressed pack; UART2: — | UART0, UART1: each addressed pack; UART2: — |
-| Read maintenance marker and effective slave count | ASCII 64 / 02 | — | UART0: addressed pack; UART1: master 0 only; UART2: — | UART0: addressed pack; UART1: master 0 only; UART2: — |
-| Read extended storage diagnostics | ASCII 64/04 | — | UART0, UART1; addressed pack, no permission required | UART0, UART1; addressed pack, no permission required |
-| Read one history record | ASCII 4B / 0000 oldest or 0001 next | UART0 | UART0, UART1; no permission required | UART0, UART1; no permission required |
-| Read active/stored calibration | ASCII 64/05; active 00, primary 01, backup 02 | — | UART0, UART1; no permission required | UART0, UART1; no permission required |
-| Read persisted capacity/SOC contents | ASCII 64/06 | — | UART0, UART1; no permission required | UART0, UART1; no permission required |
-| Read full-width live charged/discharged energy | ASCII 64/06 | — | UART0, UART1; no permission required | UART0, UART1; no permission required |
+| Read firmware identity / version / build / image flags | ASCII 64 / 03 | — | **UART0**, **UART1**: each addressed pack; UART2: — | **UART0**, **UART1**: each addressed pack; UART2: — |
+| Read maintenance marker and effective slave count | ASCII 64 / 02 | — | **UART0**: addressed pack; **UART1**: master 0 only; UART2: — | **UART0**: addressed pack; **UART1**: master 0 only; UART2: — |
+| Read extended storage diagnostics | ASCII 64/04 | — | **UART0**, **UART1**; addressed pack, no permission required | **UART0**, **UART1**; addressed pack, no permission required |
+| Read one history record | ASCII 4B / 0000 oldest or 0001 next | UART0 | UART0, **UART1**; no permission required | UART0, **UART1**; no permission required |
+| Read active/stored calibration | ASCII 64/05; active 00, primary 01, backup 02 | — | **UART0**, **UART1**; no permission required | **UART0**, **UART1**; no permission required |
+| Read persisted capacity/SOC contents | ASCII 64/06 | — | **UART0**, **UART1**; no permission required | **UART0**, **UART1**; no permission required |
+| Read full-width live charged/discharged energy | ASCII 64/06 | — | **UART0**, **UART1**; no permission required | **UART0**, **UART1**; no permission required |
 | Read hard-stop selection and build default | 64/03, for configuration also read 47 | — | 64/03 image flag 0: fixed in image | 64/03 flag 80/bit 0 +47 Group0.Bits6/7 |
 
 This complements the action matrix rather than replacing the telemetry
@@ -183,9 +185,9 @@ live. 64/03 is static: read 47/Group0 for active configuration.
 
 | Field | Original .13 | MAINT 1.5.4 | MAINT 1.6.4 | Write route / exception |
 |---|---|---|---|---|
-| Group0.Bit0 | Reserved, no OEM function | 1 = allow writes over UART1 | 1 = allow writes over UART1 | UART0/UART2; UART1[W] may disable itself 1→0. Re-enable only through UART0/UART2. |
+| Group0.Bit0 | Reserved, no OEM function | 1 = allow writes over **UART1** | 1 = allow writes over **UART1** | UART0/UART2; UART1[W] may disable itself 1→0. Re-enable only through UART0/UART2. |
 | Group0.Bit1 | 1 = enable temperature sensor plausibility check | 1 = enable temperature sensor plausibility check | same as 1.5.4 | UART0, UART1[W], UART2 |
-| Group0.Bit2 | Reserved, no OEM function | 1 = allow maintenance start over UART1 | same as 1.5.4 | UART0/UART2 only; a change through UART1-A1 returns E3 and rejects the entire block. |
+| Group0.Bit2 | Reserved, no OEM function | 1 = allow maintenance start over **UART1** | same as 1.5.4 | UART0/UART2 only; a change through UART1-A1 returns E3 and rejects the entire block. |
 | Group0.Bit3 | Reserved, no OEM function | **1 = allow Power/RTC over UART1**, 0 = blocked | **1 = allow Power/RTC over UART1**, 0 = blocked | UART0/UART2 only; a change through UART1-A1 returns E3 and rejects the entire block. |
 | Group0.Bit4 | Reserved, no OEM function | Reserved, no function | **1 = enable extended off**, 0 = disabled | UART0, UART1[W], UART2; Disabling does not release an existing lock. |
 | Group0.Bit5 | Reserved, no OEM function | Reserved, no function | **0 = individual pack lock active**, 1 = clear | 1.5.4: writable through UART0/UART1[W]/UART2. 1.6.4: status only; change only through addressed 45 on/off over UART0/UART1[P]. |
