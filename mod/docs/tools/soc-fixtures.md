@@ -4,7 +4,7 @@ The SOC tools execute original Cortex-M0 instructions with synthetic RAM, GPIO a
 
 ## Image and dependency scope
 
-The profile binds OEM16.06.13 and the historical MAINT1.6 build `18daf61d8a93671d`. It verifies image hashes, build identity, selected unchanged code ranges and RAM bindings. That scope does not automatically extend to every MAINT1.6 image or to1.6.3. The current firmware's behavior and planned-reset extension are described in [SOC analysis](../../../analysis/firmware/soc-capacity-and-persistence.md) and [storage/reset](../firmware/storage-and-reset.md).
+The profile binds OEM 16.06.13 and the historical MAINT 1.6 build `18daf61d8a93671d`. It verifies image hashes, build identity, selected unchanged code ranges and RAM bindings. That scope does not automatically extend to every MAINT 1.6 image or to 1.6.3. The current firmware's behavior and planned-reset extension are described in [SOC analysis](../../../analysis/firmware/soc-capacity-and-persistence.md) and [storage/reset](../firmware/storage-and-reset.md).
 
 Inputs include the OEM image, the fixed historical release and its preserved report under ignored `local/`. These are intentional version-bound research fixtures; they are separate from the maintained patcher unit-test fixture boundary. Required historical inputs must remain available. The profile refuses a different image rather than silently applying known addresses.
 

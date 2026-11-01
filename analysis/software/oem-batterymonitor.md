@@ -8,7 +8,7 @@ The findings come from static .NET/CIL analysis, configuration files, XML compar
 
 ## 1. Application structure
 
-BatteryMonitor is a Windows serial application built with **.NET Framework 4.5 and WPF**, with DevExpress 15.2 controls and SunnyUI dependencies. Other dependencies include log4net, Newtonsoft.Json and zxing for barcode handling. In the inspected V2.1.12 distribution, most of the approximately 117 MB installation consists of UI libraries; application logic resides in an approximately 2 MB executable.
+BatteryMonitor is a Windows serial application built with **.NET Framework 4.5 and WPF**, with DevExpress 15.2 controls and SunnyUI dependencies. Other dependencies include log 4net, Newtonsoft.Json and zxing for barcode handling. In the inspected V2.1.12 distribution, most of the approximately 117 MB installation consists of UI libraries; application logic resides in an approximately 2 MB executable.
 
 Its behavior is divided between three sources:
 

@@ -15,7 +15,7 @@ class ConfigurableHardStop(unittest.TestCase):
   base=fixture('oem-16.06.13-facts')['facts'];cls.profiles={}
   for default in (False,True):
    facts=copy.deepcopy(base)
-   image,report=build(cls.original,facts,13,hard_stop=default,maint_version='1.6.3')
+   image,report=build(cls.original,facts,13,hard_stop=default,maint_version='1.6.4')
    cls.profiles[default]=(image,facts,report)
  def board(self,default=False,mode=0xc0,adr=1):
   im,facts,_=self.profiles[default];m=Machine(im,facts);m.defaults(adr)
@@ -29,7 +29,7 @@ class ConfigurableHardStop(unittest.TestCase):
  def test_version_and_dynamic_default_flags(self):
   for default in (False,True):
    m=self.board(default);rtn,data=ascii_payload(m.transact(ascii_frame(1,0x64,b'\3'),True),1)
-   self.assertEqual((rtn,data[:4],data[7:10],data[-1]),(0,b'MNT\4',b'\1\6\3',0xfe|int(default)))
+   self.assertEqual((rtn,data[:4],data[7:10],data[18]),(0,b'MNT\5',b'\1\6\4',0xfe|int(default)))
  def test_explicit_on_and_off_override_both_defaults(self):
   for default in (False,True):
    for mode,expected in ((0,False),(0x40,True),(0x80,default),(0xc0,default)):
@@ -72,7 +72,7 @@ class ConfigurableHardStop(unittest.TestCase):
   from seplos.cli import run_worker
   source=ORIGINALS/'CAN1101[V16.06.13_PN01_250607].ehex'
   for mode,default in (('analyze',False),('patch',False),('patch',True)):
-   report,artifacts=run_worker(source,mode,13,maint_version='1.6.3',hard_stop='enable' if default else 'preserve')
+   report,artifacts=run_worker(source,mode,13,maint_version='1.6.4',hard_stop='enable' if default else 'preserve')
    self.assertEqual(report['status'],'compatible' if mode=='analyze' else 'passed',report.get('error'))
    self.assertIn('configurable_hardstop',report['facts'])
    if mode=='patch':
@@ -81,14 +81,15 @@ class ConfigurableHardStop(unittest.TestCase):
     self.assertEqual(report['build']['image_flags'],254|int(default));self.assertIn('firmware.ehex',artifacts)
  def test_publisher_rejects_missing_capability_default_hook_or_suite(self):
   from seplos.cli import run_worker,SCHEMA
+  from seplos.remote_diagnostics_tests import REQUIRED as REMOTE
   from seplos.marker_uart0_tests import REQUIRED as M
   from seplos.service_tests import REQUIRED as S
   from seplos.permissions_tests import REQUIRED as P
   from seplos.configurable_hardstop_tests import REQUIRED as H
   source=ORIGINALS/'CAN1101[V16.06.13_PN01_250607].ehex'
   _,facts,built=self.profiles[False];built={k:v for k,v in built.items() if k not in ('resolved_assembly','disassembly')}
-  base=dict(schema=SCHEMA,mode='patch',maint_version='1.6.3',positive_flags=True,status='passed',stage='complete',input_file_sha256=hashlib.sha256(source.read_bytes()).hexdigest(),suite='maint163-real-thumb-v1',suite_complete=True,facts=facts,build=built,
-   tests=[dict(name=n,passed=True) for n in [*M,*S,*P,*H,*[f'cutoff-{i}' for i in range(40)]]])
+  base=dict(schema=SCHEMA,mode='patch',maint_version='1.6.4',positive_flags=True,status='passed',stage='complete',input_file_sha256=hashlib.sha256(source.read_bytes()).hexdigest(),suite='maint164-real-thumb-v1',suite_complete=True,facts=facts,build=built,
+   tests=[dict(name=n,passed=True) for n in [*REMOTE,*M,*S,*P,*H,*[f'cutoff-{i}' for i in range(40)]]])
   for kind,error in (('capability','configurable_hardstop capability/default contract missing'),('default','configurable_hardstop capability/default contract missing'),('hook','configurable_hardstop hook/RAM contract missing'),('test','mandatory configurable_hardstop suite incomplete'),('polarity','build polarity differs'),('worker-polarity','worker polarity differs')):
    report=copy.deepcopy(base)
    if kind=='capability':report['build']['image_flags']&=~128
@@ -99,7 +100,7 @@ class ConfigurableHardStop(unittest.TestCase):
    else:report['tests']=[t for t in report['tests'] if t['name']!=H[0]]
    with tempfile.TemporaryDirectory() as tmp:
     worker=Path(tmp)/'worker.py';worker.write_text('from pathlib import Path\nimport json,sys\nr='+repr(report)+'\nPath(sys.argv[sys.argv.index("--out")+1],"report.json").write_text(json.dumps(r))\n')
-    result,artifacts=run_worker(source,'patch',worker=worker,maint_version='1.6.3')
+    result,artifacts=run_worker(source,'patch',worker=worker,maint_version='1.6.4')
     self.assertEqual(artifacts,{});self.assertIn(error,result['error'])
 
 if __name__=='__main__':unittest.main()

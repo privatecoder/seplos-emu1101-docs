@@ -16,7 +16,7 @@ class LightProfile(unittest.TestCase):
   cls.source=ORIGINALS/'CAN1101[V16.06.13_PN01_250607].ehex'
   cls.original=Image.read(cls.source)
   cls.facts=copy.deepcopy(fixture('oem-16.06.13-facts')['facts'])
-  cls.image,cls.report=build(cls.original,cls.facts,13,maint_version='1.5.3')
+  cls.image,cls.report=build(cls.original,cls.facts,13,maint_version='1.5.4')
  def board(self,adr=1,bit3=True,bit4=False):
   m=Machine(self.image,self.facts);m.defaults(adr)
   m.put(m.r['group0'],bytes([(m.num(m.r['group0'])&~24)|(8 if bit3 else 0)|(16 if bit4 else 0)]))
@@ -29,7 +29,7 @@ class LightProfile(unittest.TestCase):
   for port in ('R','C'):
    for adr in (0,1,21):
     rtn,data=self.query(self.board(adr),0x64,b'\3',port)
-    self.assertEqual((rtn,data[:4],data[7:10],data[-1]),(0,b'MNT\4',b'\1\5\3',0x3a))
+    self.assertEqual((rtn,data[:4],data[7:10],data[18]),(0,b'MNT\5',b'\1\5\4',0x3a))
  def test_C_power_RTC_permission_both_values_and_roles(self):
   for adr in (0,1,11,21):
    for allowed in (False,True):
@@ -70,10 +70,10 @@ class LightProfile(unittest.TestCase):
  @classmethod
  def CLI(cls,hard='preserve'):
   from seplos.cli import run_worker
-  return run_worker(cls.source,'patch',13,maint_version='1.5.3',hard_stop=hard)
+  return run_worker(cls.source,'patch',13,maint_version='1.5.4',hard_stop=hard)
  def test_CLI_analyze_patch_and_static_hard_stop(self):
   from seplos.cli import run_worker
-  analyzed,_=run_worker(self.source,'analyze',13,maint_version='1.5.3')
+  analyzed,_=run_worker(self.source,'analyze',13,maint_version='1.5.4')
   self.assertEqual(analyzed['status'],'compatible',analyzed.get('error'))
   for hard,flag in [('preserve',0x3a),('enable',0x3b)]:
    report,artifacts=self.CLI(hard);self.assertEqual(report['status'],'passed',report.get('error'))
@@ -82,11 +82,12 @@ class LightProfile(unittest.TestCase):
    self.assertFalse(any(t['name'].startswith('positive-bit4-') for t in report['tests']))
  def test_publication_rejects_wrong_capabilities_hooks_or_old_suite(self):
   from seplos.cli import run_worker,SCHEMA
+  from seplos.remote_diagnostics_tests import REQUIRED as REMOTE
   from seplos.marker_uart0_tests import REQUIRED as M
   from seplos.storage_diagnostics_tests import REQUIRED as D
-  base=dict(schema=SCHEMA,mode='patch',maint_version='1.5.3',positive_flags=True,status='passed',stage='complete',input_file_sha256=hashlib.sha256(self.source.read_bytes()).hexdigest(),suite='maint153-real-thumb-v1',suite_complete=True,facts=self.facts,
-   tests=[dict(name=n,passed=True) for n in [*M,*D,*[f'other-{i}' for i in range(60)]]],
-   build=dict(patch_version='1.5.3',info_format=4,info_bytes=19,uart0_marker=True,image_flags=58,positive_flags=True,storage_diagnostics=True,extended_diagnostics=True,checkpoint_before_reset=False,ram_bytes=0,hooks=self.report['hooks']))
+  base=dict(schema=SCHEMA,mode='patch',maint_version='1.5.4',positive_flags=True,status='passed',stage='complete',input_file_sha256=hashlib.sha256(self.source.read_bytes()).hexdigest(),suite='maint154-real-thumb-v1',suite_complete=True,facts=self.facts,
+   tests=[dict(name=n,passed=True) for n in [*REMOTE,*M,*D,*[f'other-{i}' for i in range(60)]]],
+   build=dict(patch_version='1.5.4',info_format=5,info_bytes=21,remote_capabilities=15,remote_diagnostics=True,uart0_marker=True,image_flags=58,positive_flags=True,storage_diagnostics=True,extended_diagnostics=True,checkpoint_before_reset=False,ram_bytes=0,hooks=self.report['hooks']))
   for kind,error in [('capability','capability contract'),('hooks','five-hook contract'),('old-suite','suite incomplete'),('RAM','capability contract')]:
    report=copy.deepcopy(base)
    if kind=='capability':report['build']['image_flags']|=4
@@ -95,7 +96,7 @@ class LightProfile(unittest.TestCase):
    else:report['tests']=[t for t in report['tests'] if t['name']!=D[0]]
    with tempfile.TemporaryDirectory() as temp:
     worker=Path(temp)/'worker.py';worker.write_text('from pathlib import Path\nimport json,sys\nr='+repr(report)+'\nPath(sys.argv[sys.argv.index("--out")+1],"report.json").write_text(json.dumps(r))\n')
-    result,artifacts=run_worker(self.source,'patch',worker=worker,maint_version='1.5.3')
+    result,artifacts=run_worker(self.source,'patch',worker=worker,maint_version='1.5.4')
     self.assertEqual(artifacts,{});self.assertIn(error,result['error'])
 
 if __name__=='__main__':unittest.main()

@@ -11,7 +11,7 @@ Confidence: **confirmed** = directly from the code · **probable** · **assumpti
 ---
 
 
-**Scope:** these tables describe UART1 (RS485 pair of the CAN socket), especially OEM16.06.13. UART0 does not implement this map or this Modbus slave in .13. UART1 is occupied if an inverter polls it; a second uncoordinated requester is unsupported. Master address 0 works even without slaves, but then reports a one-pack aggregate.
+**Scope:** these tables describe UART1 (RS485 pair of the CAN socket), especially OEM 16.06.13. UART0 does not implement this map or this Modbus slave in .13. UART1 is occupied if an inverter polls it; a second uncoordinated requester is unsupported. Master address 0 works even without slaves, but then reports a one-pack aggregate.
 
 ## 1. Framing and rules
 
@@ -449,6 +449,6 @@ The handler first writes **a single byte** (cell count), then 18 half-words and 
 | 0x0000 × 28 | unknown (identifiers 0x0641/0x3EC4) | – |
 
 
-## Historical UART0 exception: OEM16.04.06 only
+## Historical UART0 exception: OEM 16.04.06 only
 
 A separate FC03-like CRC read path exists on UART0 beside ASCII: `0x52FE → 0x1AEE → 0x19C6 → 0x1474 → 0x1A60 → UART0`. Native replay at local address 3: `030300010001D428` yields `030300020000E5E8`; the same request with bad CRC (`…D429`) stays silent. The response uses a **two-byte byte count**, not a standard Modbus reply. From the next available build, 16.06.03, both requests are silent and the UART0 path is absent. Register semantics remain incomplete: do not reuse the UART1 register map here. This is an offline code/emulator result, not a newly measured hardware/inverter test. [Baud and evidence details](../hardware/ports-and-topologies.md#8-application-baud-rates-and-the-historical-uart0-exception).

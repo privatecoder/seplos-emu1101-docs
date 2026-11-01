@@ -143,9 +143,9 @@ Further strings:
 | Watchdog | `0x50009000` | ASCII 0x45 type 6 = restart | |
 
 **Manufacturer port specifications:** The48150-10E manual p.27 explicitly
-specifies9600-baud RM485 in theCAN socket:1/8=B,2/7=A,4=CAN-H,5=CAN-L,3/6=GND.
+specifies 9600-baud RM485 in theCAN socket:1/8=B,2/7=A,4=CAN-H,5=CAN-L,3/6=GND.
 The48200 manual instead labels thoseRS485 wiresNC; its image onPDF p.38 shows
-Bluetooth LCD004 besideLCD003. This establishes the accessories,without proving
+Bluetooth LCD004 besideLCD003. This establishes the accessories, without proving
 their exact wire format or its binding to theUART2 dispatcher. Other hardware
 specifications and source discrepancies are kept separate from code findings in
 [the manual comparison](../hardware/hardware-specifications.md).

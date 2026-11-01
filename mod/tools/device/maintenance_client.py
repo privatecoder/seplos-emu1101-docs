@@ -7,9 +7,12 @@ Examples (nothing is sent without --serial or --tcp):
   python3 -I maintenance_client.py start --serial /dev/ttyUSB0
   python3 -I maintenance_client.py stop --tcp 192.0.2.1:8899
 
-Current profiles: MAINT1.5.3/1.6.3; recognizes MNT02/03/04 and five-byte raw status; older status replies
+Current profiles: MAINT1.5.4/1.6.4; recognizes MNT02/03/04/05 and five-byte raw status; older status replies
 are rejected. On UART1, INFO03 supports addressed packs0..21; status/start/stop remain master-only.
 1.5.2/1.6.2 add addressed diagnostics (64/04, ten bytes, no writes) on UART0 and UART1.
+1.5.4/1.6.4 add one-record history, calibration pages and checkpoint/live energy reads.
+History shares the UART0/UART1 cursor; do not interleave independent readers. These
+reads are snapshots, not guaranteed next-boot SOC or an atomic history download.
 On UART0 (1.5.1/1.6.1 and later), addressed status/stop/info use19200; start is unsupported. This tool never
 sends 0x45 or bootloader frames and never flashes firmware.
 """
@@ -29,7 +32,12 @@ import termios
 import time
 
 
-INFO = {"status": "02", "info": "03", "diagnostics": "04", "start": "01C35A", "stop": "00C35A"}
+INFO = {"status": "02", "info": "03", "diagnostics": "04", "start": "01C35A", "stop": "00C35A",
+        "calibration-active": "0500", "calibration-primary": "0501",
+        "calibration-backup": "0502", "checkpoint-energy": "06"}
+HISTORY = {"history-oldest": "0000", "history-next": "0001"}
+READ_ACTIONS = frozenset(("info", "diagnostics", *HISTORY,
+                          "calibration-active", "calibration-primary", "calibration-backup", "checkpoint-energy"))
 
 
 def valid_address(address):
@@ -60,8 +68,10 @@ def request(action, address=0, uart="UART1"):
     uart = normalize_uart(uart)
     if uart == "UART0" and action == "start":
         raise ValueError("Maintenance start is only available over UART1")
-    if uart == "UART1" and address and action not in ("info", "diagnostics"):
-        raise ValueError("Only info/diagnostics are available for nonzero pack addresses")
+    if uart == "UART1" and address and action not in READ_ACTIONS:
+        raise ValueError("Only addressed read commands are available for nonzero pack addresses")
+    if action in HISTORY:
+        return frame(0x4B, HISTORY[action], address)
     return frame(0x64, INFO[action], address)
 
 
@@ -83,19 +93,19 @@ def parse_response(raw, address=0):
 
 
 def parse_info(info):
-    """Decode immutable MNT02/17, MNT03/18 or MNT04/19-byte info."""
-    if (len(info), info[:4]) not in ((17,b"MNT\x02"),(18,b"MNT\x03"),(19,b"MNT\x04")):
+    """Decode MNT02/03/04 and MNT05 with explicit capability bits."""
+    if (len(info), info[:4]) not in ((17,b"MNT\x02"),(18,b"MNT\x03"),(19,b"MNT\x04"),(21,b"MNT\x05")):
         raise ValueError("unknown maintenance info format or length")
-    version_end = 10 if info[3] == 4 else 9
+    version_end = 10 if info[3] >= 4 else 9
     result = {
         "base_version": ("%d.%02d.?" % (info[4],info[5])) if info[6]==255 else "%d.%02d.%02d" % (info[4],info[5],info[6]),
         "patch_version": ".".join(str(x) for x in info[7:version_end]),
         "build_id": info[version_end:version_end+8].hex(),
     }
     if info[3] >= 3:
-        flags=info[-1]
+        flags=info[18] if info[3] >= 4 else info[17]
         result.update(info_format=info[3],image_flags=flags,hard_stop=bool(flags&1),positive_flags=bool(flags&8))
-        if info[3] == 4:
+        if info[3] >= 4:
             result["uart0_marker"] = bool(flags&16)
             result["extended_diagnostics"] = bool(flags&32)
             result["checkpoint_before_reset"] = bool(flags&64)
@@ -103,17 +113,24 @@ def parse_info(info):
             if flags&128:
                 result["hard_stop_default"] = bool(flags&1)
                 result["hard_stop"] = None  # Current state requires47/Group0.
+    if info[3] == 5:
+        caps = int.from_bytes(info[19:21], "big")
+        if caps & ~0x000f:
+            raise ValueError("unknown maintenance capability bits")
+        result.update(capabilities=caps, uart1_history=bool(caps & 1),
+                      calibration_pages=bool(caps & 2), persisted_soc_contents=bool(caps & 4),
+                      full_width_energy=bool(caps & 8))
     return result
 
 
 def hard_stop_state(group0, image_flags, info_format=4):
-    """Decode an actual Group0 read; bit0 is a default only with MNT04 bit7."""
+    """Decode an actual Group0 read; bit0 is a default with MNT04/05 bit7."""
     if type(group0) is not int or not 0<=group0<=255 or type(image_flags) is not int or not 0<=image_flags<=255:
         raise ValueError("Group0 and image flags must be bytes")
-    if type(info_format) is not int or info_format not in (2,3,4):
+    if type(info_format) is not int or info_format not in (2,3,4,5):
         raise ValueError("unknown maintenance info format")
     default=bool(image_flags&1)
-    if info_format!=4 or not image_flags&128:
+    if info_format<4 or not image_flags&128:
         return dict(configurable=False,initialized=None,enabled=default,default_enabled=default,source="image")
     initialized=not bool(group0&128)
     return dict(configurable=True,initialized=initialized,
@@ -143,6 +160,88 @@ def parse_diagnostics(info):
         runtime_lock=bool(info[9]&1) if info[9]&4 else None,
         runtime_consistent=bool(info[9]&2) if info[9]&4 else None,
         runtime_magic_valid=bool(info[9]&4))
+
+
+def parse_history(info):
+    """Decode one 4B response only; never advance the shared history cursor."""
+    if not info:
+        return {"empty": True}
+    if len(info) != 97 or info[0] != 1 or info[1] not in (0, 1):
+        raise ValueError("unknown history format, flag or length")
+    return dict(format=1, empty=False, last_record=bool(info[1]),
+                year=int.from_bytes(info[2:4], "big"), record_tail_hex=info[4:].hex())
+
+
+def _calibration_fields(raw):
+    """Decode expected A0/51 record fields; native stored values are LE."""
+    value = lambda offset, size=2, signed=False: int.from_bytes(raw[offset:offset+size], "little", signed=signed)
+    return dict(invalid_flags=raw[2], cell_gains=[value(3+2*i) for i in range(16)],
+                voltage_gains=[value(35), value(37)], current_gains=[value(39), value(45)],
+                zero_raw=[value(41, 4, True), value(47, 4, True)], crc=value(51))
+
+
+def parse_calibration(info):
+    """64/05 snapshot: active values are BE; stored raw records retain LE.
+
+    Classification and native CRC acceptance are separate firmware observations.
+    Neither establishes physical calibration accuracy. Unexpected record shapes
+    remain visible as raw prefixes and are not interpreted as expected fields.
+    """
+    if len(info) < 2 or info[0] != 1 or info[1] not in (0, 1, 2):
+        raise ValueError("unknown calibration format or page")
+    if info[1] == 0:
+        if len(info) != 72 or info[2] & ~0x1c or info[3] > 16:
+            raise ValueError("unknown active calibration length, flags or cell count")
+        value = lambda offset, size=2, signed=False: int.from_bytes(info[offset:offset+size], "big", signed=signed)
+        return dict(format=1, page="active", invalid_flags=info[2], cell_count=info[3],
+                    cell_gains=[value(4+2*i) for i in range(16)],
+                    voltage_gains=[value(36), value(38)], current_gains=[value(40), value(42)],
+                    zero_raw=[value(44, 4, True), value(48, 4, True)],
+                    references=[value(52), value(54)],
+                    raw_currents=[value(56, 4, True), value(60, 4, True)],
+                    converted_currents_ma=[value(64, 4, True), value(68, 4, True)])
+    if len(info) != 58 or info[2] > 2 or info[3] not in (0, 1):
+        raise ValueError("unknown stored calibration length or status")
+    raw = info[5:58]
+    if info[4] != raw[1] or (info[2] == 1 and (raw[:2] != b"\xa0\x33" or not info[3])):
+        raise ValueError("inconsistent stored calibration metadata")
+    return dict(format=1, page="primary" if info[1] == 1 else "backup",
+                classification=("erased", "valid", "invalid")[info[2]],
+                native_crc_accepted=bool(info[3]), declared_length=info[4],
+                raw_prefix_hex=raw.hex(), fields=_calibration_fields(raw) if info[2] == 1 else None)
+
+
+def parse_checkpoint_energy(info):
+    """64/06 stored records and coherent live snapshot, not guaranteed boot SOC.
+
+    The firmware may later checkpoint or modify parameters. Native CRC acceptance
+    determines the observed boot choice independently of strict A0/20 shape.
+    Energy counters are unsigned u32 in 0.1kWh, without OEM42's 65000 fallback.
+    """
+    if len(info) != 68 or info[0] != 1:
+        raise ValueError("unknown checkpoint/energy format or length")
+    if any(info[i] > 2 for i in (1, 2, 3, 5)) or info[4] & ~3:
+        raise ValueError("unknown checkpoint/energy status")
+    value = lambda offset, size=2: int.from_bytes(info[offset:offset+size], "big")
+    def stored(offset, classification, accepted):
+        raw = info[offset:offset+22]
+        if classification == 1 and (raw[:2] != b"\xa0\x14" or not accepted):
+            raise ValueError("inconsistent checkpoint metadata")
+        fields = None
+        if classification == 1:
+            little = lambda position, size=2: int.from_bytes(raw[position:position+size], "little")
+            fields = dict(remaining_cah=little(2), full_cah=little(4),
+                          charged_energy_dkwh=little(6, 4), discharged_energy_dkwh=little(10, 4),
+                          cycles=little(14), soc_cycle_reference_tenths=little(16),
+                          soc_decrease_tenths=little(18), crc=little(20))
+        return dict(classification=("erased", "valid", "invalid")[classification],
+                    native_crc_accepted=bool(accepted), raw_hex=raw.hex(), fields=fields)
+    return dict(format=1, comparison=("not-comparable", "identical", "different")[info[3]],
+                native_crc_accept_mask=info[4], boot_choice=("fallback", "primary", "backup")[info[5]],
+                live=dict(p58_full_cah=value(6), p59_remaining_cah=value(8),
+                          charged_energy_dkwh=value(10, 4), discharged_energy_dkwh=value(14, 4),
+                          remaining_cah=value(18), full_cah=value(20), soc_tenths=value(22)),
+                primary=stored(24, info[1], info[4] & 1), backup=stored(46, info[2], info[4] & 2))
 
 
 def parse_status(info):
@@ -177,7 +276,7 @@ def read_reply(read_chunk, sent, timeout=3):
                 return packet, parse_response(packet, address=int(sent[3:5], 16))
             except ValueError:
                 continue
-    raise TimeoutError("No valid 0x64 response within %.1f s" % timeout)
+    raise TimeoutError("No valid response within %.1f s" % timeout)
 
 
 def exchange_serial(port, sent, timeout=3, baud=9600):
@@ -275,13 +374,13 @@ def wait_for_state(action, query_status, expected_slaves=None, timeout=3.0,
 def main():
     parser = argparse.ArgumentParser(description=__doc__,
                                      formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument("action", choices=tuple(INFO))
+    parser.add_argument("action", choices=(*INFO, *HISTORY))
     transport = parser.add_mutually_exclusive_group()
     transport.add_argument("--serial", metavar="DEVICE", help="RS485 adapter; UART1 9600 or UART0 19200 8N1")
     transport.add_argument("--tcp", type=valid_tcp_endpoint, metavar="HOST:PORT",
                            help="RS485 Ethernet gateway; configure its baudrate for the selected UART")
     parser.add_argument("--uart", type=normalize_uart, choices=("UART0", "UART1"), default="UART1", help="UART0=RS485-1/2 at19200; UART1=CAN-socket RS485 at9600")
-    parser.add_argument("--address", type=int, default=0, help="Target pack0..21; on UART1 nonzero with info/diagnostics")
+    parser.add_argument("--address", type=int, default=0, help="Target pack0..21; on UART1 nonzero with addressed read commands")
     parser.add_argument("--no-wait", action="store_true", help="show the immediate ACK without waiting for the DIP update")
     parser.add_argument("--expected-slaves", type=int, metavar="N", help="expected physical slave count after stop (0..15); default: any positive count")
     args = parser.parse_args()
@@ -307,9 +406,15 @@ def main():
     print("RX", raw.decode("ascii", "replace").rstrip("\r"))
     if rtn:
         raise SystemExit("BMS returned RTN %02X" % rtn)
-    if args.action == "diagnostics":
-        try:print(json.dumps(parse_diagnostics(info),indent=2))
-        except ValueError as error:raise SystemExit(str(error)) from error
+    decoder = (parse_history if args.action in HISTORY else
+               parse_calibration if args.action.startswith("calibration-") else
+               parse_checkpoint_energy if args.action == "checkpoint-energy" else
+               parse_diagnostics if args.action == "diagnostics" else None)
+    if decoder:
+        try:
+            print(json.dumps(decoder(info), indent=2))
+        except ValueError as error:
+            raise SystemExit(str(error)) from error
         return
     if args.action == "info":
         try:
@@ -323,6 +428,10 @@ def main():
             print("info-format=%d image-flags=0x%02X hard-stop=%s positive-flags=%s" % (details["info_format"], details["image_flags"], hard_stop, "yes" if details["positive_flags"] else "no"))
         if "extended_diagnostics" in details:
             print("diagnostics=%s checkpoint-before-reset=%s" % ("yes" if details["extended_diagnostics"] else "no", "yes" if details["checkpoint_before_reset"] else "no"))
+        if "capabilities" in details:
+            print("capabilities=0x%04X history=%s calibration=%s persisted-soc=%s full-width-energy=%s" % (
+                details["capabilities"], details["uart1_history"], details["calibration_pages"],
+                details["persisted_soc_contents"], details["full_width_energy"]))
         return
     try:
         details = parse_status(info)

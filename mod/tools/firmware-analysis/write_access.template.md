@@ -1,4 +1,4 @@
-# UART write capabilities: Original .13, MAINT 1.5.3 and MAINT 1.6.3
+# UART write capabilities: Original .13, MAINT 1.5.4 and MAINT 1.6.4
 
 > **Port notation:** **UART0 = RS485-1/RS485-2 (shared pack bus)**; **UART1 = RS485 pair in the CAN socket**; **UART2 = local display/Bluetooth port**. UART1 carries RS485 traffic; the actual CAN interface uses separate pins in the same socket.
 
@@ -6,13 +6,13 @@ Seplos BMS 2.0/10E/V16 (EMU1101). These tables describe the named OEM 16.06.13
 and MAINT images only. Determine each target's capabilities with 64/03;
 command 51 reports the OEM base family and cannot identify the patch release.
 Unknown images require separate analysis. The catalogue verifies current input
-hashes, MNT04 metadata/template and build-ID digests against public release
+hashes, MNT05 metadata/template and build-ID digests against public release
 JSONs without opening ports or rerunning native emulation.
 
 @PROFILES@
 
 SHA-256, where listed, covers the complete .ehex file. The OEM image has no
-MAINT build ID or MNT04 reply. Published hashes bind the actual release files;
+MAINT build ID or MNT05 reply. Published hashes bind the actual release files;
 a different hard-stop build option produces a different image.
 
 ## Ports and conditions
@@ -77,36 +77,38 @@ Detected erase/readback/token errors return RTN05 with no INFO. An ACK does
 not prove that polling has already finished changing. Clearing the marker
 does not reset, alter parameters or release an individual pack lock.
 
-UART0/UART1 64/03 returns identical MNT04 information for a given pack: 19 decoded
-bytes, LENGTH 8026. Offsets 0–2 MNT, 3 format, 4–6 OEM base, 7–9 patch version,
-10–17 build ID, 18 image flags. It contains no runtime marker or state fields.
+UART0/UART1 64/03 returns identical MNT05 information for a given pack: 21 decoded
+bytes, LENGTH 402A. Offsets 0–2 MNT, 3 format, 4–6 OEM base, 7–9 patch version,
+10–17 build ID, 18 image flags, 19–20 capability mask u16 BE 000F. It contains no runtime marker or state fields.
 Flag 0x10 identifies UART0 marker/info support.
+
+New read-capability bits 0/1/2/3 mean UART1 history, calibration pages, persisted SOC contents and full-width live energy. Discover support through the explicit mask; never infer it from a version or image flag. Reads require no master role, marker or Group0 enable flag. UART1 RX injection at the EEPROM transfer boundary is model-tested; full concurrent UART0 polling, timer and protection execution and physical timing are untested. Existing 64/04 is unchanged. [Remote diagnostics](../../docs/firmware/remote-diagnostics.md) defines exact layouts, shared-cursor rollback and snapshot/boot limits. UART2 is unchanged.
 
 ## Version-specific rules
 
 Both versions permit UART1 Power/RTC with Group0.Bit3=1. Image flag 0x08 identifies
 positive polarity; Group0 FF therefore allows UART1 Power/RTC in both versions.
-Extended off also requires image flag 0x04. Only 1.6.3 enables it with
-bit 4=1; bit 5=0 indicates an individual lock. Disabling bit 4 does not release an existing lock. In 1.5.3 bits 4/5 remain
-reserved. No new parameter is introduced by 1.5.3.
+Extended off also requires image flag 0x04. Only 1.6.4 enables it with
+bit 4=1; bit 5=0 indicates an individual lock. Disabling bit 4 does not release an existing lock. In 1.5.4 bits 4/5 remain
+reserved. No new parameter is introduced by 1.5.4.
 
 Both support UART0/UART1 64/04: freely readable addressed 0–21, foreign/FF silent,
 format 01, ten INFO bytes, LENGTH B014. These check parameter/SOC shape, CRC
-and differences without repair. 1.5.3 returns lock bytes 7/8=FF, byte 9=00
+and differences without repair. 1.5.4 returns lock bytes 7/8=FF, byte 9=00
 (no lock cache); this is unavailable state, not an unlocked-state claim.
-Only 1.6.3 saves/verifies both original SOC copies before addressed UART0/UART1 45/06.
+Only 1.6.4 saves/verifies both original SOC copies before addressed UART0/UART1 45/06.
 RTN08 prevents reset on storage/verification failure; FF does not checkpoint
-or reset. UART1 still needs [P]. 1.5.3 retains the OEM UART0 45 broadcast paths.
-MNT04 patch bytes are 01 05 03 / 01 06 03. Diagnostic image flag 0x20 is present
-in both; checkpoint flag 0x40 only in 1.6.3. Published image flags are 3A / FE.
-A static hard-stop 1.5.3 build uses 3B instead of 3A.
+or reset. UART1 still needs [P]. 1.5.4 retains the OEM UART0 45 broadcast paths.
+MNT05 patch bytes are 01 05 04 / 01 06 04. Diagnostic image flag 0x20 is present
+in both; checkpoint flag 0x40 only in 1.6.4. Published image flags are 3A / FE.
+A static hard-stop 1.5.4 build uses 3B instead of 3A.
 
-1.6.3 protects bit 5 even during malformed UART0/UART2 imports. Addressed UART0/UART1 on/off
-returns RTN08 with LENGTH0000 on a persistence failure; matching RAM bit 5
+1.6.4 protects bit 5 even during malformed UART0/UART2 imports. Addressed UART0/UART1 on/off
+returns RTN08 with LENGTH 0000 on a persistence failure; matching RAM bit 5
 does not turn it into success. Check uncertain outcomes with fresh reads
 rather than automatically repeating writes.
 
-### Configurable hard stop in MAINT 1.6.3
+### Configurable hard stop in MAINT 1.6.4
 
 Image flag 0x80 marks configurability. Image flag bit 0 is the build default
 for legacy parameters; explicit parameters take precedence. The published FE
@@ -220,7 +222,7 @@ read-only. Pylontech supplies no additional configuration write route here.
 ## Reproduction
 
 Run `write_access.py` with --verify, --markdown or no option for JSON.
-Verification uses current release input hashes and embedded MNT04 templates;
+Verification uses current release input hashes and embedded MNT05 templates;
 it needs no historical build reports and does not rerun native tests.
 Use --out NEW_FILE to write without overwriting an existing file. Native emulator
 checks model MCU behavior; they do not replace electrical hardware validation.
@@ -231,7 +233,7 @@ emits JSON by default; --markdown renders this document. Published native
 validation counts and limits are recorded in the release summaries below.
 
 See
-[MAINT 1.5.3](../../docs/firmware/maint153-positive-power.md),
-[MAINT 1.6.3](../../docs/firmware/maint163-configurable-hard-stop.md),
+[MAINT 1.5.4](../../docs/firmware/maint-light.md),
+[MAINT 1.6.4](../../docs/firmware/maint-full.md),
 [storage and reset](../../docs/firmware/storage-and-reset.md), and
 [OpenBMS monitor integration](../../docs/firmware/openbms-monitor.md).

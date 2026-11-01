@@ -1,4 +1,4 @@
-"""Configurable SP80 mask for1.6.3, preserving the original decision order.
+"""Configurable SP80 mask for1.6.4, preserving the original decision order.
 
 Group0 &C0:00 explicit soft,40 explicit hard,80/C0 inherited image default.
 No parameter migration, write command, event-byte mutation or RAM reservation.

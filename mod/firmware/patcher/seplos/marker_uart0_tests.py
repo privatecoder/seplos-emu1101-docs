@@ -46,9 +46,9 @@ def validate_uart0_marker(original,patched,facts,report):
  def query(m,info=b'\2',target=None):
   address=m.num(r['address']);raw=uart0_exchange(m,ascii_frame(address if target is None else target,0x64,info))
   return ascii_payload(raw,address) if raw else None
- expected=b'MNT\4'+bytes(facts['oracle']['base_version'])+bytes([report['base_revision'],*map(int,report['patch_version'].split('.'))])+bytes.fromhex(report['build_id'])+bytes([report['image_flags']])
+ expected=b'MNT\5'+bytes(facts['oracle']['base_version'])+bytes([report['base_revision'],*map(int,report['patch_version'].split('.'))])+bytes.fromhex(report['build_id'])+bytes([report['image_flags']])+report['remote_capabilities'].to_bytes(2,'big')
  def layout():
-  equal((report['info_format'],report['info_bytes'],len(expected)),(4,19,19))
+  equal((report['info_format'],report['info_bytes'],len(expected)),(5,21,21))
   assert report['uart0_marker'] and report['image_flags']&16
   equal(len(report['hooks']),len(set(report['hooks'].values())))
   assert 'hook_uart0_marker_parser' in report['hooks'] and 'hook_cut_uart0_parser' not in report['hooks']
@@ -58,7 +58,7 @@ def validate_uart0_marker(original,patched,facts,report):
    m=board(adr);m.put(r['group0'],b'\0')
    for marker in (0xffffffff,0,0x12345678):
     m.put(0x23000,marker.to_bytes(4,'little'));raw=uart0_exchange(m,ascii_frame(adr,0x64,b'\3'))
-    equal(ascii_payload(raw,adr),(0,expected));equal(raw[9:13],b'8026');equal(len(raw),56)
+    equal(ascii_payload(raw,adr),(0,expected));equal(raw[9:13],b'402A');equal(len(raw),60)
     equal(ascii_payload(m.transact(ascii_frame(adr,0x64,b'\3'),True),adr),(0,expected))
    equal(m.flash_ops,[]);equal(m.saves,[])
  check('info-addressed-R-C-identical',infos)
@@ -95,7 +95,7 @@ def validate_uart0_marker(original,patched,facts,report):
     equal(m.flash_ops,[]);equal(m.read(0x23000,4),bytes(4))
  check('foreign-and-FF-silent',foreign)
  def tokens():
-  for payload in (b'\5' if report.get('extended_diagnostics') else b'\4',b'\1\xc3\x5a',b'\0\xc3\0',b'\0\0\x5a'):
+  for payload in (b'\7' if report.get('extended_diagnostics') else b'\4',b'\1\xc3\x5a',b'\0\xc3\0',b'\0\0\x5a'):
    m=board();m.put(0x23000,bytes(4));equal(query(m,payload),(5,b''));equal(m.flash_ops,[])
  check('malformed-token-and-start-not-added',tokens)
  def nonhex():

@@ -1,6 +1,6 @@
 # Intermittent recharge: soft stop vs. hard stop
 
-When a pack is full and intermittent recharge is enabled, the retained OEM builds use either a soft stop or the SP80 hard-stop mask. The code establishes output requests and reported limits; electrical load sharing remains conditional on the fitted power stage. The comparison below concerns the seven retained OEM images; MAINT 1.6.3 adds runtime selection, described at the end.
+When a pack is full and intermittent recharge is enabled, the retained OEM builds use either a soft stop or the SP80 hard-stop mask. The code establishes output requests and reported limits; electrical load sharing remains conditional on the fitted power stage. The comparison below concerns the seven retained OEM images; MAINT 1.6.4 provides runtime selection, described at the end.
 
 Confidence tags as in the rest of this documentation: **confirmed** = read from the code, **probable** = inferred, **assumption** = interpretation (here: hardware behaviour that the firmware cannot show).
 
@@ -147,4 +147,4 @@ Notes:
 - [protocols/can.md §3](../protocols/can.md#3-limits-and-data-source-master-aggregation-confirmed): master aggregation of CCL/DCL
 
 
-In MAINT1.6.3 the effective hard-stop mask can instead be selected with Group0.Bits6/7. Imageflag.Bit7 signals configurability and Imageflag.Bit0 then describes the build default, not the runtime selection. Group5.Bit1 must still enable recharge waiting. See the [MAINT1.6.3 parameter contract](../../mod/docs/firmware/maint163-configurable-hard-stop.md).
+In MAINT 1.6.4 the effective hard-stop mask can instead be selected with Group0.Bits6/7. Imageflag.Bit7 signals configurability and Imageflag.Bit0 then describes the build default, not the runtime selection. Group5.Bit1 must still enable recharge waiting. See the [MAINT1.6.4 parameter contract](../../mod/docs/firmware/maint-full.md).

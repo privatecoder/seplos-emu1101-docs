@@ -3,8 +3,8 @@
 > **Port notation:** **UART0 = RS485-1/RS485-2 (shared pack bus)**; **UART1 = RS485 pair in the CAN socket**; **UART2 = local display/Bluetooth port**. UART1 carries RS485 traffic; the actual CAN interface uses separate pins in the same socket.
 
 Verified 2026-10-21. UART1 uses the RS485 pair in the CAN socket at
-9600 baud. Images checked: OEM16.06.13, selected MAINT1.5 Power/RTC, original
-MAINT1.6 and MAINT1.6 CUTOFF_POSITIVE. Offline only; no firmware changes or
+9600 baud. Images checked: OEM 16.06.13, selected MAINT 1.5 Power/RTC, original
+MAINT 1.6 and MAINT 1.6 CUTOFF_POSITIVE. Offline only; no firmware changes or
 device access. The bit-3/bit-4 polarity does not affect this receive sequence.
 Synthetic probe frames and addresses only.
 
@@ -15,7 +15,7 @@ buffer can discard a new query in the second case below.
 
 ## 1. What the firmware configures
 
-OEM16.06.13 initializes UART1 at `0x23DC`. Instructions `0x2438–0x243C` request
+OEM 16.06.13 initializes UART1 at `0x23DC`. Instructions `0x2438–0x243C` request
 9600 baud; `0x2452–0x2454` set TimeoutTime to 100; `0xB9FC–0xBA04` write it to
 CTRL[31:24]. Executed initialization returns configuration
 `80250000000000060100006401`, CTRL `64006210`: timeout 100, timeout interrupt
@@ -56,7 +56,7 @@ actual bus silence can be too short.
 
 ## 3. Case B: timeout occurred, completed frame not yet processed
 
-| Receive sequence | OEM16.06.13 | selected MAINT1.5/1.6 builds |
+| Receive sequence | OEM 16.06.13 | selected MAINT 1.5/1.6 builds |
 |---|---|---|
 | Completed own query, then foreign frame before main-loop processing | New start can overwrite own query; own answer is lost | Own completed query remains available and is answered |
 | Completed foreign frame, then own query before main-loop processing | Own query can replace foreign frame and be answered | Own bytes are discarded until the foreign frame is processed |
@@ -67,7 +67,7 @@ buffer. The difference is visible at `.Lrx_byte` in
 [`mod/firmware/patcher/seplos/payload.s`](../../mod/firmware/patcher/seplos/payload.s).
 
 **This fixes an OEM buffer-overwrite bug.** The fix already exists in the selected
-MAINT1.5 build; it was not introduced with 1.6 and is unchanged between the two
+MAINT 1.5 build; it was not introduced with 1.6 and is unchanged between the two
 1.6 variants. It is recorded in the [MAINT changelog](../../mod/firmware/CHANGELOG.md);
 documenting it changes no firmware bytes or version. Its tradeoff is that MAINT
 does not queue a second query while the only buffer is occupied. OEM success in

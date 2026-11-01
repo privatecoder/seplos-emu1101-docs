@@ -25,7 +25,7 @@ and pause UART0 master polling before host access to master or slaves.
 
 | Command | Behavior |
 |---|---|
-| `maintenance_client.py` | Marker status/start/stop, MNT02/03/04 info and addressed diagnostics; POSIX serial/TCP, standard library. It never sends reset or bootloader commands. |
+| `maintenance_client.py` | Marker status/start/stop, MNT02/03/04/05 info, addressed history, calibration and checkpoint/live-energy snapshots; POSIX serial/TCP, standard library. It never sends reset or bootloader commands. |
 | `parameter_client.py` | Addressed 47/A1 over serial/TCP, E3 rejection and full readback. Serial requires pyserial 3.5. |
 | `identity_client.py` | Addressed A2/A4 using the parameter client's transports. |
 | `restart-pack` / `restart_pack.py ADDRESS --port DEVICE` | One addressed UART0 reset; confirm an outage and identical version/BMS serial on return. No ACK for reset, no automatic reset retry. Optional `--dry-run` needs no port or pyserial. |
@@ -33,9 +33,12 @@ and pause UART0 master polling before host access to master or slaves.
 | `seplos_query.py PORT BAUD ADR_HEX CID2_HEX [INFO_HEX]` | One allowlisted read-only ASCII command. |
 | `control.py PORT ADR_HEX TYPE_HEX PARAM_HEX` | One raw UART0 45 control frame for an isolated bench; can change power/state, clear history or restart depending on arguments. |
 | `monitor.py SECONDS --port DEVICE`, `wait_and_read.sh PORT` | Read-only query monitoring using the script-relative query helper. |
+| `flash_packs.py COUNT --mode master/external --profile light/full` | Offline plan by default. With `--execute --port DEVICE`, backs up all targets and updates them one by one with exact MAINT/parameter/SN checks; stops on the first error. Optional distinct UART1 `--maintenance-port` can pause master 0. See [sequential flashing](../../docs/tools/batch-flashing.md). |
 | `flash_gap.py PORT IMAGE GAP_MS NEW_LOG --address N` | Addressed application reset/verification (decimal N, 0–21; default 0), strict image validation before opening the port, exclusive new log and original 256-byte bootloader blocks with configurable ACK gap. One reset, bounded bootloader entry, abort on invalid ACK, no write replay. |
 | `flash_recovery.py PORT IMAGE EXPECTED_SHA256 NEW_LOG` | Recover a bootloader already answering RFL, without an application reset. Verify image hash, all outgoing frames and all replies. Requires one isolated pack because the bootloader has no pack addressing. |
 | `boot_entry.py` | Importable module: `enter(port, address=N, timeout=3)` sends one reset and repeats only read-only RFL probes. No standalone CLI or erase/program operation. |
+
+Batch count 12 means addresses 0–11 with `--mode master` and 1–12 with `--mode external`. An active maintenance marker leaves master address 0 unchanged. The batch uses one exclusive UART0 descriptor; `flash_gap.prepare_bytes` pins the reviewed input and `flash_gap.flash_session` reuses the one-reset/ACK procedure. Recovery remains manual for an isolated target.
 
 `restart_pack.py` accepts decimal addresses 0–15. It compares command 51 and raw A4 data and requires an observed outage before declaring return. It does not query the MAINT build ID, verify the SOC checkpoint or explicitly decode a reset RTN08; use a checkpoint-aware host for that workflow. A failed return check leaves the action outcome unconfirmed.
 
@@ -58,6 +61,40 @@ automatically. POSIX serial clients and flash codecs use the standard library.
 [capabilities](../../docs/firmware/uart-write-capabilities.md), and
 [storage/reset contract](../../docs/firmware/storage-and-reset.md) describe the
 version and persistence boundaries.
+
+## Read-only remote diagnostics
+
+MAINT 1.5.4/1.6.4 advertise the four reads through the MNT05 capability mask,
+not through version inference. Read fresh `info` for each addressed board.
+Historical MNT03/MNT04 decoding remains supported; it grants none of the new
+capabilities. The [wire contract](../../docs/firmware/remote-diagnostics.md)
+defines exact layouts, units, errors and limits.
+
+```sh
+"$SEPLOS_PY" -I -B "$DEVICE/maintenance_client.py" info --address 7
+"$SEPLOS_PY" -I -B "$DEVICE/maintenance_client.py" history-oldest --address 7
+"$SEPLOS_PY" -I -B "$DEVICE/maintenance_client.py" history-next --address 7
+"$SEPLOS_PY" -I -B "$DEVICE/maintenance_client.py" calibration-active --address 7
+"$SEPLOS_PY" -I -B "$DEVICE/maintenance_client.py" calibration-primary --address 7
+"$SEPLOS_PY" -I -B "$DEVICE/maintenance_client.py" calibration-backup --address 7
+"$SEPLOS_PY" -I -B "$DEVICE/maintenance_client.py" checkpoint-energy --address 7
+```
+
+These commands print one request offline. Add `--serial DEVICE` or
+`--tcp HOST:PORT` explicitly to send one request; `--uart UART0` selects the
+UART0 transport and baud. No read starts a download loop, calibration action,
+mirror repair, checkpoint save or reset. Each successful read prints JSON.
+`parse_history`, `parse_calibration` and `parse_checkpoint_energy` are also
+importable offline decoders. Erased/invalid stored records preserve raw hex;
+expected decoded fields are `null`. Native CRC acceptance is independent of
+strict record shape and does not establish physical calibration accuracy.
+
+History uses the shared UART0/UART1 cursor. Coordinate readers; concurrent
+record creation means a download is not an atomic ring snapshot. The firmware
+restores the cursor after a reported EEPROM read failure, but an unanswered
+request can already have advanced it. Do not blindly retry `history-next` on
+transport ambiguity. Calibration and checkpoint/live energy are snapshots;
+a later automatic save can change the next-boot checkpoint.
 
 ## Offline regression checks
 

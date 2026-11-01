@@ -13,11 +13,11 @@ class AddressedInfo(unittest.TestCase):
  @classmethod
  def setUpClass(cls):
   im=Image.read(next((ORIGINALS).glob('*16.06.13*ehex')))
-  cls.facts=probe(im,discover(im));cls.image,cls.report=build(im,cls.facts,base_revision=13,maint_version='1.5.3')
+  cls.facts=probe(im,discover(im));cls.image,cls.report=build(im,cls.facts,base_revision=13,maint_version='1.5.4')
  def board(self,address):
   m=Machine(self.image,self.facts);m.defaults(address);return m
  def test_slave_info_is_addressed_and_maintenance_stays_master_only(self):
-  expected=b'MNT\x04\x10\x06\x0d\x01\x05\x03'+bytes.fromhex(self.report['build_id'])+b'\x3a'
+  expected=b'MNT\x05\x10\x06\x0d\x01\x05\x04'+bytes.fromhex(self.report['build_id'])+b'\x3a\0\x0f'
   for address in (0,1,11,15,21):
    m=self.board(address);m.put(m.r['group0'],b'\x00');m.put(0x23000,b'\x78\x56\x34\x12')
    self.assertEqual(ascii_payload(m.transact(ascii_frame(address,0x64,b'\x03'),True),address),(0,expected))

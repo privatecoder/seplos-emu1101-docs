@@ -82,9 +82,9 @@ def validate_service(original,patched,facts,report):
  def layout():
   assert report['extended_diagnostics'] and report['checkpoint_before_reset']
   configurable=report.get('configurable_hard_stop',False)
-  equal(report['patch_version'],'1.6.3')
+  equal(report['patch_version'],'1.6.4')
   equal(report['image_flags']&0xfe,0xfe)
-  equal((report['info_format'],report['info_bytes']),(4,19))
+  equal((report['info_format'],report['info_bytes']),(5,21))
   equal(len(report['hooks']),len(set(report['hooks'].values())))
   equal(s['soc_write_site'],s['hooks']['hook_service_soc_iap'])
  check('layout-and-two-unique-hooks',layout)

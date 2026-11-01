@@ -166,9 +166,9 @@ Details: [CAN protocols](../protocols/can.md) · [Modbus RTU](../protocols/modbu
 - **ASCII protocol** (pack port):
   - 0x42, 0x44, 0x45, 0x47, 0x49, 0x4B, 0x4D, 0x4E, 0x51, **0x5A** (intra-pack), 0xA0–0xA6
   - Core frame layouts persist; version-specific dispatcher, serial-string length and acknowledgement changes are listed above
-- **Additional UART0 CRC read path:** FC03-like, response builder `0x1474`, two-byte count; native replay confirmed. Removed in06.03, register semantics incomplete.
+- **Additional UART0 CRC read path:** FC03-like, response builder `0x1474`, two-byte count; native replay confirmed. Removed in 06.03, register semantics incomplete.
 - **Binary protocol:** 0x47, 0xA1, 0x63, 0x64 (0x64 acknowledgement bug).
-- **Pylontech RS485** (inverter port): individual42/44/51 at own address or FF;4F at own address (master additionally0x12); system61–63 only master at0x12.
+- **Pylontech RS485** (inverter port): individual 42/44/51 at own address or FF;4F at own address (master additionally 0x12); system 61–63 only master at 0x12.
 - **Modbus RTU** (FC03 only, dispatcher compares only the low byte of the start address):
   - `0x0000` × 12 (**PACE V1.3**)
   - `0x0001` × 15 (zeros)

@@ -1,6 +1,6 @@
 {
-  "schema": "seplos-write-access-revision5",
-  "date": "2026-10-24",
+  "schema": "seplos-write-access-revision6",
+  "date": "2026-11-01",
   "base": "OEM16.06.13",
   "base_image": {
     "version": "16.06.13",
@@ -12,8 +12,8 @@
     "value",
     "command",
     "OEM16.06.13",
-    "MAINT1.5.3",
-    "MAINT1.6.3"
+    "MAINT1.5.4",
+    "MAINT1.6.4"
   ],
   "ports": {
     "R": "RS485-1/2, UART0.19200",
@@ -21,14 +21,14 @@
     "D": "Display, UART2,9600"
   },
   "profiles": {
-    "1.5.3": {
-      "manifest": "mod/firmware/releases/maint153-positive-power.json",
+    "1.5.4": {
+      "manifest": "mod/firmware/releases/maint-light.json",
       "power_rtc_enabled_bit3": 1,
       "extended_off_enabled_bit4": null,
       "lock_status_bit5": null
     },
-    "1.6.3": {
-      "manifest": "mod/firmware/releases/maint163-configurable-hard-stop.json",
+    "1.6.4": {
+      "manifest": "mod/firmware/releases/maint-full.json",
       "power_rtc_enabled_bit3": 1,
       "extended_off_enabled_bit4": 1,
       "lock_status_bit5": 0
@@ -184,14 +184,14 @@
     ],
     [
       "Save SOC before a planned restart",
-      "Automatic before addressed ASCII45/06",
+      "Automatic before addressed ASCII 45/06",
       "—",
       "—",
       "R, C[P]; no separate write permission"
     ],
     [
       "Configure hard stop during recharge waiting",
-      "A1,Group0.Bits6/7",
+      "A1, Group0.Bits6/7",
       "—",
       "—",
       "R, C[W], D; write together"
@@ -249,14 +249,42 @@
     ],
     [
       "Read extended storage diagnostics",
-      "ASCII64/04",
+      "ASCII 64/04",
       "—",
       "R, C; addressed pack, no permission required",
       "R, C; addressed pack, no permission required"
     ],
     [
+      "Read one history record",
+      "ASCII 4B / 0000 oldest or 0001 next",
+      "R",
+      "R, C; no permission required",
+      "R, C; no permission required"
+    ],
+    [
+      "Read active/stored calibration",
+      "ASCII 64/05; active 00, primary 01, backup 02",
+      "—",
+      "R, C; no permission required",
+      "R, C; no permission required"
+    ],
+    [
+      "Read persisted capacity/SOC contents",
+      "ASCII 64/06",
+      "—",
+      "R, C; no permission required",
+      "R, C; no permission required"
+    ],
+    [
+      "Read full-width live charged/discharged energy",
+      "ASCII 64/06",
+      "—",
+      "R, C; no permission required",
+      "R, C; no permission required"
+    ],
+    [
       "Read hard-stop selection and build default",
-      "64/03,for configuration also read 47",
+      "64/03, for configuration also read 47",
       "—",
       "64/03 image flag 0: fixed in image",
       "64/03 flag 80/bit 0 +47 Group0.Bits6/7"
@@ -274,14 +302,14 @@
       "Group0.Bit1",
       "1 = enable temperature sensor plausibility check",
       "1 = enable temperature sensor plausibility check",
-      "same as 1.5.3",
+      "same as 1.5.4",
       "R, C[W], D"
     ],
     [
       "Group0.Bit2",
       "Reserved, no OEM function",
       "1 = allow maintenance start over C",
-      "same as 1.5.3",
+      "same as 1.5.4",
       "R/D only; a change through C-A1 returns E3 and rejects the entire block."
     ],
     [
@@ -303,7 +331,7 @@
       "Reserved, no OEM function",
       "Reserved, no function",
       "**0 = individual pack lock active**, 1 = clear",
-      "1.5.3: writable through R/C[W]/D. 1.6.3: status only; change only through addressed 45 on/off over R/C[P]."
+      "1.5.4: writable through R/C[W]/D. 1.6.4: status only; change only through addressed 45 on/off over R/C[P]."
     ],
     [
       "Group0.Bit6",
@@ -1146,7 +1174,7 @@
       "group": 0,
       "bit": 4,
       "mask": 16,
-      "name": "1.6.3: extended off enabled at 1; 1.5.3 reserved",
+      "name": "1.6.4: extended off enabled at 1; 1.5.4 reserved",
       "C_A1_1_6_3": "W",
       "read_only_1_6_3": false,
       "C_A1_1_5_3": "W"
@@ -1155,7 +1183,7 @@
       "group": 0,
       "bit": 5,
       "mask": 32,
-      "name": "1.6.3: individual pack lock active at 0, status; 1.5.3 reserved",
+      "name": "1.6.4: individual pack lock active at 0, status; 1.5.4 reserved",
       "C_A1_1_6_3": "E3",
       "read_only_1_6_3": true,
       "C_A1_1_5_3": "W"
@@ -1164,7 +1192,7 @@
       "group": 0,
       "bit": 6,
       "mask": 64,
-      "name": "1.6.3: hard-stop selection when bit 7=0; Original/1.5.3 reserved",
+      "name": "1.6.4: hard-stop selection when bit 7=0; Original/1.5.4 reserved",
       "C_A1_1_6_3": "W",
       "read_only_1_6_3": false,
       "C_A1_1_5_3": "W"
@@ -1173,7 +1201,7 @@
       "group": 0,
       "bit": 7,
       "mask": 128,
-      "name": "1.6.3:0 explicit choice, 1 build default; Original/1.5.3 reserved",
+      "name": "1.6.4: 0 explicit choice, 1 build default; Original/1.5.4 reserved",
       "C_A1_1_6_3": "W",
       "read_only_1_6_3": false,
       "C_A1_1_5_3": "W"

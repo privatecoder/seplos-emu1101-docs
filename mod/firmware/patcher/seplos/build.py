@@ -12,7 +12,7 @@ def build(image,facts,base_revision=255,hard_stop=False,*,maint_version):
  from .profiles import require_profile
  require_profile(maint_version)
  positive_flags=True
- revision=True;is_cutoff=maint_version=='1.6.3';service=is_cutoff;configurable=is_cutoff
+ revision=True;is_cutoff=maint_version=='1.6.4';service=is_cutoff;configurable=is_cutoff
  if type(base_revision) is not int or not 0<=base_revision<=255:raise ValueError('invalid base revision')
  if image.sha!=facts['original_app_sha256']:raise ValueError('analysis/input digest mismatch')
  from .hardstop import locate,apply
@@ -47,7 +47,7 @@ def build(image,facts,base_revision=255,hard_stop=False,*,maint_version):
   constants.update({'SVC_'+k.upper():v for k,v in servicing.items() if type(v) is int})
   hooks.update(servicing['hooks']);evidence.extend(servicing['evidence']);flags|=0x60
   constants['IMAGE_FLAGS']=flags
- if maint_version=='1.5.3':
+ if maint_version=='1.5.4':
   from .storage_diagnostics import discover_diagnostics,source_diagnostics
   diagnostic=discover_diagnostics(image,facts)
   constants.update({'CUT_'+k.upper():v for k,v in diagnostic.items() if type(v) is int})
@@ -59,13 +59,17 @@ def build(image,facts,base_revision=255,hard_stop=False,*,maint_version):
   constants['HS_DEFAULT']=int(hard_stop_detail['enabled']);flags|=0x80
   constants['IMAGE_FLAGS']=flags
   hooks.update(dynamic['hooks']);evidence.extend(dynamic['evidence'])
+ from .remote_diagnostics import discover_remote,source_remote
+ remote=discover_remote(image,facts)
+ constants.update({'REM_'+k.upper():v for k,v in remote.items() if type(v) is int})
  if len(set(hooks.values()))!=len(hooks):raise ValueError('duplicate OEM hook site')
  payload=Path(__file__).with_name('payload.s').read_text()
  if is_cutoff:payload=source16(payload)
  if revision:payload=source_revision(payload,maint_version)
  if service:payload=source_service(payload)
- if maint_version=='1.5.3':payload=source_diagnostics(payload)
+ if maint_version=='1.5.4':payload=source_diagnostics(payload)
  if configurable:payload=source_configurable(payload)
+ payload=source_remote(payload)
  source='\n'.join(f'.equ {k}, 0x{v:x}' for k,v in sorted(constants.items()))+'\n'+payload
  with tempfile.TemporaryDirectory(prefix='seplos-build-') as d:
   d=Path(d);asm=d/'payload.s';obj=d/'payload.o';raw=d/'payload.bin'
@@ -101,7 +105,7 @@ def build(image,facts,base_revision=255,hard_stop=False,*,maint_version):
  if type(image).parse(result.render())!=result:raise ValueError('output container failed roundtrip')
  report={'hard_stop':hard_stop_detail,'info_format':3,'info_bytes':18,'addressed_info':True,'power_rtc':True,'image_flags':flags,'patch_version':'1.5','append_at':start,'appendix_bytes':len(appendix),'app_sha256':result.sha,'build_id':build_id.hex(),'base_revision':base_revision,'base_revision_source':'unknown' if base_revision==255 else 'explicit caller declaration (not code-proven)','entries':{k:start+v for k,v in symbols.items()},'build_id_offset':offset,'disassembly':dis,'resolved_assembly':source}
  report['positive_flags']=positive_flags
- if revision:report.update(info_format=4,info_bytes=19,uart0_marker=True,hooks=hooks)
+ if revision:report.update(info_format=5,info_bytes=21,uart0_marker=True,hooks=hooks,remote_diagnostics=True,remote_capabilities=15)
  if is_cutoff:
   report.update(patch_version='1.6',cutoff=True,hooks=hooks,ram_bytes=4)
   cutoff['entries']={k:v for k,v in report['entries'].items() if k.startswith('hook_cut_')}
@@ -110,13 +114,14 @@ def build(image,facts,base_revision=255,hard_stop=False,*,maint_version):
  if service:
   report.update(service=True,extended_diagnostics=True,checkpoint_before_reset=True)
   servicing['entries']={k:v for k,v in report['entries'].items() if k.startswith('hook_service_')}
- if maint_version=='1.5.3':
+ if maint_version=='1.5.4':
   report.update(storage_diagnostics=True,extended_diagnostics=True,checkpoint_before_reset=False,ram_bytes=0)
   if len(hooks)!=5 or hooks!={**facts['hooks'],**marker['hooks']}:raise ValueError('storage diagnostics changed OEM hook set')
- if maint_version=='1.5.3':report['positive_power153']=True
+ if maint_version=='1.5.4':report['positive_power']=True
  if configurable:
   report.update(configurable_hard_stop=True,hard_stop_default=bool(constants['HS_DEFAULT']))
   report['hard_stop']={**hard_stop_detail,'enabled':None,'configurable':True,'default_enabled':bool(constants['HS_DEFAULT']),'runtime_from_parameter':True}
   dynamic['entries']={k:v for k,v in report['entries'].items() if k=='hook_configurable_hard_stop'}
-  if len(hooks)!=21:raise ValueError('MAINT1.6.3 must have21 guarded OEM hooks')
+  if len(hooks)!=21:raise ValueError('MAINT1.6.4 must have21 guarded OEM hooks')
+ remote['entries']={k:v for k,v in report['entries'].items() if k.startswith('hook_remote_')}
  return result,report

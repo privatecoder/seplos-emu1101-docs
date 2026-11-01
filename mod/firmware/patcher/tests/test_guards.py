@@ -42,7 +42,7 @@ class Guards(unittest.TestCase):
   from seplos.machine import probe
   from seplos.build import build
   from seplos.selftest import validate
-  probe(relocated,found);patched,built=build(relocated,found,maint_version='1.5.3')
+  probe(relocated,found);patched,built=build(relocated,found,maint_version='1.5.4')
   self.assertGreaterEqual(len(validate(relocated,patched,found,built)),60)
  def test_sensor_switch_collision_rejected(self):
   from seplos.guards import guard

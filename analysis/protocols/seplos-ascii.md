@@ -10,7 +10,7 @@ The [Seplos MODBUS-ASCII Protocol V2.0 specification](<../../vendor/docs/protoco
 
 Confidence: **confirmed** = directly from the code · **probable** = inferred from data flow · **assumption**. Without a tag, *confirmed* applies.
 
-This page describes the **original firmware**. [UART write capabilities](../../mod/docs/firmware/uart-write-capabilities.md) compares its writable values with MAINT1.5.3 and MAINT1.6.3; their UART1 extensions are separate from the OEM command set.
+This page describes the **original firmware**. [UART write capabilities](../../mod/docs/firmware/uart-write-capabilities.md) compares its writable values with MAINT 1.5.4 and MAINT 1.6.4; their UART1 extensions are separate from the OEM command set.
 
 > Despite its name, this is **not Modbus**. It is an ASCII protocol according to YD/T1363.3, which Pylontech also uses. A real Modbus RTU slave exists in addition, see [modbus-rtu.md](modbus-rtu.md).
 
@@ -287,6 +287,8 @@ The value set lives in RAM only and is only a starting point: the 1 s SOC logic 
 
 ### 5.6 CID2 0x4B: Read history
 
+MAINT 1.5.4/1.6.4 additionally expose this read on addressed UART1, including slaves. The original UART0 command is unchanged. See [remote diagnostics](../../mod/docs/firmware/remote-diagnostics.md) for cursor sharing, EEPROM-error retry and capability discovery.
+
 - **Storage:** external I²C EEPROM (device 0xA4), ring buffer with 128 bytes per record, **max. 500 records**, header at 0xFF00. Written by `0x5998`, triggered by `0x5DB2` (called at `0x621E` in the main loop's 1-s block) *(certain, 06.13; 04.06/06.11/06.12 identical)*:
   - **at once on a change** of the system status (`0x2000003A`: `0x20`/`0x02`/`0x01`/`0x10`) or of event bytes 1–5, 6 (without bit 7) and 7 (bits 4–7 only) since the last trigger; event 8 does not count. Hence records one second apart when messages change (bench board);
   - **otherwise at the interval** of parameter 75 (operation) or 76 (standby) in minutes; raw status bits 0/1 select the running counter. Both counters restart after every trigger.
@@ -362,7 +364,7 @@ Rejection → RTN 06, unknown subcode → RTN 04. Saved via `0x5174` into calibr
 
 Detailed effects *(confirmed, code review 2026-10-14)*:
 
-- **Factors:** sub 1/2 store absolute factors computed from the previous factor and the ratio reference/measured (current `0x2392 → 0x2284`, factor `0x20000C78+0x0C`; voltage `0x1F38 → 0x1CA0`, cell factors `0x20000B64+12·i+8` and pack voltage factor `0x20000C24+8`). A new calibration with a good measurement therefore corrects an old error, within the acceptance limit. **No UART command reads the factors**; they live only in flash block 2 (cells from record offset `+3+2·i`, voltage `+37`, current A `+39`/`+41`, current B `+45`/`+47`; `0x5174–0x5234`, load `0x5260–0x5328`).
+- **Factors:** sub 1/2 store absolute factors computed from the previous factor and the ratio reference/measured (current `0x2392 → 0x2284`, factor `0x20000C78+0x0C`; voltage `0x1F38 → 0x1CA0`, cell factors `0x20000B64+12·i+8` and pack voltage factor `0x20000C24+8`). A new calibration with a good measurement therefore corrects an old error, within the acceptance limit. **No OEM UART command reads the factors**; they live only in flash block 2 (cells from record offset `+3+2·i`, voltage `+37`, current A `+39`/`+41`, current B `+45`/`+47`; `0x5174–0x5234`, load `0x5260–0x5328`).
 - **Sub 0 with current flowing:** only |channel| < 1000 mA is checked, then the momentary ADC bases become the zero point (`0x2348–0x2386`). A residual current (e.g. 0.8 A) stays as a **permanent offset** and skews current, SOC counting and current-dependent logic. The 0x42 current reads 0 in standby (`0x03A4–0x0452`), so it does not prove that no current flows.
 - **Sub 1 without a minimum current:** only |BMS − reference| < 3.01 A (`0x2392–0x23B0`). Example: BMS 2 A, reference 0.01 A is accepted and divides the factor by 200; because of the 3-A limit a single new calibration cannot undo that.
 - **Sub 2:** reference = mV per cell, compared with the arithmetic mean of the cell voltages (`0x20000D08`) and with the **port voltage P+/P−** (`0x20000CDA`), not B+/B− (`0x1EC0–0x1F88`). With the MOSFETs off the port reads 0 V and the calibration is refused.

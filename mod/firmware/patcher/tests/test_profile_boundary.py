@@ -10,7 +10,7 @@ ROOT=Path(__file__).resolve().parents[1]
 sys.path.insert(0,str(ROOT))
 from seplos.build import build
 from seplos.cli import run_worker, worker_job
-RETIRED=('1.5','1.6','1.5.1','1.5.2','1.6.1','1.6.2')
+RETIRED=('1.5','1.6','1.5.1','1.5.2','1.6.1','1.6.2','1.5.3','1.6.3')
 
 class Profiles(unittest.TestCase):
  def cli(self,*args):
@@ -18,7 +18,7 @@ class Profiles(unittest.TestCase):
  def test_help_has_only_current_profiles_and_no_polarity_option(self):
   result=self.cli('patch','--help')
   self.assertEqual(result.returncode,0)
-  self.assertIn('{1.5.3,1.6.3}',result.stdout)
+  self.assertIn('{1.5.4,1.6.4}',result.stdout)
   self.assertNotIn('--positive-flags',result.stdout)
  def test_cli_refuses_retired_profiles_before_output(self):
   with tempfile.TemporaryDirectory() as tmp:
@@ -29,7 +29,7 @@ class Profiles(unittest.TestCase):
     self.assertFalse(out.exists())
  def test_profile_is_required_and_removed_mode_and_flag_are_errors(self):
   with tempfile.TemporaryDirectory() as tmp:
-   for extra in ([],['--maint-version','1.5.3','--positive-flags']):
+   for extra in ([],['--maint-version','1.5.4','--positive-flags']):
     out=Path(tmp)/'missing-profile'
     result=self.cli('patch','missing.ehex',*extra,'--out',out)
     self.assertEqual(result.returncode,2,result.stdout+result.stderr)
@@ -41,14 +41,14 @@ class Profiles(unittest.TestCase):
    with self.subTest(version=version),self.assertRaisesRegex(ValueError,'unsupported MAINT version'):
     build(None,None,maint_version=version)
  def test_polarity_is_not_an_api_option(self):
-  with self.assertRaises(TypeError):build(None,None,maint_version='1.5.3',positive_flags=False)
+  with self.assertRaises(TypeError):build(None,None,maint_version='1.5.4',positive_flags=False)
  def test_parent_refuses_old_profile_or_mode_before_starting_worker(self):
   with patch('seplos.cli.subprocess.Popen',side_effect=AssertionError('worker must not start')):
    for version in RETIRED:
     with self.assertRaisesRegex(ValueError,'unsupported MAINT version'):
      run_worker('missing.ehex','patch',maint_version=version)
    with self.assertRaisesRegex(ValueError,'unsupported mode'):
-    run_worker('missing.ehex','hard-stop',maint_version='1.5.3')
+    run_worker('missing.ehex','hard-stop',maint_version='1.5.4')
  def test_private_worker_cannot_build_retired_profiles(self):
   with tempfile.TemporaryDirectory() as tmp:
    for version in RETIRED:
@@ -62,14 +62,14 @@ class Profiles(unittest.TestCase):
   with self.assertRaises(TypeError):worker_job(Path('missing.ehex'),Path('/private/tmp'),'patch',13,'preserve')
  def test_private_cli_requires_a_current_profile_without_old_flag(self):
   with tempfile.TemporaryDirectory() as tmp:
-   for extra in ([],['--maint-version','1.5.2'],['--maint-version','1.5.3','--positive-flags']):
+   for extra in ([],['--maint-version','1.5.2'],['--maint-version','1.5.4','--positive-flags']):
     out=Path(tmp)/'private'
     result=self.cli('_worker','missing.ehex','--mode','patch',*extra,'--out',out)
     self.assertEqual(result.returncode,2,result.stdout+result.stderr)
     self.assertFalse(out.exists())
  def test_corpus_cli_has_the_same_profile_boundary(self):
   with tempfile.TemporaryDirectory() as tmp:
-   for extra in ([],['--maint-version','1.6.2'],['--maint-version','1.6.3','--positive-flags']):
+   for extra in ([],['--maint-version','1.6.2'],['--maint-version','1.6.4','--positive-flags']):
     out=Path(tmp)/'corpus'
     result=subprocess.run([sys.executable,'-I','-B',str(ROOT/'verify_corpus.py'),*extra,'--out',str(out)],cwd='/private/tmp',capture_output=True,text=True)
     self.assertEqual(result.returncode,2,result.stdout+result.stderr)

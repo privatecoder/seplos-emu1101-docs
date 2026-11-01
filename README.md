@@ -11,9 +11,9 @@ Firmware, protocol and hardware references, reproducible MAINT patches and analy
 | [mod/](mod/README.md) | Patcher, release metadata, analysis programs, device helpers and MAINT documentation. |
 | [references/](references/) | Community and other-vendor references. |
 
-The current patch alternatives are [MAINT 1.5.3](mod/docs/firmware/maint153-positive-power.md) and [MAINT 1.6.3](mod/docs/firmware/maint163-configurable-hard-stop.md). The [capability matrix](mod/docs/firmware/uart-write-capabilities.md) compares them with OEM 16.06.13. The [firmware changelog](mod/firmware/CHANGELOG.md) records their behavior and build identities.
+The current patch alternatives are [MAINT 1.5.4](mod/docs/firmware/maint-light.md) and [MAINT 1.6.4](mod/docs/firmware/maint-full.md). The [capability matrix](mod/docs/firmware/uart-write-capabilities.md) compares them with OEM 16.06.13. Both add addressed history, active/stored calibration and saved-capacity/live-energy reads without new enable flags. The [firmware changelog](mod/firmware/CHANGELOG.md) records their behavior and build identities.
 
-**Test status:** MAINT 1.5.3 and 1.6.3 have been validated offline, including native Cortex-M0 emulation and byte-identical rebuilds. Neither current release has been flashed or tested on hardware. See the [release metadata](mod/firmware/releases/README.md) and [validation limits](mod/docs/firmware/validation-methods-and-limits.md).
+**Test status:** MAINT 1.5.4 passed 214 mandatory native execution groups and 1.6.4 passed 293; both rebuilt byte-identically. Neither current profile has been flashed or tested on hardware. See the [release metadata](mod/firmware/releases/README.md) and [validation limits](mod/docs/firmware/validation-methods-and-limits.md).
 
 **Experimental firmware:** Incorrect firmware, wiring or an interrupted update can render a BMS unusable and compromise battery protection. Use at your own risk. The project is provided "AS IS", without warranty, under the terms of the [license](LICENSE).
 

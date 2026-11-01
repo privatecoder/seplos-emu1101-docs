@@ -13,7 +13,7 @@ class Payload(unittest.TestCase):
   for path in sorted((ORIGINALS).glob('*16.06.*.ehex')):
    with self.subTest(image=path.name):
     original=Image.read(path);facts=probe(original,discover(original))
-    patched,report=build(original,facts,maint_version='1.5.3')
+    patched,report=build(original,facts,maint_version='1.5.4')
     changed={a for a,(x,y) in enumerate(zip(original.app,patched.app)) if x!=y}
     allowed={a for site in report['hooks'].values() for a in range(site,site+4)}
     self.assertLessEqual(changed,allowed)
@@ -29,9 +29,9 @@ class Payload(unittest.TestCase):
     info=m.transact(ascii_frame(0,0x64,b'\x03'),True)
     self.assertTrue(info.startswith(b'~20004600'),info)
     data=bytes.fromhex(info[13:-5].decode())
-    self.assertEqual(len(data),19)
-    self.assertEqual(data[:4],b'MNT\x04')
+    self.assertEqual(len(data),21)
+    self.assertEqual(data[:4],b'MNT\x05')
     self.assertEqual(data[18],58|int('SP80' in path.name))
-    self.assertEqual(data[6:10],b'\xff\x01\x05\x03')
+    self.assertEqual(data[6:10],b'\xff\x01\x05\x04')
 
 if __name__=='__main__':unittest.main()

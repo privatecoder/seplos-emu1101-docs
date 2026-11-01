@@ -43,7 +43,7 @@ def validate_cutoff(original,patched,facts,report):
   equal(original.sp,patched.sp);equal(d['ram'],original.sp)
   equal(int.from_bytes(patched.app[d['zero_size_offset']:d['zero_size_offset']+4],'little'),d['zero_size_old']+4)
   m=board();rtn,data=ascii_payload(m.transact(ascii_frame(1,0x64,b'\3'),True),1)
-  equal((rtn,len(data),data[7:9],data[-1]),(0,report['info_bytes'],b'\1\6',report['image_flags']))
+  equal((rtn,len(data),data[7:9],data[18]),(0,report['info_bytes'],b'\1\6',report['image_flags']))
   # Real OEM zero helper initializes the added cache bytes without moving SP.
   m.put(d['ram'],b'XXXX');m.uc.reg_write(UC_ARM_REG_R0,0);m.uc.reg_write(UC_ARM_REG_R1,d['ram']);m.uc.reg_write(UC_ARM_REG_R2,4)
   m.run(d['zero_helper']);equal(m.read(d['ram'],4),bytes(4))

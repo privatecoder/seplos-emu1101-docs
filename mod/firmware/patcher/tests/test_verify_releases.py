@@ -1,6 +1,8 @@
 """Release identity checking uses current public metadata and exact bytes."""
 from pathlib import Path
 import copy
+import contextlib
+import io
 import hashlib
 import importlib.util
 import json
@@ -24,7 +26,7 @@ class ReleaseVerification(unittest.TestCase):
         return module
 
     def metadata(self):
-        return json.loads((PROJECT_ROOT / 'mod/firmware/releases/maint153-positive-power.json').read_text())
+        return json.loads((PROJECT_ROOT / 'mod/firmware/releases/maint-light.json').read_text())
 
     def test_existing_release_matches_full_identity(self):
         module = self.verifier()
@@ -48,7 +50,7 @@ class ReleaseVerification(unittest.TestCase):
         module = self.verifier()
         metadata = self.metadata()
         raw = (RELEASES / metadata['name']).read_bytes()
-        for field, value in [('patch_version', '1.6.3'), ('image_flags', 0), ('app_bytes', 0)]:
+        for field, value in [('patch_version', '1.6.4'), ('image_flags', 0), ('app_bytes', 0)]:
             with self.subTest(field=field):
                 wrong = {**metadata, field: value}
                 with self.assertRaisesRegex(ValueError, field):
@@ -61,6 +63,31 @@ class ReleaseVerification(unittest.TestCase):
         for version in ('1.5', '1.6', '1.5.2', '1.6.2'):
             with self.subTest(version=version), self.assertRaisesRegex(ValueError, 'unsupported MAINT version'):
                 module.verify_existing(raw, {**metadata, 'patch_version': version})
+
+    def test_rejects_wrong_remote_format_length_or_capability_mask(self):
+        module = self.verifier()
+        metadata = self.metadata()
+        raw = (RELEASES / metadata['name']).read_bytes()
+        for field, value, error in [('info_format', 4, 'format/length'),
+                                    ('info_bytes', 19, 'format/length'),
+                                    ('remote_capabilities', 7, 'remote_capabilities')]:
+            with self.subTest(field=field), self.assertRaisesRegex(ValueError, error):
+                module.verify_existing(raw, {**metadata, field: value})
+
+    def test_public_metadata_requires_both_distinct_current_profiles(self):
+        module = self.verifier()
+        metadata = self.metadata()
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            module.PUBLIC_METADATA = root
+            for name in ('one.json', 'two.json'):
+                (root/name).write_text(json.dumps(metadata))
+            stderr = io.StringIO()
+            with contextlib.redirect_stderr(stderr), self.assertRaises(SystemExit) as caught:
+                module.main(['--out', str(root/'results')])
+            self.assertEqual(caught.exception.code, 2)
+            self.assertIn('one metadata file for each current profile', stderr.getvalue())
+            self.assertFalse((root/'results').exists())
 
     def test_rebuild_source_must_match_pinned_OEM(self):
         module = self.verifier()
@@ -82,7 +109,7 @@ class ReleaseVerification(unittest.TestCase):
             self.assertFalse(report['rebuild'])
             self.assertEqual(report['profiles'], 2)
             self.assertEqual({row['existing']['patch_version'] for row in report['results']},
-                             {'1.5.3', '1.6.3'})
+                             {'1.5.4', '1.6.4'})
             for row in report['results']:
                 self.assertEqual(len(row['existing']['build_id']), 16)
                 self.assertEqual(len(row['existing']['ehex_sha256']), 64)

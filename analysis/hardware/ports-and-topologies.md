@@ -4,7 +4,7 @@
 
 Updated 2026-10-26. This guide covers simultaneous inverter, monitor and service
 connections for Seplos BMS 2.0/10E/V16 (EMU1101) packs. The reference is **OEM 16.06.13**, with current
-patch alternatives **MAINT 1.5.3 and 1.6.3**. Older OEM differences are explicit.
+patch alternatives **MAINT 1.5.4 and 1.6.4**. Older OEM differences are explicit.
 
 **Practical rule:** An inverter on actual CAN leaves UART1 available to a monitor.
 An inverter on UART1 leaves UART0 available only when no Seplos master polls UART0. Two
@@ -72,7 +72,7 @@ See [CAN](../protocols/can.md), [system ASCII](../protocols/pylontech-rs485.md) 
 info and `4F` an empty success reply (RTN00). It also supports
 `45/47/49/4B/4D/4E/5A/A0–A6/AA/AB`; `60–63` return RTN04. UART0 has no Modbus RTU
 receiver in .13. Evidence: dispatcher `0x1132` and retained native UART0 probes.
-The older .04 exception is described in section8.
+The older .04 exception is described in section 8.
 
 ## 3. Master role, DIP switches and aggregation
 
@@ -111,7 +111,7 @@ for nonzero local addresses at `0x9A44–0x9A52`.
 The setup sheets are **DIP matrices**, not complete wiring diagrams: The [Seplos CANBUS V1.0 comparison](../protocols/can.md#manufacturer-can-specification-scope-and-differences) supplies another master/slave DIP table with the expected slave-count encoding; it does not establish a UART1 cable chain.
 
 - [RS485 DIP ADDRESS SETUP](<../../vendor/docs/address%20setup/RS485%20DIP%20address%20setup.pdf>), p.1:
-  2P–15P use addresses 1…N with DIP5–8 OFF. **The 1P exception is all OFF/address0.**
+  2P–15P use addresses 1…N with DIP5–8 OFF. **The 1P exception is all OFF/address 0.**
 - [CAN DIP ADDRESS SETUP](<../../vendor/docs/address%20setup/CAN%20DIP%20address%20setup.pdf>), p.1:
   master 0 with its slave count, then slaves 1…N−1, up to 16P.
 - [Vendor ASCII protocol](<../../vendor/docs/protocol%20specs/Seplos%20BMS%20Modbus-ASCII%20Protocol%20RS485%20V2.0%20%282019-10-15%29.pdf>),
@@ -180,15 +180,16 @@ remains one communication domain, including the effects of broadcasts.
 ## 7. Maintenance, flashing and permanently attached gateways
 
 Flashing and the full OEM PC command set use **UART0**: device/serial-string writes,
-calibration, history, 49 capacity commands and forced heating. UART2 supports selected
+calibration writes, 49 capacity commands and forced heating. UART2 supports selected
 local parameter functions. OEM UART1 reads; MAINT extends it as described in the
 [capability matrix](../../mod/docs/firmware/uart-write-capabilities.md). Patching only the master does
 not extend OEM slaves' UART1 commands.
 
-Current MAINT 1.5.3/1.6.3 also support UART0 64/02, marker clear, 64/03 and 64/04.
+Current MAINT 1.5.4/1.6.4 also support UART0 64/02, marker clear, 64/03 and 64/04.
+Both profiles also provide addressed UART1 history 4B and UART0/UART1 calibration/checkpoint/energy reads 64/05–06 without new permission flags; see [remote diagnostics](../../mod/docs/firmware/remote-diagnostics.md).
 Maintenance start remains **UART1 to master 0**, with its permission and automatic
 addressing disabled. It stops only Seplos polling, not an external PC/inverter.
-UART1 64/02/start/stop remain master 0 services; 03/04 work per target. A free-UART0 single
+UART1 64/02/start/stop remain master 0 services; 03–06 work per target. A free-UART0 single
 pack or externally polled UART0 chain needs no maintenance start.
 
 Before active UART0 service, pause external requesters and stop any Seplos master

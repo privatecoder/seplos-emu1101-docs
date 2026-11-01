@@ -98,7 +98,7 @@ The English names were machine-translated from Chinese. The most common errors:
 |---|---|---|---|---|---|
 | 0 | `0x1300` | Monomer high voltage alarm | **cell high-voltage warning** | 3.450 V | Event 2 bit 0. Triggers (if all packs) CCL 10 A. **Central to the SOC:** above 98.2 % the SOC only counts up if a cell is ≥ P0; 90 % rule; **100 % threshold = N × P0, limited to 3.45–3.50 V/cell** (55.20 V in the example configuration); full mark for capacity learning. *(confirmed)* |
 | 1 | `0x1302` | Monomer high pressure recovery | return of cell high-voltage warning | 3.350 V | Hysteresis for P0. Also: no SOC drift in standby as long as a cell is ≥ P1. *(confirmed)* |
-| 2 | `0x1304` | Monomer low pressure alarm | **cell undervoltage warning** | 2.900 V | Event 2 bit 2. SOC jumps to (P78+P79)/2 = 10 % if a cell ≤ P2 and SOC ≥ P78. Discharge counting holds when rounded whole-percent SOC < P79+1 and all cells > P2; with P79=5, the displayed value can be around5.4 %, not necessarily6 %. Empty mark for capacity learning. *(confirmed)* |
+| 2 | `0x1304` | Monomer low pressure alarm | **cell undervoltage warning** | 2.900 V | Event 2 bit 2. SOC jumps to (P78+P79)/2 = 10 % if a cell ≤ P2 and SOC ≥ P78. Discharge counting holds when rounded whole-percent SOC < P79+1 and all cells > P2; with P79=5, the displayed value can be around 5.4 %, not necessarily 6 %. Empty mark for capacity learning. *(confirmed)* |
 | 3 | `0x1306` | Monomer low pressure recovery | return of cell undervoltage warning | 3.100 V | Hysteresis for P2. Also clears the full flag when the highest cell falls to ≤ P3. *(confirmed)* |
 | 4 | `0x1308` | Monomer overvoltage protection | **cell overvoltage protection** (OVP) | 3.650 V | Charge MOSFET off, SOC := 100 % (while charging). CCL = 0 if a cell > P4 + 30 mV. *(confirmed)* |
 | 5 | `0x130A` | Monomer overvoltage recovery | return of cell OVP | 3.450 V | Charging enabled again below this value. Discharging > 10 A for ~10 s lifts the OVP immediately. *(confirmed)* |
@@ -173,8 +173,8 @@ Notes:
 
 | # | RAM (06.13) | Name | correct meaning | Example value | what the firmware does with it |
 |---|---|---|---|---|---|
-| 58 | `0x1374` | Battery rated capacity | **rated capacity** | 280.00 Ah | Reported in0x42 as rated capacity. A1 also sets learned full capacity toP58 when they differ by **at least10 Ah**.49/3A instead changes only learned full capacity and the coulomb maximum (if remaining capacity ≤ value), leaving parameter fieldP58 unchanged. *(confirmed)* |
-| 59 | `0x1376` | SOC | **remaining capacity parameter/fallback value**, not a percentage | 50.00 Ah | **Not the current charge.** Used as initial remaining capacity at boot if block6 is invalid. A1 stores this field but does not apply it to the live counter.49/3B sets that counter to its own command value ≤ full capacity, leaving this parameter field unchanged. *(confirmed)* |
+| 58 | `0x1374` | Battery rated capacity | **rated capacity** | 280.00 Ah | Reported in 0x42 as rated capacity. A1 also sets learned full capacity toP58 when they differ by **at least 10 Ah**.49/3A instead changes only learned full capacity and the coulomb maximum (if remaining capacity ≤ value), leaving parameter fieldP58 unchanged. *(confirmed)* |
+| 59 | `0x1376` | SOC | **remaining capacity parameter/fallback value**, not a percentage | 50.00 Ah | **Not the current charge.** Used as initial remaining capacity at boot if block 6 is invalid. A1 stores this field but does not apply it to the live counter.49/3B sets that counter to its own command value ≤ full capacity, leaving this parameter field unchanged. *(confirmed)* |
 
 P59 supplies the initial remaining capacity only when
 no valid capacity record (block 6) is available at boot. `49/3B` changes only the
@@ -208,7 +208,7 @@ not imply automatic updates of the corresponding parameter fields. See
 | 76 | `0x1400` | Standby recording interval | history entry in standby every | 240 min | |
 | 77 | `0x1401` | Standby shutdown delay | **self-shutdown after … hours of standby** | 48 h | Only with BitGroup7 bit 1 (**on** in the example configuration). Conditions: continuous standby **without external voltage at the port**, highest cell < P5. Then 60 s "charging forbidden", then "off" (discharge MOSFET off), save state to internal flash, switch off supply *(switching off the supply probable)*. A charger (port > P15) or the push button aborts. |
 | 78 | `0x1402` | Remaining capacity alarm | **SOC warning below** | 15 % | Event 6 bit 2. Part of the 10 % SOC rule ((P78+P79)/2) and reset of the empty flag (UVP → 0 %). Event 6 bit 2 removes the pack from the DCL sum. If all packs are below P78, the master reports DCL = 0; an inverter honoring DCL then stops discharging at this warning condition. The separate local P79 protection has its own threshold and recovery rules. |
-| 79 | `0x1403` | Remaining capacity protection | **SOC protection below** | 5 % | Event6.bit3 gives normal discharge/precharge inhibition (charging remains allowed, charging recovery can bypass it). Thresholds use rounded whole-percent SOC:4.4 % protects,4.5 % does not yet. Counting holds when rounded SOC < P79+1 and minimum > P2; with P79=5, displayed SOC can remain around5.4 %. Charge activation (P72–P74) briefly lifts the protection periodically. |
+| 79 | `0x1403` | Remaining capacity protection | **SOC protection below** | 5 % | Event6.bit3 gives normal discharge/precharge inhibition (charging remains allowed, charging recovery can bypass it). Thresholds use rounded whole-percent SOC:4.4 % protects,4.5 % does not yet. Counting holds when rounded SOC < P79+1 and minimum > P2; with P79=5, displayed SOC can remain around 5.4 %. Charge activation (P72–P74) briefly lifts the protection periodically. |
 | 80 | `0x1404` | Interval charge capacity | **intermittent recharge: charge capability restored at or below** | 96 % | After100%, event6.Bit1 excludes the pack from normal charge capability until rounded SOC ≤P80. All packs waiting →CCL=0 (except heating minimum); waiting alone leaves the charge MOSFET closed without Hard-Stop. Only with BitGroup5 bit 1. Above P80, 0.2 A SOC drift in standby. |
 | 81 | `0x1405` | Cycle cumulative capacity | **a cycle counts after cumulative … % discharge** | 80 % | |
 | 82 | `0x1406` | Connection fault impedance | "connection fault impedance" | 10.0 mΩ | **No function:** never read by the firmware. The output connection fault (event 6 bit 6) comes from a hardware input (GPIO `0x50001000` pin 10, ≥ 5 s low, only with BitGroup5 bit 6). |
@@ -350,7 +350,7 @@ Bit 0/1 charging high warning/protection (P20/P24), 2/3 charging low (P22/P26), 
 | SOC 100 % | same voltage for >1800 s; Bit7 inactive >30 s; prior SOC <99.0% | 55.20 V for >1800 s |
 | SOC 100 % via OVP | cell OVP P4 while charging (pack OVP masked in the example configuration) | 3.65 V on one cell |
 | SOC counting lock while charging | SOC ≥ 98.2 % and no cell ≥ P0 | – |
-| normal charge capability restored after100% | rounded SOC ≤P80; local gate depends on protection/soft-hard stop | 96 % |
+| normal charge capability restored after 100% | rounded SOC ≤P80; local gate depends on protection/soft-hard stop | 96 % |
 | SOC 10 % | cell ≤ P2 and SOC ≥ P78 | 2.90 V |
 | SOC 0 % | cell UVP (P6) or pack UVP (P16) | 2.70 V / 43.20 V |
 | Balancing | cell ≥ P8, spread > P62, cell ≥ P63 above the lowest | from 3.40 V |
@@ -362,7 +362,7 @@ Detailed derivation: [States and triggers](states-and-triggers.md).
 
 ## 7. Notable points and remarks
 
-1. **P58/P59 when writing back:**49/3A sets learned full capacity to its command value without changing parameter P58. A1 instead adjusts it to P58 if the difference is at least10 Ah. P59 is a stored boot fallback, not a measured value;49/3B sets only live remaining charge. [Ports and conditions](../../mod/docs/firmware/uart-write-capabilities.md).
+1. **P58/P59 when writing back:**49/3A sets learned full capacity to its command value without changing parameter P58. A1 instead adjusts it to P58 if the difference is at least 10 Ah. P59 is a stored boot fallback, not a measured value;49/3B sets only live remaining charge. [Ports and conditions](../../mod/docs/firmware/uart-write-capabilities.md).
 2. **Pack OVP off, CVL = pack OVP value:** intended or not, the combination works: the inverter charges up to 56.0 V, the cells are protected by the cell OVP of 3.65 V. At 56.0 V / 16 = 3.50 V on average there is a margin to 3.65 V as long as the cells do not drift far apart.
 3. **P10 = 16 × P0 (55.20 V):** from 55.20 V every pack warns; with each warning pack the CCL drops by P50 / 2 (50 A in the example), as soon as all packs warn, 10 A total applies. With four equally sharing packs this would be 2.5 A per pack; actual sharing is not guaranteed. The 100% correction separately requires the full-voltage hold for >1800 s and current-status Bit7 inactive for >30 s (set at ≥3.01 A, cleared below 2.81 A); total CCL alone does not establish those per-pack conditions.
 4. **Balancing from 3.40 V (P8)** with start from 30 mV spread (P62): with well-matched cells balancing is almost never active. This matches the behaviour observed in practice.

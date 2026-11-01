@@ -6,9 +6,9 @@ The patcher validates firmware offline. It analyzes the original input, builds t
 
 ## Current releases and evidence scope
 
-The current profiles are **MAINT 1.5.3** and **MAINT 1.6.3**, based on OEM **16.06.13** for the published releases. The [release metadata](../../firmware/releases/README.md) binds each exact image to its EHEX/application hashes, build ID, flags and test count. Both published profiles have offline execution evidence and have **not been flashed or hardware-tested**.
+The current profiles are **MAINT 1.5.4** and **MAINT 1.6.4**, based on OEM **16.06.13** for the published releases. The [release metadata](../../firmware/releases/README.md) binds each exact image to its EHEX/application hashes, build ID, flags and test count. Both actual current images passed their mandatory native suites and rebuilt byte-identically. Both profiles have **not been flashed or hardware-tested**; `hardware_tested` remains false.
 
-The metadata records 194 mandatory execution groups for 1.5.3 and 273 for 1.6.3. The full profile includes all 65,536 combinations of the function-switch byte and Event6 for configurable hard stop. These counts describe the published profile suites; they are different from the number of Python unit tests in the patcher's test runner.
+The release metadata records 214 mandatory execution groups for 1.5.4 and 293 for 1.6.4. The full profile includes all 65,536 combinations of the function-switch byte and Event6 for configurable hard stop. These counts describe the published profile suites; they are different from the number of Python unit tests in the patcher's test runner.
 
 Only `patch` success with the mandatory suite permits publication of `firmware.ehex`. `analyze` establishes structural/probe compatibility without running the entire patched-image suite. Hash/MNT verification of a retained image is another separate check and is not a fresh native test result.
 
@@ -21,6 +21,7 @@ Only `patch` success with the mandatory suite permits publication of `firmware.e
 | Persistence and reset | Actual CRC, serializer/readers/writers where covered; modeled IAP failures and word-boundary interruptions; copy classification and planned-reset verification. | No brownout waveform, partially programmed bits within a word, flash timing or endurance proof. A valid primary is not a versioned transaction journal. |
 | Power and charge paths | Native control flow, lock priorities, configurable charge-inhibit masks, modeled GPIO writes and recovery conditions. | A software GPIO state is not a measurement of MOSFET conduction, body-diode current or electrical isolation. |
 | Hook ABI and memory | Native execution checks, retained registers/stack, guarded hook contracts and modeled boundary cases. | Observed stack depth is not a universal bound for every interrupt nesting or system state. |
+| Remote diagnostic reads | Native history cursor/EEPROM mode/stride, UART1 RX injection at the EEPROM transfer boundary, active/stored calibration and saved-SOC shape/CRC, full-width energy, no repair/write side effects and unchanged hook/RAM bounds. | Full concurrent UART0 polling, timer and protection execution is untested. No physical timing, real I2C timeout, whole-ring atomic snapshot, physical calibration accuracy or future boot-SOC guarantee. |
 | Host helpers | Synthetic transport/port tests, strict frame and image validation, no replay after uncertain writes, explicit target selection. | Fake-port success is not a hardware update or a guarantee about a particular gateway. |
 
 [Storage and reset](storage-and-reset.md), [UART receive ownership](../../../analysis/protocols/uart1-receive-gap-and-buffer-ownership.md) and [original power behavior](../../../analysis/firmware/power-on-off.md) describe the corresponding firmware contracts and evidence limits.
@@ -45,7 +46,7 @@ The [metadata fixture registry](../../firmware/patcher/tests/fixtures/registry.j
 
 ## Version-bound research tools and historical evidence
 
-Research probes under `mod/tools/firmware-analysis` can deliberately bind older exact images and their saved facts. That scope is distinct from current release validation. For example, `audit_firmware_v16.py` covers OEM .13 and fixed **1.5.1/1.6.1** images; its four phases examine persistence, startup/watchdog, UART interrupts and hooks. It must not be relabelled as a full audit of 1.5.3/1.6.3. [Analysis tool prerequisites](../../tools/firmware-analysis/README.md) describe the retained inputs and fresh-output requirements.
+Research probes under `mod/tools/firmware-analysis ` can deliberately bind older exact images and their saved facts. That scope is distinct from current release validation. For example, `audit_firmware_v16.py` covers OEM .13 and fixed **1.5.1/1.6.1** images; its four phases examine persistence, startup/watchdog, UART interrupts and hooks. It must not be relabelled as a full audit of 1.5.4/1.6.4. [Analysis tool prerequisites](../../tools/firmware-analysis/README.md) describe the retained inputs and fresh-output requirements.
 
 The complete dated report and raw results remain under ignored `local/research/validation/evidence/Vierfachpruefung-2026-10-23/`, including `validation-audit-2026-10-23.md`. It records exact image hashes, per-phase checks, observed stack depths and model exclusions. Fixed historical tools and their dependencies are preserved separately; the [historical test runner](../../tools/run_historical_tests.py) lists prerequisites and executes only explicitly selected suites.
 
