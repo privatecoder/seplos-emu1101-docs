@@ -50,6 +50,8 @@ on may release it independently of that setting.
 
 ## Complete write and action matrix
 
+**Bold UART names** in the MAINT columns mark interfaces newly available for that operation compared with Original .13.
+
 @MATRIX@
 
 A1 always transmits a complete valid parameter block. UART0 uses ASCII with 169

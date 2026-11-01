@@ -49,6 +49,30 @@ def port_rows(rows):
     return [[display_ports(cell) for cell in row] for row in rows]
 
 
+def available_ports(cell):
+    """Exclude explicit unavailable routes such as 'UART1/UART2: —'."""
+    ports = set()
+    for part in re.split(r'[;,]', cell):
+        if not re.search(r':\s*—(?:\s|$)', part):
+            ports.update(re.findall(r'\bUART[012]\b', part))
+    return ports
+
+
+def comparison_rows(rows, oem_column=2, maint_columns=(3, 4)):
+    rendered = port_rows(rows)
+    for row in rendered:
+        original = available_ports(row[oem_column])
+        for column in maint_columns:
+            added = available_ports(row[column]) - original
+            # Existing strong text already emphasizes its contained UART names.
+            parts = re.split(r'(\*\*[^*]*\*\*)', row[column])
+            for index in range(0, len(parts), 2):
+                parts[index] = re.sub(r'\bUART[012]\b',
+                    lambda match: '**'+match[0]+'**' if match[0] in added else match[0], parts[index])
+            row[column] = ''.join(parts)
+    return rendered
+
+
 def render():
     data = catalogue()
     profiles = data['profiles']
@@ -57,9 +81,9 @@ def render():
         '@PROFILES@': table(('Firmware', 'Build ID', 'MNT05 image flags', '.ehex file SHA-256'),
             [('Original 16.06.13', '—', '—', f'`{data["base_image"]["ehex_sha256"]}`')] +
             [(v, f'`{p["build_id"]}`', f'`0x{p["image_flags"]:02X}`', f'`{p["ehex_sha256"]}`') for v, p in profiles.items()]),
-        '@MATRIX@': table(('Value / action', 'Command', 'Original .13', 'MAINT 1.5.4', 'MAINT 1.6.4'), port_rows(data['matrix'])),
-        '@READS@': table(('Read operation', 'Command', 'Original .13', 'MAINT 1.5.4', 'MAINT 1.6.4'), port_rows(data['selected_read_commands'])),
-        '@GROUP0@': table(('Field', 'Original .13', 'MAINT 1.5.4', 'MAINT 1.6.4', 'Write route / exception'), port_rows(data['group0'])),
+        '@MATRIX@': table(('Value / action', 'Command', 'Original .13', 'MAINT 1.5.4', 'MAINT 1.6.4'), comparison_rows(data['matrix'])),
+        '@READS@': table(('Read operation', 'Command', 'Original .13', 'MAINT 1.5.4', 'MAINT 1.6.4'), comparison_rows(data['selected_read_commands'])),
+        '@GROUP0@': table(('Field', 'Original .13', 'MAINT 1.5.4', 'MAINT 1.6.4', 'Write route / exception'), comparison_rows(data['group0'], oem_column=1, maint_columns=(2, 3))),
         '@PARAMETERS@': table(('Index', 'Value', 'Raw unit', 'OEM .13 RAM'),
             [(f'P{p["index"]}', p['name'], p['unit'], f'`{p["ram"]:#010x}`') for p in data['parameters']]),
         '@BITS@': table(('Group', 'Bit', 'Meaning'),

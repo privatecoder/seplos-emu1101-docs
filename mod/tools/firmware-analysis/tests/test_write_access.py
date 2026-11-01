@@ -168,6 +168,27 @@ class CatalogueTests(unittest.TestCase):
         self.assertNotIn('1.6.3', text)
         self.assertNotIn('@PROFILES@', text)
 
+    def test_new_interfaces_are_bold_relative_to_available_OEM_routes(self):
+        root, source = self.synthetic_project()
+        result = self.command(source, '--markdown')
+        self.assertEqual(result.returncode, 0, result.stderr)
+        def row(label):
+            line = next(line for line in result.stdout.splitlines() if line.startswith('| '+label+' |'))
+            return [cell.strip() for cell in line.strip('|').split('|')]
+        self.assertEqual(row('All 87 configuration parameters P0–P86')[2:],
+                         ['UART0, UART2', 'UART0, **UART1**[W], UART2', 'UART0, **UART1**[W], UART2'])
+        self.assertEqual(row('Read parameters, switches and device name')[3:],
+                         ['UART0: ASCII; **UART1**/UART2: binary']*2)
+        self.assertEqual(row('Read firmware identity / version / build / image flags')[3:],
+                         ['**UART0**, **UART1**: each addressed pack; UART2: —']*2)
+        self.assertEqual(row('Read one history record')[3:],
+                         ['UART0, **UART1**; no permission required']*2)
+        self.assertEqual(row('Configure hard stop during recharge waiting')[3:],
+                         ['—', '**UART0**, **UART1**[W], **UART2**; write together'])
+        self.assertEqual(row('Calibrate current zero')[2:], ['UART0']*3)
+        self.assertEqual(row('Group0.Bit0')[2:4], ['1 = allow writes over **UART1**']*2)
+        self.assertEqual(row('Group0.Bit3')[2:4], ['**1 = allow Power/RTC over UART1**, 0 = blocked']*2)
+
     def test_MNT05_rejects_missing_unknown_or_mismatched_capabilities(self):
         root, source = self.synthetic_project()
         path = root / 'mod/firmware/releases' / PUBLIC[0]
