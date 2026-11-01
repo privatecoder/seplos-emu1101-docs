@@ -44,7 +44,10 @@ def boot_frame(cmd, adr=0, data=b""):
 
 def stream_of(path):
     """Validate the full EHEX before reproducing the OEM record-data stream."""
-    image = Image.read(path)
+    return _stream(Image.read(path))
+
+
+def _stream(image):
     header = b"".join(bytes.fromhex(line[9:-2]) for line in image.header)
     tail = b"".join(bytes.fromhex(line[9:-2]) for line in image.tail)
     return header + image.app + tail
@@ -78,8 +81,8 @@ class Port:
         termios.tcdrain(self.fd)
 
     def read_until(self, done, timeout):
-        buf, end = b"", time.time() + timeout
-        while time.time() < end:
+        buf, end = b"", time.monotonic() + timeout
+        while time.monotonic() < end:
             r, _, _ = select.select([self.fd], [], [], 0.005)
             if r:
                 buf += os.read(self.fd, 1024)
@@ -100,6 +103,63 @@ def application_info(port, address, timeout):
     return info
 
 
+def prepare_image(path):
+    """Validate and pin the exact bytes before opening an update port."""
+    return prepare_bytes(_Path(path).read_bytes())
+
+
+def prepare_bytes(raw):
+    """Prepare only the pinned, already-read container; no path is reopened."""
+    stream = _stream(Image.parse(raw.decode('ascii')))
+    blocks = tuple(stream[i:i + 256].ljust(256, b"\0") for i in range(0, len(stream), 256))
+    plan = ((b"WFE", 0, b""),) + tuple((b"WFD", 16*i, block) for i, block in enumerate(blocks)) + ((b"WFG", 0, b""),)
+    frames = tuple(boot_frame(command, offset, data) for command, offset, data in plan)
+    return stream, plan, frames
+
+
+def flash_session(port, prepared, *, gap_ms=350, address=0):
+    """Use one already-open port; one reset, no write retries or recovery.
+
+    `prepared` must be the immutable result of prepare_image. The caller owns
+    the port and log. The 0x51 return check is preliminary; a batch caller must
+    additionally compare parameters, serials and exact MAINT identity.
+    """
+    entry.ascii.valid_address(address)
+    if type(gap_ms) is not int or gap_ms < 0:
+        raise ValueError('gap_ms must be a nonnegative integer')
+    stream, plan, frames = prepared
+    gap = gap_ms / 1000
+    application_info(port, address, .6)
+    started = time.monotonic()
+    entry.enter(port, address)
+    time.sleep(gap)
+    port.log.write("STATE gap=%d ms, sending W F E\n" % gap_ms)
+    for number, (frame, (command, _, _)) in enumerate(zip(frames, plan)):
+        port.send(frame)
+        reply = port.read_until(lambda raw: raw.endswith(b"\r" * 4), 10)
+        try:
+            entry.validate_write_ack(reply)
+        except ValueError:
+            port.log.write("STATE ABORT at %s %d: %r\n" % (command, number, reply))
+            raise
+        port.log.flush()
+        if command != b"WFG":
+            time.sleep(gap)
+    elapsed = time.monotonic() - started
+    deadline = time.monotonic() + 20
+    while time.monotonic() < deadline:
+        try:
+            info = application_info(port, address, .3)
+        except ValueError:
+            time.sleep(.1)
+            continue
+        port.log.write("STATE done; app back\n")
+        return dict(blocks=(len(stream)+255)//256, elapsed_seconds=elapsed,
+                    application_return_seconds=time.monotonic()-started,
+                    version_hex=info[10:12].hex(), application_info_hex=info.hex())
+    raise RuntimeError("Application did not return")
+
+
 def main():
     import argparse
     parser = argparse.ArgumentParser(description=__doc__)
@@ -116,43 +176,13 @@ def main():
             raise ValueError('gap_ms must be nonnegative')
     except ValueError as error:
         parser.error(str(error))
-    gap = args.gap_ms / 1000
-    stream = stream_of(args.image)
-    blocks = [stream[i:i + 256].ljust(256, b"\0") for i in range(0, len(stream), 256)]
-    plan = [(b"WFE", 0, b"")] + [(b"WFD", 16 * i, block) for i, block in enumerate(blocks)] + [(b"WFG", 0, b"")]
-    frames = [boot_frame(command, address, data) for command, address, data in plan]
+    prepared = prepare_image(args.image)
     with open(args.log, 'x') as log:
         port = Port(args.port, log)
         try:
-            application_info(port, args.address, .6)
-            started = time.monotonic()
-            entry.enter(port, args.address)
-            time.sleep(gap)
-            log.write("STATE gap=%d ms, sending W F E\n" % args.gap_ms)
-            for number, (frame, (command, _, _)) in enumerate(zip(frames, plan)):
-                port.send(frame)
-                reply = port.read_until(lambda raw: raw.endswith(b"\r" * 4), 10)
-                try:
-                    entry.validate_write_ack(reply)
-                except ValueError:
-                    log.write("STATE ABORT at %s %d: %r\n" % (command, number, reply))
-                    raise
-                log.flush()
-                if command != b"WFG":
-                    time.sleep(gap)
-            elapsed = time.monotonic() - started
-            deadline = time.monotonic() + 20
-            while time.monotonic() < deadline:
-                try:
-                    info = application_info(port, args.address, .3)
-                except ValueError:
-                    time.sleep(.1)
-                    continue
-                log.write("STATE done; app back\n")
-                print("OK: %d blocks, elapsed %.1f s (reset to W F G), version %s, application after %.1f s" % (
-                    len(blocks), elapsed, info[10:12].hex(), time.monotonic() - started))
-                return
-            raise SystemExit("Application did not return")
+            result = flash_session(port, prepared, gap_ms=args.gap_ms, address=args.address)
+            print("OK: %d blocks, elapsed %.1f s (reset to W F G), version %s, application after %.1f s" % (
+                result['blocks'], result['elapsed_seconds'], result['version_hex'], result['application_return_seconds']))
         finally:
             port.close()
 

@@ -46,6 +46,16 @@ class FlashGapTests(unittest.TestCase):
         with patch.object(sys, 'argv', args), contextlib.redirect_stdout(io.StringIO()):
             self.module.main()
 
+    def test_receive_deadline_uses_monotonic_time_not_wall_clock(self):
+        port = object.__new__(self.module.Port)
+        port.fd = 123
+        port.stamp = lambda *args: None
+        with patch.object(self.module.time, 'time', side_effect=AssertionError('wall clock used for timeout')), \
+             patch.object(self.module.time, 'monotonic', side_effect=[0, .01, .02, 1.01]), \
+             patch.object(self.module.select, 'select', return_value=([123], [], [])), \
+             patch.object(self.module.os, 'read', side_effect=[b'a', b'b']):
+            self.assertEqual(port.read_until(lambda data: False, 1), b'ab')
+
     def test_full_ff_blocks_checksum_wraps_at_and_above_65535(self):
         payload = b'\xff' * 256
         for address, total, checksum in ((0x0D10, 65535, b'\x00\x01'), (0x0D20, 65551, b'\xff\xf1')):

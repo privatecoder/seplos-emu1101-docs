@@ -63,10 +63,12 @@ def source_revision(source,version):
  minor=int(version.split('.')[1])
  old=f'.byte 3, 0, 0, BASE_REVISION, 1, {minor}'
  patch=int(version.split('.')[2])
- for before,after in ((old,f'.byte 4, 0, 0, BASE_REVISION, 1, {minor}, {patch}'),
-                      ('cmp r3, #18','cmp r3, #19'),('movs r0, #0x36','movs r0, #0x38')):
+ for before,after in ((old,f'.byte 5, 0, 0, BASE_REVISION, 1, {minor}, {patch}'),
+                      ('cmp r3, #18','cmp r3, #21'),('movs r0, #0x36','movs r0, #0x3c')):
   if source.count(before)!=1:raise ValueError('unknown revision source contract: '+before)
   source=source.replace(before,after)
+ if source.count('.byte IMAGE_FLAGS')!=1:raise ValueError('unknown MNT05 flags template')
+ source=source.replace('.byte IMAGE_FLAGS','.byte IMAGE_FLAGS\n    .byte 0, 15')
  if version.startswith('1.6.'):
   if source.count('hook_cut_uart0_parser:')!=1:raise ValueError('missing cutoff parser for UART0 marker chain')
   source=source.replace('hook_cut_uart0_parser:', 'hook_cut_uart0_parser:\n.Lmarker_cut_parser:')

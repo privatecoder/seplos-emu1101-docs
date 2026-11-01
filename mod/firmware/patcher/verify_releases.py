@@ -30,7 +30,7 @@ def verify_existing(raw, metadata):
     offset = image.app.index(b'MNT')
     info_format = metadata['info_format']
     info_bytes = metadata['info_bytes']
-    if info_format not in (3, 4) or info_bytes != (19 if info_format == 4 else 18):
+    if info_format != 5 or info_bytes != 21:
         raise ValueError('info_hex format/length mismatch')
     # The APP template reserves two zero bytes; the handler fills the OEM
     # version from its read-only version source when it answers INFO=03.
@@ -41,17 +41,19 @@ def verify_existing(raw, metadata):
     info = bytes(embedded)
     if 'info_hex' in metadata and bytes.fromhex(metadata['info_hex']) != info:
         raise ValueError(f'info_hex mismatch for {metadata["name"]}')
-    revision = info_format == 4
+    revision = info_format >= 4
     version = bytes(map(int, metadata['patch_version'].split('.')))
     if len(version) != (3 if revision else 2) or version != info[7:10 if revision else 9]:
         raise ValueError(f'patch_version mismatch for {metadata["name"]}')
     build_id = info[10:18] if revision else info[9:17]
     if build_id.hex() != metadata['build_id']:
         raise ValueError(f'build_id mismatch for {metadata["name"]}')
-    if info[-1] != metadata['image_flags']:
+    if info[18] != metadata['image_flags']:
         raise ValueError(f'image_flags mismatch for {metadata["name"]}')
+    if int.from_bytes(info[19:21],'big') != 15 or metadata.get('remote_capabilities') != 15:
+        raise ValueError('remote_capabilities mismatch')
     actual.update(build_id=build_id.hex(), info_hex=info.hex(),
-                  patch_version=metadata['patch_version'], image_flags=info[-1])
+                  patch_version=metadata['patch_version'], image_flags=info[18], remote_capabilities=int.from_bytes(info[19:21],'big'))
     return actual
 
 
@@ -85,7 +87,9 @@ def main(argv=None):
     profiles = [(path, json.loads(path.read_text())) for path in metadata_paths]
     if args.metadata_dir.resolve() == PUBLIC_METADATA.resolve() and len(profiles) != 2:
         parser.error('expected exactly two current public release metadata files')
-    from seplos.profiles import require_profile
+    from seplos.profiles import require_profile, SUPPORTED_VERSIONS
+    if args.metadata_dir.resolve() == PUBLIC_METADATA.resolve() and {m.get('patch_version') for _, m in profiles} != set(SUPPORTED_VERSIONS):
+        parser.error('expected one metadata file for each current profile')
     for _, metadata in profiles:
         require_profile(metadata['patch_version'])
     source = verify_source(args.source)

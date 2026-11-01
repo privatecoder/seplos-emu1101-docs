@@ -16,7 +16,7 @@ def worker_job(source,out,mode,revision,hard_stop,maint_version):
  resource.setrlimit(resource.RLIMIT_FSIZE,(64*1024*1024,64*1024*1024))
  from .analysis import discover
  from .guards import guard
- report={'schema':SCHEMA,'tool_version':'2.0.0','mode':mode,'maint_version':maint_version,'positive_flags':positive_flags,'input':str(source),'status':'refused','stage':'container','tests':[]}
+ report={'schema':SCHEMA,'tool_version':'2.1.0','mode':mode,'maint_version':maint_version,'positive_flags':positive_flags,'input':str(source),'status':'refused','stage':'container','tests':[]}
  started=time.monotonic()
  try:
   if not __debug__:raise RuntimeError('Python -O is unsupported: assertions must be enabled')
@@ -38,15 +38,17 @@ def worker_job(source,out,mode,revision,hard_stop,maint_version):
    if maint_version.count('.')==2:
     from .marker_uart0 import discover_marker_uart0
     report['stage']='UART0-marker-contract';discover_marker_uart0(im,facts)
-   if maint_version=='1.6.3':
+   if maint_version=='1.6.4':
     from .service import discover_service
     report['stage']='service-contract';discover_service(im,facts)
-   if maint_version=='1.5.3':
+   if maint_version=='1.5.4':
     from .storage_diagnostics import discover_diagnostics
     report['stage']='storage_diagnostics-contract';discover_diagnostics(im,facts)
-   if maint_version=='1.6.3':
+   if maint_version=='1.6.4':
     from .configurable_hardstop import discover_configurable
     report['stage']='configurable_hardstop-contract';discover_configurable(im,facts)
+   from .remote_diagnostics import discover_remote
+   report['stage']='remote-diagnostics-contract';discover_remote(im,facts)
    report.update(status='compatible',stage='complete')
   else:
    from .build import build
@@ -106,26 +108,30 @@ def run_worker(source,mode,revision=255,timeout=120,worker=None,hard_stop='prese
    if mode=='patch':
     built=report['build']
     if built.get('patch_version')!=maint_version:raise ValueError('worker version differs from request')
+    if built.get('info_format')!=5 or built.get('info_bytes')!=21 or built.get('remote_capabilities')!=15 or not built.get('remote_diagnostics'):
+     raise ValueError('remote info contract missing')
     if maint_version.count('.')==2:
      from .marker_uart0_tests import REQUIRED
-     if built.get('info_format')!=4 or built.get('info_bytes')!=19 or not built.get('uart0_marker') or not built.get('image_flags',0)&16:raise ValueError('revision UART0 marker contract missing')
+     if built.get('info_format')!=5 or built.get('info_bytes')!=21 or not built.get('uart0_marker') or not built.get('image_flags',0)&16:raise ValueError('revision UART0 marker contract missing')
      if not set(REQUIRED)<={t['name'] for t in tests}:raise ValueError('mandatory UART0 marker suite incomplete')
-    if maint_version=='1.6.3':
+    if maint_version=='1.6.4':
      from .service_tests import REQUIRED
      if not built.get('service') or not built.get('extended_diagnostics') or not built.get('checkpoint_before_reset') or built.get('image_flags',0)&0x60!=0x60:raise ValueError('service capabilities missing')
      if not set(REQUIRED)<={t['name'] for t in tests}:raise ValueError('mandatory service suite incomplete')
-    if maint_version=='1.5.3':
+    if maint_version=='1.5.4':
      from .storage_diagnostics_tests import REQUIRED
      if not built.get('storage_diagnostics') or not built.get('extended_diagnostics') or built.get('image_flags',0)&0xfe!=0x3a or built.get('cutoff') or built.get('checkpoint_before_reset') or built.get('ram_bytes')!=0:raise ValueError('storage_diagnostics capability contract missing')
      expected={**report.get('facts',{}).get('hooks',{}),**report.get('facts',{}).get('marker_uart0',{}).get('hooks',{})}
      if len(expected)!=5 or built.get('hooks')!=expected:raise ValueError('storage_diagnostics five-hook contract missing')
      if not set(REQUIRED)<={t['name'] for t in tests}:raise ValueError('mandatory storage_diagnostics suite incomplete')
-    if maint_version=='1.6.3':
+    if maint_version=='1.6.4':
      from .configurable_hardstop_tests import REQUIRED
      if not built.get('configurable_hard_stop') or built.get('image_flags',0)&0xfe!=0xfe or type(built.get('hard_stop_default')) is not bool or bool(built.get('image_flags',0)&1)!=built['hard_stop_default']:raise ValueError('configurable_hardstop capability/default contract missing')
      h=report.get('facts',{}).get('configurable_hardstop',{})
      if len(built.get('hooks',{}))!=21 or built['hooks'].get('hook_configurable_hard_stop')!=h.get('site') or built.get('ram_bytes')!=4:raise ValueError('configurable_hardstop hook/RAM contract missing')
      if not set(REQUIRED)<={t['name'] for t in tests}:raise ValueError('mandatory configurable_hardstop suite incomplete')
+    from .remote_diagnostics_tests import REQUIRED
+    if not set(REQUIRED)<={t['name'] for t in tests}:raise ValueError('mandatory remote diagnostics suite incomplete')
     if built.get('positive_flags',False)!=positive_flags or bool(built.get('image_flags',0)&8)!=positive_flags:raise ValueError('build polarity differs from request')
     if positive_flags and maint_version.startswith('1.6'):
      from .permissions_tests import REQUIRED
@@ -134,6 +140,9 @@ def run_worker(source,mode,revision=255,timeout=120,worker=None,hard_stop='prese
    if hashlib.sha256(output).hexdigest()!=report['output_file_sha256']:raise ValueError('output digest mismatch')
    candidate=Image.parse(output.decode('ascii'))
    if candidate.sha!=report['build']['app_sha256']:raise ValueError('app digest mismatch')
+   identity_offset=report['build']['build_id_offset']-10
+   identity=candidate.app[identity_offset:identity_offset+21]
+   if len(identity)!=21 or identity[:4]!=b'MNT\x05' or identity[7:10]!=bytes(map(int,maint_version.split('.'))) or identity[18]!=report['build']['image_flags'] or identity[19:21]!=b'\0\x0f':raise ValueError('embedded remote info contract mismatch')
    names=('firmware.ehex','payload.resolved.s','payload.dis')
    return report,{name:(tmp/name).read_bytes() for name in names}
   except Exception as exc:
@@ -157,13 +166,13 @@ def publish(out,report,artifacts):
 
 
 def main(argv=None):
- p=argparse.ArgumentParser(description='Offline OEM analysis + mandatory tested MAINT1.5.3/1.6.3 patch. Never flashes hardware.')
+ p=argparse.ArgumentParser(description='Offline OEM analysis + mandatory tested MAINT1.5.4/1.6.4 patch. Never flashes hardware.')
  sub=p.add_subparsers(dest='command',required=True)
  for name in ('analyze','patch','_worker'):
   q=sub.add_parser(name,help='private bounded worker' if name=='_worker' else name)
   q.add_argument('input',type=Path);q.add_argument('--out',required=True,type=Path,help='new output directory; parent must exist')
   q.add_argument('--base-revision',type=int,default=255,help='explicit OEM third component 0..254; default 255=unknown (not inferred from filename)')
-  q.add_argument('--hard-stop',choices=('preserve','enable'),default='preserve',help='patch: preserve existing charge-inhibit behavior (default), or enable SP80 hard stop (1.6.3: default for legacy config)')
+  q.add_argument('--hard-stop',choices=('preserve','enable'),default='preserve',help='patch: preserve existing charge-inhibit behavior (default), or enable SP80 hard stop (1.6.4: default for legacy config)')
   q.add_argument('--maint-version',choices=SUPPORTED_VERSIONS,required=True,help='required current MAINT profile; positive permissions are automatic')
   if name=='_worker':q.add_argument('--mode',required=True,choices=('analyze','patch'))
  args=p.parse_args(argv)

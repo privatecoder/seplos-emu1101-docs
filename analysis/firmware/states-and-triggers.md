@@ -59,14 +59,14 @@ Byte `0x200000AC`, checked in 06.12 and 06.13 (logic identical). All current thr
 | 6 | **Discharge current ≥ 3 A** | I ≤ −3.00 A | I > −2.80 A | `0x84A0` / `0x870C` |
 | 7 | **Charge current ≥ 3 A** | I ≥ +3.01 A | I < +2.81 A | same |
 
-- Bit 7 is evaluated by the SOC calibration: the voltage rules for 98/100 % only take effect after current-status Bit7 has remained inactive for **more than30 s** (see [SOC correction prerequisites](soc-capacity-and-persistence.md#2-automatic-corrections-without-ovp)). No reader was found for bit 6. Both are only visible in the intra-pack response 0x5A. In 0x44 the firmware only reports `& 0x33` (bits 0, 1, 4, 5).
+- Bit 7 is evaluated by the SOC calibration: the voltage rules for 98/100 % only take effect after current-status Bit7 has remained inactive for **more than 30 s** (see [SOC correction prerequisites](soc-capacity-and-persistence.md#2-automatic-corrections-without-ovp)). No reader was found for bit 6. Both are only visible in the intra-pack response 0x5A. In 0x44 the firmware only reports `& 0x33` (bits 0, 1, 4, 5).
 - Bits 0/1 are the basis for everything that requires "charging"/"discharging", e.g. the [energy counters](#energy-and-cycle-counters) and the charge/discharge temperature limits.
 - The thresholds here apply to the individual pack. The master decides for the whole system separately with its own dead band (see [Modbus aggregate](../protocols/modbus-rtu.md#2-data-source-system-aggregate-0x2000164c), total current: discharging ≤ −0.8 A, charging ≥ +1.0 A).
 - Confirmed with 24 real 0x5A captures (see [Intra-pack protocol](../protocols/intra-pack.md), real captures/test data).
 
 System aggregation uses a separate deadband: discharging ≤−0.8 A, clearing above −0.6 A; charging ≥+1.0 A, clearing below +0.8 A. These are not per-pack detection thresholds.
 
-Bit2 denotes external voltage/charger detection, not a float-charging phase. From16.06.12 its immediate and five-second paths follow the table above; through16.06.11 it was set only after30 s (`0x856E` / `0x87DA`, voltage difference from `0x1CFA`). It affects heating and standby shutdown. ASCII44 masks it out, whereas5A byte31 carries it. The interpretation is consistent with24 historical5A captures. Neither CVL nor SOC logic creates a float-voltage stage.
+Bit2 denotes external voltage/charger detection, not a float-charging phase. From16.06.12 its immediate and five-second paths follow the table above; through 16.06.11 it was set only after 30 s (`0x856E` / `0x87DA`, voltage difference from `0x1CFA`). It affects heating and standby shutdown. ASCII44 masks it out, whereas 5A byte 31 carries it. The interpretation is consistent with 24 historical 5A captures. Neither CVL nor SOC logic creates a float-voltage stage.
 
 ## Charge and discharge output decisions
 
@@ -157,7 +157,7 @@ P70 only counts short-term overcurrent and short circuit, not the normal charge/
 
 - Within the window, the latch of cell/pack UVP, empty flag and SOC protection is cleared every second. The MOSFETs close, and a charger can detect the battery.
 - Abort after 5 s if a cell is ≤ P9, a discharge current ≥ 3 A flows or a MOSFET path is off.
-- Success: charging-current status Bit7 (set at3.01 A, cleared below2.81 A) for more than5 s or lowest cell > P7 resets the attempt counter.
+- Success: charging-current status Bit7 (set at 3.01 A, cleared below 2.81 A) for more than 5 s or lowest cell > P7 resets the attempt counter.
 - Because the voltage evaluation immediately sets UVP again as long as a cell is ≤ P6, this only helps in the range P6 < cell ≤ P7.
 - **Caution:** BitGroup6 bit 4 at the same time **disables** the charge lock "cell < P9" (event 6 bit 4). In the example configuration (bit 4 on), this deep discharge lock is therefore ineffective.
 
@@ -225,7 +225,7 @@ The logic has been unchanged since 04.06, except for the minimum cell voltage (3
 
 ---
 
-With P65 ≤8, cell temperature channels3/4 copy channel2 (`0x2162`, OEM16.06.13). This is a measurement-channel rule rather than evidence of extra physical probes.
+With P65 ≤8, cell temperature channels 3/4 copy channel 2 (`0x2162`, OEM 16.06.13). This is a measurement-channel rule rather than evidence of extra physical probes.
 
 ## Additional event conditions
 

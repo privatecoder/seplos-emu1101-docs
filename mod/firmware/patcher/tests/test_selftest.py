@@ -11,7 +11,7 @@ class Contract(unittest.TestCase):
   from seplos.machine import probe
   from seplos.build import build
   from seplos.selftest import validate
-  im=Image.read(next((ORIGINALS).glob('*16.06.13*ehex')));facts=probe(im,discover(im));patched,buildreport=build(im,facts,maint_version='1.5.3')
+  im=Image.read(next((ORIGINALS).glob('*16.06.13*ehex')));facts=probe(im,discover(im));patched,buildreport=build(im,facts,maint_version='1.5.4')
   result=validate(im,patched,facts,buildreport)
   self.assertGreaterEqual(len(result),60)
   self.assertTrue(all(x['passed'] for x in result))

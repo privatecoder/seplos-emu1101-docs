@@ -50,10 +50,10 @@ def validate_diagnostics(original,patched,facts,report):
   assert all(a in allowed or x==y for a,(x,y) in enumerate(zip(original.app,patched.app)))
  check('exact-five-OEM-hooks-no-startup-or-NVM-change',hooks)
  def version():
-  equal(report['image_flags']&0xfe,0x3a);equal((report['info_format'],report['info_bytes']),(4,19))
+  equal(report['image_flags']&0xfe,0x3a);equal((report['info_format'],report['info_bytes']),(5,21))
   for port in ('R','C'):
    rtn,data=exchange(board(),port,b'\3')
-   equal((rtn,data[:4],data[7:10],data[-1]),(0,b'MNT\4',b'\1\5'+bytes([3]),report['image_flags']))
+   equal((rtn,data[:4],data[7:10],data[18]),(0,b'MNT\5',b'\1\5'+bytes([4]),report['image_flags']))
  check('version-and-capability-contract',version)
  def all_addresses():
   for adr in range(22):
@@ -106,7 +106,7 @@ def validate_diagnostics(original,patched,facts,report):
  check('foreign-FF-invalid-local-silent',silent)
  def malformed():
   for port in ('R','C'):
-   for info in (b'',b'\4\0',b'\5'):
+   for info in (b'',b'\4\0',b'\7'):
     m=board();out=exchange(m,port,info);assert out is None or out[0]!=0
     equal(exchange(m,port)[0],0);no_write(m)
    good=ascii_frame(1,0x64,b'\4')

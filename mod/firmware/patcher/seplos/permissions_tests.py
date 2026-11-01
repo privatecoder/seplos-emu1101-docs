@@ -40,7 +40,7 @@ def validate_positive(original,patched,facts,report):
  def info():
   assert report.get('positive_flags') is True and report['image_flags']&14==14
   m=board();rtn,data=request(m,0x64,b'\3')
-  equal((rtn,len(data),data[:4],data[7:9],data[-1]),(0,report['info_bytes'],b'MNT'+bytes([report['info_format']]),b'\1\6',report['image_flags']))
+  equal((rtn,len(data),data[:4],data[7:9],data[18]),(0,report['info_bytes'],b'MNT'+bytes([report['info_format']]),b'\1\6',report['image_flags']))
  check(REQUIRED[0],info)
  for enabled in (False,True):
   def bit3(enabled=enabled):

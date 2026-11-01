@@ -56,7 +56,7 @@ After on, protections and the recovery priority below determine outputs. On alon
 
 ## Charge permission and output masks
 
-Evaluator:16.06.13 `0x6FFA`;16.06.05 `0x6516`. The >10 A discharge-recovery branch is `0x7036`–`0x704A` in16.06.13.
+Evaluator:16.06.13 `0x6FFA`;16.06.05 `0x6516`. The >10 A discharge-recovery branch is `0x7036`–`0x704A` in 16.06.13.
 
 The function sets or clears **alarm event 8 bit 6** ("charging forbidden"). From this follow the system status/on-off bit 1 and finally GPIO `0x50002000` bit 12, i.e. the charge MOSFET.
 
@@ -91,7 +91,7 @@ The discharge MOSFET (on-off bit 0, GPIO 13) is **off** as long as any of the fo
 - Empty flag (`0x200000F5` bit 0, set when the SOC jumps to 0 % due to UVP)
 - System status bit 5 "off"
 
-**Charging recovery precedes the inhibits above:** with system status bit 7 set (charge current at least 3.01 A; clears below 2.81 A), `0x719C–0x71B8` jumps to the output stage before testing them. Without cell/pack UVP it enables discharge even while off is set. Pending UVP is cleared first; discharge remains inhibited only in that clearing cycle. This is more than merely clearing UVP. Re-enabling may require [precharge](states-and-triggers.md#soft-start-precharge). A synthetic4 A case enables both MOSFETs while the initial off bit is still set; subsequent state processing can clear off in the same cycle. *(confirmed: code and counterexample)*
+**Charging recovery precedes the inhibits above:** with system status bit 7 set (charge current at least 3.01 A; clears below 2.81 A), `0x719C–0x71B8` jumps to the output stage before testing them. Without cell/pack UVP it enables discharge even while off is set. Pending UVP is cleared first; discharge remains inhibited only in that clearing cycle. This is more than merely clearing UVP. Re-enabling may require [precharge](states-and-triggers.md#soft-start-precharge). A synthetic 4 A case enables both MOSFETs while the initial off bit is still set; subsequent state processing can clear off in the same cycle. *(confirmed: code and counterexample)*
 
 ## Off triggers and delayed supply shutdown
 

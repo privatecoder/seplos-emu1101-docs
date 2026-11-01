@@ -185,7 +185,7 @@ def validate(original,patched,facts,build):
  check('stock-Modbus-gate-frame-CRC-and-interleaved-binary-service',modbus_regression)
 
  def info_status():
-  m=board();expected=b'MNT'+bytes([build['info_format']])+bytes(facts['oracle']['base_version'])+bytes([build['base_revision'],*map(int,build['patch_version'].split('.'))])+bytes.fromhex(build['build_id'])+bytes([build['image_flags']])
+  m=board();expected=b'MNT'+bytes([build['info_format']])+bytes(facts['oracle']['base_version'])+bytes([build['base_revision'],*map(int,build['patch_version'].split('.'))])+bytes.fromhex(build['build_id'])+bytes([build['image_flags']])+build['remote_capabilities'].to_bytes(2,'big')
   for marker,slaves in ((0xffffffff,11),(0,0),(0x12345678,7)):
    m.put(0x23000,marker.to_bytes(4,'little'));m.put(r['slaves'],bytes([slaves]))
    equal(maintenance(m,b'\x03'),(0,expected));equal(maintenance(m,b'\x02'),(0,marker.to_bytes(4,'little')+bytes([slaves])))
@@ -194,12 +194,12 @@ def validate(original,patched,facts,build):
  for address in range(22):
   def addressed_info(address=address):
    m=board(address);m.put(r['group0'],b'\0');m.put(r['slaves'],b'\x0b')
-   expected=b'MNT'+bytes([build['info_format']])+bytes(facts['oracle']['base_version'])+bytes([build['base_revision'],*map(int,build['patch_version'].split('.'))])+bytes.fromhex(build['build_id'])+bytes([build['image_flags']])
+   expected=b'MNT'+bytes([build['info_format']])+bytes(facts['oracle']['base_version'])+bytes([build['base_revision'],*map(int,build['patch_version'].split('.'))])+bytes.fromhex(build['build_id'])+bytes([build['image_flags']])+build['remote_capabilities'].to_bytes(2,'big')
    before=m.payload()
    for marker in (0xffffffff,0,0x12345678):
     m.put(0x23000,marker.to_bytes(4,'little'))
     response=tx(m,ascii_frame(address,0x64,b'\x03'))
-    equal(ascii_payload(response,address),(0,expected));equal(response[9:13],b'8026' if build['info_format']==4 else b'A024')
+    equal(ascii_payload(response,address),(0,expected));equal(response[9:13],b'402A')
     equal(m.payload(),before);equal(m.read(0x23000,4),marker.to_bytes(4,'little'));equal(m.num(r['slaves']),11)
    equal(m.flash_ops,[]);equal(m.saves,[])
    equal(query(m,0x47),frame(address,0x47,before+m.read(r['name'],10)))
@@ -252,7 +252,7 @@ def validate(original,patched,facts,build):
   equal(m.payload(),before);equal(m.flash_ops,[]);equal(m.saves,[])
   equal(ascii_payload(tx(m,request),11)[0],0)
  check('slave-info-rejects-malformed-CRC-length-VER-CID-and-recovers',malformed_slave_info)
- for payload in (b'',b'\x05' if build.get('extended_diagnostics') else b'\x04',b'\x01\xc3\0',b'\x00\xc3\0',b'\x03\0'):
+ for payload in (b'',b'\x07' if build.get('extended_diagnostics') else b'\x04',b'\x01\xc3\0',b'\x00\xc3\0',b'\x03\0'):
   check('maintenance-invalid-contract-'+payload.hex(),lambda payload=payload:equal(maintenance(board(),payload),(5,b'')))
  def tick():
   m=board();m.put(0x23000,bytes(4));m.put(r['slaves'],b'\x0b');m.run(build['entries']['hook_dip']);equal(m.num(r['slaves']),0)
@@ -294,4 +294,6 @@ def validate(original,patched,facts,build):
  if build.get('configurable_hard_stop'):
   from .configurable_hardstop_tests import validate_configurable
   passed.extend(validate_configurable(original,patched,facts,build))
+ from .remote_diagnostics_tests import validate_remote
+ passed.extend(validate_remote(original,patched,facts,build))
  return passed

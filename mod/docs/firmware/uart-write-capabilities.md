@@ -1,4 +1,4 @@
-# UART write capabilities: Original .13, MAINT 1.5.3 and MAINT 1.6.3
+# UART write capabilities: Original .13, MAINT 1.5.4 and MAINT 1.6.4
 
 > **Port notation:** **UART0 = RS485-1/RS485-2 (shared pack bus)**; **UART1 = RS485 pair in the CAN socket**; **UART2 = local display/Bluetooth port**. UART1 carries RS485 traffic; the actual CAN interface uses separate pins in the same socket.
 
@@ -6,17 +6,17 @@ Seplos BMS 2.0/10E/V16 (EMU1101). These tables describe the named OEM 16.06.13
 and MAINT images only. Determine each target's capabilities with 64/03;
 command 51 reports the OEM base family and cannot identify the patch release.
 Unknown images require separate analysis. The catalogue verifies current input
-hashes, MNT04 metadata/template and build-ID digests against public release
+hashes, MNT05 metadata/template and build-ID digests against public release
 JSONs without opening ports or rerunning native emulation.
 
-| Firmware | Build ID | MNT04 image flags | .ehex file SHA-256 |
+| Firmware | Build ID | MNT05 image flags | .ehex file SHA-256 |
 |---|---|---|---|
-| Original16.06.13 | — | — | `0ea75c9834cf19789a58f58db8cde1a2bbd722a8f5a7bde7f00106f59b91ccf6` |
-| 1.5.3 | `2b89286ed6c14604` | `0x3A` | `dee768334ad4227999b41efd0c4232c0b5c9f323c973cd392b5651a1b5f29325` |
-| 1.6.3 | `baa01ecd5af4eb28` | `0xFE` | `99ea2cc5496358ec127300b55a4ca718acb1c4f6ee16f13edbe346f7aa4db062` |
+| Original 16.06.13 | — | — | `0ea75c9834cf19789a58f58db8cde1a2bbd722a8f5a7bde7f00106f59b91ccf6` |
+| 1.5.4 | `80112d861b8329c4` | `0x3A` | `bc1442ed075d94f10fcd08d2ce322c9e1eb23748ee0459894f1bf74cb3b18382` |
+| 1.6.4 | `a8676b52bae281ff` | `0xFE` | `3a5ebf37197320ef6ba0ef5aba85daa981fe829ef312d9d84fc5ac0062c6bf3f` |
 
 SHA-256, where listed, covers the complete .ehex file. The OEM image has no
-MAINT build ID or MNT04 reply. Published hashes bind the actual release files;
+MAINT build ID or MNT05 reply. Published hashes bind the actual release files;
 a different hard-stop build option produces a different image.
 
 ## Ports and conditions
@@ -54,7 +54,7 @@ on may release it independently of that setting.
 
 ## Complete write and action matrix
 
-| Value / action | Command | Original .13 | MAINT1.5.3 | MAINT1.6.3 |
+| Value / action | Command | Original .13 | MAINT 1.5.4 | MAINT 1.6.4 |
 |---|---|---|---|---|
 | All 87 configuration parameters P0–P86 | A1, whole block | UART0, UART2 | UART0, UART1[W], UART2 | UART0, UART1[W], UART2 |
 | Function switches Group0–7, including display format | A1; exceptions below | UART0, UART2 | UART0, UART1[W], UART2 | UART0, UART1[W], UART2; bit 5 protected |
@@ -77,8 +77,8 @@ on may release it independently of that setting.
 | Clear maintenance marker / stop maintenance | ASCII 64 / 00 C3 5A | — | UART0: addressed pack; UART1: master 0 only | UART0: addressed pack; UART1: master 0 only |
 | Replace firmware | UART0 bootloader, separate flash procedure | UART0 | UART0 | UART0 |
 | Send six undecoded bytes to the display/dongle | ASCII AB → UART2-Tunnel | UART0 → UART2 | UART0 → UART2 | UART0 → UART2 |
-| Save SOC before a planned restart | Automatic before addressed ASCII45/06 | — | — | UART0, UART1[P]; no separate write permission |
-| Configure hard stop during recharge waiting | A1,Group0.Bits6/7 | — | — | UART0, UART1[W], UART2; write together |
+| Save SOC before a planned restart | Automatic before addressed ASCII 45/06 | — | — | UART0, UART1[P]; no separate write permission |
+| Configure hard stop during recharge waiting | A1, Group0.Bits6/7 | — | — | UART0, UART1[W], UART2; write together |
 
 A1 always transmits a complete valid parameter block. UART0 uses ASCII with 169
 INFO bytes, including the device name. UART1/UART2 use binary with 158 DATA bytes,
@@ -86,7 +86,7 @@ without the name. Individual P values are not directly writable registers.
 
 ## Additional read and service operations
 
-| Read operation | Command | Original .13 | MAINT1.5.3 | MAINT1.6.3 |
+| Read operation | Command | Original .13 | MAINT 1.5.4 | MAINT 1.6.4 |
 |---|---|---|---|---|
 | Read parameters, switches and device name | 47 | UART0: ASCII; UART2: binary; UART1: — | UART0: ASCII; UART1/UART2: binary | UART0: ASCII; UART1/UART2: binary |
 | Read battery serial number / String1 | A2 | UART0: ASCII; UART1/UART2: — | UART0: ASCII; UART1: binary; UART2: — | UART0: ASCII; UART1: binary; UART2: — |
@@ -95,8 +95,12 @@ without the name. Individual P values are not directly writable registers.
 | Read base device information | ASCII 51 | UART0, UART1; UART2: — | UART0, UART1; does not replace patch identity | UART0, UART1; does not replace patch identity |
 | Read firmware identity / version / build / image flags | ASCII 64 / 03 | — | UART0, UART1: each addressed pack; UART2: — | UART0, UART1: each addressed pack; UART2: — |
 | Read maintenance marker and effective slave count | ASCII 64 / 02 | — | UART0: addressed pack; UART1: master 0 only; UART2: — | UART0: addressed pack; UART1: master 0 only; UART2: — |
-| Read extended storage diagnostics | ASCII64/04 | — | UART0, UART1; addressed pack, no permission required | UART0, UART1; addressed pack, no permission required |
-| Read hard-stop selection and build default | 64/03,for configuration also read 47 | — | 64/03 image flag 0: fixed in image | 64/03 flag 80/bit 0 +47 Group0.Bits6/7 |
+| Read extended storage diagnostics | ASCII 64/04 | — | UART0, UART1; addressed pack, no permission required | UART0, UART1; addressed pack, no permission required |
+| Read one history record | ASCII 4B / 0000 oldest or 0001 next | UART0 | UART0, UART1; no permission required | UART0, UART1; no permission required |
+| Read active/stored calibration | ASCII 64/05; active 00, primary 01, backup 02 | — | UART0, UART1; no permission required | UART0, UART1; no permission required |
+| Read persisted capacity/SOC contents | ASCII 64/06 | — | UART0, UART1; no permission required | UART0, UART1; no permission required |
+| Read full-width live charged/discharged energy | ASCII 64/06 | — | UART0, UART1; no permission required | UART0, UART1; no permission required |
+| Read hard-stop selection and build default | 64/03, for configuration also read 47 | — | 64/03 image flag 0: fixed in image | 64/03 flag 80/bit 0 +47 Group0.Bits6/7 |
 
 This complements the action matrix rather than replacing the telemetry
 catalogue. UART1 47/A2/A4 and implemented 64/03/04 reads need no A1 permission.
@@ -115,36 +119,38 @@ Detected erase/readback/token errors return RTN05 with no INFO. An ACK does
 not prove that polling has already finished changing. Clearing the marker
 does not reset, alter parameters or release an individual pack lock.
 
-UART0/UART1 64/03 returns identical MNT04 information for a given pack: 19 decoded
-bytes, LENGTH 8026. Offsets 0–2 MNT, 3 format, 4–6 OEM base, 7–9 patch version,
-10–17 build ID, 18 image flags. It contains no runtime marker or state fields.
+UART0/UART1 64/03 returns identical MNT05 information for a given pack: 21 decoded
+bytes, LENGTH 402A. Offsets 0–2 MNT, 3 format, 4–6 OEM base, 7–9 patch version,
+10–17 build ID, 18 image flags, 19–20 capability mask u16 BE 000F. It contains no runtime marker or state fields.
 Flag 0x10 identifies UART0 marker/info support.
+
+New read-capability bits 0/1/2/3 mean UART1 history, calibration pages, persisted SOC contents and full-width live energy. Discover support through the explicit mask; never infer it from a version or image flag. Reads require no master role, marker or Group0 enable flag. UART1 RX injection at the EEPROM transfer boundary is model-tested; full concurrent UART0 polling, timer and protection execution and physical timing are untested. Existing 64/04 is unchanged. [Remote diagnostics](../../docs/firmware/remote-diagnostics.md) defines exact layouts, shared-cursor rollback and snapshot/boot limits. UART2 is unchanged.
 
 ## Version-specific rules
 
 Both versions permit UART1 Power/RTC with Group0.Bit3=1. Image flag 0x08 identifies
 positive polarity; Group0 FF therefore allows UART1 Power/RTC in both versions.
-Extended off also requires image flag 0x04. Only 1.6.3 enables it with
-bit 4=1; bit 5=0 indicates an individual lock. Disabling bit 4 does not release an existing lock. In 1.5.3 bits 4/5 remain
-reserved. No new parameter is introduced by 1.5.3.
+Extended off also requires image flag 0x04. Only 1.6.4 enables it with
+bit 4=1; bit 5=0 indicates an individual lock. Disabling bit 4 does not release an existing lock. In 1.5.4 bits 4/5 remain
+reserved. No new parameter is introduced by 1.5.4.
 
 Both support UART0/UART1 64/04: freely readable addressed 0–21, foreign/FF silent,
 format 01, ten INFO bytes, LENGTH B014. These check parameter/SOC shape, CRC
-and differences without repair. 1.5.3 returns lock bytes 7/8=FF, byte 9=00
+and differences without repair. 1.5.4 returns lock bytes 7/8=FF, byte 9=00
 (no lock cache); this is unavailable state, not an unlocked-state claim.
-Only 1.6.3 saves/verifies both original SOC copies before addressed UART0/UART1 45/06.
+Only 1.6.4 saves/verifies both original SOC copies before addressed UART0/UART1 45/06.
 RTN08 prevents reset on storage/verification failure; FF does not checkpoint
-or reset. UART1 still needs [P]. 1.5.3 retains the OEM UART0 45 broadcast paths.
-MNT04 patch bytes are 01 05 03 / 01 06 03. Diagnostic image flag 0x20 is present
-in both; checkpoint flag 0x40 only in 1.6.3. Published image flags are 3A / FE.
-A static hard-stop 1.5.3 build uses 3B instead of 3A.
+or reset. UART1 still needs [P]. 1.5.4 retains the OEM UART0 45 broadcast paths.
+MNT05 patch bytes are 01 05 04 / 01 06 04. Diagnostic image flag 0x20 is present
+in both; checkpoint flag 0x40 only in 1.6.4. Published image flags are 3A / FE.
+A static hard-stop 1.5.4 build uses 3B instead of 3A.
 
-1.6.3 protects bit 5 even during malformed UART0/UART2 imports. Addressed UART0/UART1 on/off
-returns RTN08 with LENGTH0000 on a persistence failure; matching RAM bit 5
+1.6.4 protects bit 5 even during malformed UART0/UART2 imports. Addressed UART0/UART1 on/off
+returns RTN08 with LENGTH 0000 on a persistence failure; matching RAM bit 5
 does not turn it into success. Check uncertain outcomes with fresh reads
 rather than automatically repeating writes.
 
-### Configurable hard stop in MAINT 1.6.3
+### Configurable hard stop in MAINT 1.6.4
 
 Image flag 0x80 marks configurability. Image flag bit 0 is the build default
 for legacy parameters; explicit parameters take precedence. The published FE
@@ -175,14 +181,14 @@ live. 64/03 is static: read 47/Group0 for active configuration.
 
 ## Group0 rules
 
-| Field | Original .13 | MAINT1.5.3 | MAINT1.6.3 | Write route / exception |
+| Field | Original .13 | MAINT 1.5.4 | MAINT 1.6.4 | Write route / exception |
 |---|---|---|---|---|
 | Group0.Bit0 | Reserved, no OEM function | 1 = allow writes over UART1 | 1 = allow writes over UART1 | UART0/UART2; UART1[W] may disable itself 1→0. Re-enable only through UART0/UART2. |
-| Group0.Bit1 | 1 = enable temperature sensor plausibility check | 1 = enable temperature sensor plausibility check | same as 1.5.3 | UART0, UART1[W], UART2 |
-| Group0.Bit2 | Reserved, no OEM function | 1 = allow maintenance start over UART1 | same as 1.5.3 | UART0/UART2 only; a change through UART1-A1 returns E3 and rejects the entire block. |
+| Group0.Bit1 | 1 = enable temperature sensor plausibility check | 1 = enable temperature sensor plausibility check | same as 1.5.4 | UART0, UART1[W], UART2 |
+| Group0.Bit2 | Reserved, no OEM function | 1 = allow maintenance start over UART1 | same as 1.5.4 | UART0/UART2 only; a change through UART1-A1 returns E3 and rejects the entire block. |
 | Group0.Bit3 | Reserved, no OEM function | **1 = allow Power/RTC over UART1**, 0 = blocked | **1 = allow Power/RTC over UART1**, 0 = blocked | UART0/UART2 only; a change through UART1-A1 returns E3 and rejects the entire block. |
 | Group0.Bit4 | Reserved, no OEM function | Reserved, no function | **1 = enable extended off**, 0 = disabled | UART0, UART1[W], UART2; Disabling does not release an existing lock. |
-| Group0.Bit5 | Reserved, no OEM function | Reserved, no function | **0 = individual pack lock active**, 1 = clear | 1.5.3: writable through UART0/UART1[W]/UART2. 1.6.3: status only; change only through addressed 45 on/off over UART0/UART1[P]. |
+| Group0.Bit5 | Reserved, no OEM function | Reserved, no function | **0 = individual pack lock active**, 1 = clear | 1.5.4: writable through UART0/UART1[W]/UART2. 1.6.4: status only; change only through addressed 45 on/off over UART0/UART1[P]. |
 | Group0.Bit6 | Reserved, no OEM function | Reserved, no function | When bit 7=0: 1 hard stop, 0 soft stop | UART0, UART1[W], UART2; set both bits together. |
 | Group0.Bit7 | Reserved, no OEM function | Reserved, no function | 0 explicit choice, 1 build default | Edit together with bit 6; legacy FF follows the build default. |
 
@@ -346,10 +352,10 @@ Group7.Bit4 selects its frame format. Preserve unused bits.
 | Group0 | 1 | Temperature sensor plausibility |
 | Group0 | 2 | Allow maintenance start over UART1 |
 | Group0 | 3 | Allow Power/RTC over UART1: 1 in both MAINT versions; reserved in OEM |
-| Group0 | 4 | 1.6.3: extended off enabled at 1; 1.5.3 reserved |
-| Group0 | 5 | 1.6.3: individual pack lock active at 0, status; 1.5.3 reserved |
-| Group0 | 6 | 1.6.3: hard-stop selection when bit 7=0; Original/1.5.3 reserved |
-| Group0 | 7 | 1.6.3:0 explicit choice, 1 build default; Original/1.5.3 reserved |
+| Group0 | 4 | 1.6.4: extended off enabled at 1; 1.5.4 reserved |
+| Group0 | 5 | 1.6.4: individual pack lock active at 0, status; 1.5.4 reserved |
+| Group0 | 6 | 1.6.4: hard-stop selection when bit 7=0; Original/1.5.4 reserved |
+| Group0 | 7 | 1.6.4: 0 explicit choice, 1 build default; Original/1.5.4 reserved |
 | Group1 | 0 | Cell high-voltage warning |
 | Group1 | 1 | Cell OVP |
 | Group1 | 2 | Cell low-voltage warning |
@@ -420,7 +426,7 @@ read-only. Pylontech supplies no additional configuration write route here.
 ## Reproduction
 
 Run `write_access.py` with --verify, --markdown or no option for JSON.
-Verification uses current release input hashes and embedded MNT04 templates;
+Verification uses current release input hashes and embedded MNT05 templates;
 it needs no historical build reports and does not rerun native tests.
 Use --out NEW_FILE to write without overwriting an existing file. Native emulator
 checks model MCU behavior; they do not replace electrical hardware validation.
@@ -431,7 +437,7 @@ emits JSON by default; --markdown renders this document. Published native
 validation counts and limits are recorded in the release summaries below.
 
 See
-[MAINT 1.5.3](../../docs/firmware/maint153-positive-power.md),
-[MAINT 1.6.3](../../docs/firmware/maint163-configurable-hard-stop.md),
+[MAINT 1.5.4](../../docs/firmware/maint-light.md),
+[MAINT 1.6.4](../../docs/firmware/maint-full.md),
 [storage and reset](../../docs/firmware/storage-and-reset.md), and
 [OpenBMS monitor integration](../../docs/firmware/openbms-monitor.md).

@@ -4,7 +4,7 @@
 
 The current
 [capability renderer](write_access.py) covers OEM 16.06.13,
-MAINT 1.5.3 and MAINT 1.6.3, with 87 parameters, 64 switch positions and 23
+MAINT 1.5.4 and MAINT 1.6.4, with 87 parameters, 64 switch positions and 23
 action rows. Public release JSONs supply current identities; the extracted
 capability data has no imports from historical renderer revisions.
 [Extraction provenance](write_access_provenance.json) records the source hashes.
@@ -19,7 +19,7 @@ cd /private/tmp
 ```
 
 `--verify` checks the OEM and two current release EHEX/application hashes,
-MNT04 metadata/template and source-defined build-ID digest against
+MNT05 metadata/template and source-defined build-ID digest against
 `mod/firmware/releases/*.json`. It needs no historical build reports and runs
 no native emulation. The template reserves two zero bytes for the OEM family
 version copied at runtime. This is static input verification, not a fresh

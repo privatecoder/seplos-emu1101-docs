@@ -3,14 +3,14 @@
 > **Port notation:** **UART0 = RS485-1/RS485-2 (shared pack bus)**; **UART1 = RS485 pair in the CAN socket**; **UART2 = local display/Bluetooth port**. UART1 carries RS485 traffic; the actual CAN interface uses separate pins in the same socket.
 
 Historical comparison images: OEM 16.06.13 and the fixed MAINT 1.6 build
-`18daf61d8a93671d`. SOC arithmetic and block6 routines are unchanged. The only
+`18daf61d8a93671d`. SOC arithmetic and block 6 routines are unchanged. The only
 exception in the compared A1 region is the known call to the 1.6 parameter
 serializer at `0x08F8`, which protects the individual pack lock.
 
 Evidence: 79 executable counterexamples (`SOC-2026-10-21-final.json`, local reference, not published)
 and the [persistent analysis tool](../../mod/tools/firmware-analysis/probe_soc.py).
 No serial ports were opened and no real parameters or firmware were changed.
-The CPU executes the actual routines; acceptance/storage of IAP block6 is
+The CPU executes the actual routines; acceptance/storage of IAP block 6 is
 modeled. This is not a physical NVM dump or a complete bootloader/hardware test. The probe requires the retained fixed MAINT 1.6 release and its build report under ignored `local/`; a fresh checkout lacks these historical fixtures.
 
 Evidence: 24 SOC cutoff counterexamples (`SOC-Abschaltung-2026-10-21-final.json`, local reference, not published).
@@ -80,7 +80,7 @@ counters: each voltage hold counter resets when its condition fails; high voltag
 the SOC increase still waits for T.
 
 These rules only increase SOC. The independent P2 rule at `0x8DC8` can reduce
-it to (P78+P79)/2: minimum cell ≤P2 and internal whole-percent SOC at least P78, with the same plausible-cell/current-calibration eligibility gate active for more than30 s.
+it to (P78+P79)/2: minimum cell ≤P2 and internal whole-percent SOC at least P78, with the same plausible-cell/current-calibration eligibility gate active for more than 30 s.
 For P78=15 and P79=5, the result is 10%.
 
 ## 3. OVP and UVP
@@ -101,15 +101,15 @@ respective reset conditions occur. The full flag clears when rounded SOC ≤P80 
 
 ## 4. What returns after loss of power
 
-[MAINT1.6.2/1.6.3 planned-reset handling](../../mod/docs/firmware/storage-and-reset.md)
+[MAINT1.6.4 planned-reset handling](../../mod/docs/firmware/storage-and-reset.md)
 saves the native SOC record to both flash copies and checks them before an
 addressed UART0/UART1 `45/06` reset. Storage failure returns RTN08 and prevents that
 reset. `64/04` reads mirror diagnostics without repair. This is not SOC
-recalibration; P58/P59, `49` and automatic save triggers remain. 
+recalibration; P58/P59, `49` and automatic save triggers remain. MAINT 1.5.4/1.6.4 additionally expose [64/06 persisted capacity and full-width live energy](../../mod/docs/firmware/remote-diagnostics.md) on UART0/UART1. The read does not save or repair either mirror and does not itself change SOC.
 
 
 
-The native CRC/mirror readers select a valid primary without comparing age; otherwise a valid backup repairs it. If neither CRC is valid, P59/P58 provide the fallback. Word-interruption checks cover the native routines and MAINT1.5.1/1.6.1 bindings (historical test scope; see [storage and reset behavior](../../mod/docs/firmware/storage-and-reset.md)). These checks do not identify the cause of any particular power failure.
+The native CRC/mirror readers select a valid primary without comparing age; otherwise a valid backup repairs it. If neither CRC is valid, P59/P58 provide the fallback. Word-interruption checks cover the native routines and MAINT 1.5.1/1.6.1 bindings (historical test scope; see [storage and reset behavior](../../mod/docs/firmware/storage-and-reset.md)). These checks do not identify the cause of any particular power failure.
 
 **Block6** is at flash address `0x2B000`, mirrored at `0x2C000`.
 It contains remaining capacity, learned full capacity, energy counters and cycles.
@@ -119,23 +119,23 @@ There is **no periodic continuous SOC checkpoint**. Save triggers are:
 
 1. Neither charging nor discharging, and SOC differs by **more than 5.0
    percentage points** from the last saved value (`0x903E`). Exactly 5.0 is
-   insufficient. The branch checks bits0/1, not an asserted standby bit:
+   insufficient. The branch checks bits 0/1, not an asserted standby bit:
    logical off without charging/discharging can also take this path.
 2. A new cycle (`0x92B2`).
 3. Completion of learning a new full capacity (`0x8F26`).
 4. Before firmware-controlled self-shutdown (`0x8ACA`).
 5. A1 capacity correction, **only** if |P58 − learned full capacity| ≥10 Ah
    (`0x09A8`, UART2 `0x8092`). An ordinary parameter/display write without this
-   difference does **not** save block6.
+   difference does **not** save block 6.
 6. Clear history/counters, `45/type5` (`0x5DAC`).
 
 A hard power failure or watchdog reset does not automatically save current Q.
-Startup may therefore restore a much older but valid block6 record. Cycles
+Startup may therefore restore a much older but valid block 6 record. Cycles
 and learned full capacity can remain plausible while the charge counted since
 that checkpoint is missing. Reflashing alone does not calculate a new SOC
 from voltage.
 
-If **no valid block6 exists**, remaining/full capacity is initialized from
+If **no valid block 6 exists**, remaining/full capacity is initialized from
 P59/P58, while energy and cycles start at 0. A schematic example with
 P59=100 Ah and P58=250 Ah gives **40.0%**. This differs from restoration of
 an older valid checkpoint.
@@ -164,9 +164,9 @@ automatic corrections subsequently continue.
 | `49/3B` | Sets Q=value×3600; does **not** change stored parameter P59. |
 | `49/3A` | Sets learned full capacity and coulomb maximum; does **not** change rated capacity P58 in the parameter block. |
 | A1 with changed P59 | Saves only that parameter/fallback field; does **not** set running Q. |
-| A1 with at least 10 Ah difference from P58 | Sets learned full capacity to P58 and saves block6; can therefore change SOC. |
+| A1 with at least 10 Ah difference from P58 | Sets learned full capacity to P58 and saves block 6; can therefore change SOC. |
 
-`49` itself does not immediately save block6. The new state becomes persistent
+`49` itself does not immediately save block 6. The new state becomes persistent
 at the next save trigger above. An immediate restart can therefore lose it
 again. At idle, the >5-percentage-point branch can save it at the next SOC cycle.
 
@@ -174,7 +174,7 @@ Schematic arithmetic example: at 250 Ah full capacity, 40% corresponds to
 100.00 Ah remaining, encoded as 10000. This is not a target that can be inferred
 from neighboring pack voltages.
 
-**The compared MAINT1.6 does not support `49` over UART1** (RTN04 in the
+**The compared MAINT 1.6 does not support `49` over UART1** (RTN04 in the
 counterexample). UART1-A1 and UART2-A1 do not replace `49/3B`. A polling master
 must first enter maintenance or otherwise stop its polling before UART0 host access.
 This analysis performed no real SOC correction.

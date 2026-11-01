@@ -55,7 +55,7 @@ bench setup used 19200 baud; the bootloader rate specifically paired with the
 ## Archive provenance and patcher input
 
 The table above identifies the seven canonical EHEX payloads by complete file and decoded-image hashes.
-`Seplos update doc.docx` was extracted from the original16.06.11 ZIP and is
+`Seplos update doc.docx` was extracted from the original 16.06.11 ZIP and is
 retained with the [vendor update documents](../../vendor/docs/batterymonitor).
 The complete original ZIP archives, including macOS metadata, remain in the
 ignored local backup collection. Duplicate download copies are also retained

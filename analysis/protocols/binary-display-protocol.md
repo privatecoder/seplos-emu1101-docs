@@ -13,6 +13,11 @@ The original V16.04.06–V16.06.13 firmware implements a separate point-to-point
 - *Assumption, well supported:* connection for an **LCD display or Bluetooth/Wi-Fi dongle** (RS232/"LCD" socket). The BMS continuously sends status frames, reports switching off/on, and the extended status message contains the active CAN protocol name and selection number; command 0x63 selects the protocol.
 - For comparison: ASCII runs on UART0 (`0x50010000`) with RS485 direction pin, Modbus and Pylontech RS485 on UART1 (`0x50011000`).
 
+Manufacturer LCD003/LCD004 specifications document a five-pin **display-side**
+connector and 3.3 V supply; see [display specifications and connector limits](../hardware/hardware-specifications.md#lcd003-and-lcd004-display-specifications).
+They do not specify signal levels or the binary wire format, and do not turn the
+RS232/TTL uncertainty above into a measured electrical-layer claim.
+
 ## 2. Frame
 
 ```

@@ -15,11 +15,11 @@ class PackLock(unittest.TestCase):
  def setUpClass(cls):
   cls.original=Image.read(next((ORIGINALS).glob('*16.06.13*ehex')))
   cls.facts=probe(cls.original,discover(cls.original))
-  cls.image,cls.report=build(cls.original,cls.facts,base_revision=13,maint_version='1.6.3')
+  cls.image,cls.report=build(cls.original,cls.facts,base_revision=13,maint_version='1.6.4')
  def test_version_and_capability(self):
   m=Machine(self.image,self.facts);m.defaults(1)
   rtn,raw=ascii_payload(m.transact(ascii_frame(1,0x64,b'\3'),True),1)
-  self.assertEqual((rtn,raw[:4],raw[7:9],raw[18]),(0,b'MNT\4',b'\1\6',254))
+  self.assertEqual((rtn,raw[:4],raw[7:9],raw[18]),(0,b'MNT\5',b'\1\6',254))
  def test_addressed_off_requires_a_persistent_write(self):
   m=Machine(self.image,self.facts);m.defaults(1)
   m.put(m.r['group0'],bytes([m.num(m.r['group0'])|0x18]))

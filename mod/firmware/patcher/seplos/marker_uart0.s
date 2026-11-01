@@ -96,7 +96,7 @@ hook_uart0_marker_parser:
     m0_beq .Lm0_status
     cmp r0, #0x33
     m0_bne .Lm0_bad
-    /* Same immutable MNT04 bytes on R and C. */
+    /* Same immutable MNT05 bytes on R and C. */
     adr r4, .Lm0_token
     ldr r0, =.Lm0_token-.Lpatch_info_template
     subs r4, r4, r0
@@ -107,14 +107,14 @@ hook_uart0_marker_parser:
     lsls r1, r6, #1
     strb r0, [r5, r1]
     adds r6, #1
-    cmp r6, #19
+    cmp r6, #21
     blo .Lm0_info_copy
     ldr r0, =VERSION_ADDRESS
     ldrb r1, [r0]
     strb r1, [r5, #8]
     ldrb r1, [r0, #1]
     strb r1, [r5, #10]
-    movs r0, #0x38
+    movs r0, #0x3c
     b .Lm0_success
 .Lm0_clear:
     /* Exact00 C3 5A only; starting remains a C/master operation. */

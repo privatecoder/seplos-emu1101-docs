@@ -2,11 +2,26 @@
 
 > **Port notation:** **UART0 = RS485-1/RS485-2 (shared pack bus)**; **UART1 = RS485 pair in the CAN socket**; **UART2 = local display/Bluetooth port**. UART1 carries RS485 traffic; the actual CAN interface uses separate pins in the same socket.
 
+## Sequential pack flashing, 2026-11-01
+
+- Added `flash_packs.py`: count-based master (0 through N−1) and external (1 through N) address plans, offline by default. Execution pins reviewed release bytes, saves every target baseline before the first reset and verifies exact MAINT identity, parameters, serials and retained measurements before advancing.
+- Added an exclusive local UART0 transport with strict fragmented-reply/echo handling, extra-response rejection, passive quiet and absent-bootloader checks. Optional distinct UART1 maintenance start is confirmed and never automatically cleared. External requesters must be stopped separately.
+- Light downgrade is refused when an existing individual lock is active or its stored/runtime state is uncertain. Errors stop the whole batch without replay, recovery or advancing. Reports retain phase, verified predecessors and maintenance-start ambiguity.
+- Extracted `prepare_bytes`/`prepare_image` and `flash_session` from `flash_gap.py`, preserving its CLI and transfer stream. Serial receive deadlines now use monotonic time. `boot_entry.py` and manual isolated-target recovery contracts are unchanged.
+- Validation is offline only. The shared-bus batch path and current MAINT releases have not been flashed or tested on physical hardware.
+
+## 2.1.0: shared remote diagnostics, 2026-11-01
+
+- Patcher profiles are MAINT 1.5.4 and MAINT 1.6.4. Both add addressed UART1 history and UART0/UART1 active/stored calibration, persisted capacity mirrors and full-width live energy reads. Existing profile-specific power, lock and checkpoint behavior remains.
+- MNT05 identifies all four read capabilities in a separate u16 word; the maintained client validates and decodes the new format and data pages while retaining legacy identity decoding. Read-only CLI actions never initiate writes.
+- Native guards bind calibration/SOC/history roles and reject unreviewed code shapes. Mandatory native feature groups and publisher checks cover both profiles.
+- Current release metadata uses generic `maint-light.json` / `maint-full.json` filenames. The matrix renderer reads their exact MNT05 identities and checksums.
+
 ## 2026-10-28
 
 - The public Markdown checker validates Git-visible relative targets and anchors, rejects ignored private evidence links, and supports an index-path mode. It performs no network or firmware execution.
 
-- Patcher2.0.0 produces only MAINT1.5.3 and1.6.3. Explicit profile selection is required at CLI/worker/builder boundaries; positive permission polarity is automatic. The separate polarity option and standalone hard-stop build command are removed.
+- Patcher2.0.0 produces only MAINT 1.5.3 and 1.6.3. Explicit profile selection is required at CLI/worker/builder boundaries; positive permission polarity is automatic. The separate polarity option and standalone hard-stop build command are removed.
 - Storage diagnostics, service, configurable hard-stop and permission modules/tests use functional names. Retired-profile reproduction tests, their hash fixture, a standalone-only rendering helper and the obsolete capability-renderer alias are removed from active source. The complete prior source remains under ignored local history.
 - Current firmware bytes, build IDs, capability flags and runtime parameter semantics are unchanged. Both profiles are rebuilt and checked against the retained EHEX and application SHA256 identities.
 

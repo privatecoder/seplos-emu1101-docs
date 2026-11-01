@@ -2,7 +2,7 @@
 
 > **Port notation:** **UART0 = RS485-1/RS485-2 (shared pack bus)**; **UART1 = RS485 pair in the CAN socket**; **UART2 = local display/Bluetooth port**. UART1 carries RS485 traffic; the actual CAN interface uses separate pins in the same socket.
 
-The offline patcher builds cumulative MAINT firmware directly from compatible OEM images. MAINT **1.5.3** provides addressed parameter and identity access, maintenance services, positive UART1 power/RTC permission and storage diagnostics. MAINT **1.6.3** also provides a persistent individual pack lock, verified SOC saving before planned reset and configurable recharge-waiting hard stop. Both current profiles use Group0.bit3=1 to permit UART1 power/RTC.
+The offline patcher builds cumulative MAINT firmware directly from compatible OEM images. MAINT **1.5.4** provides addressed parameter and identity access, maintenance services, positive UART1 power/RTC permission and storage diagnostics. Both profiles add addressed history, active/stored calibration and persisted-capacity/live-energy snapshots without new permission bits. MAINT **1.6.4** also provides a persistent individual pack lock, verified SOC saving before planned reset and configurable recharge-waiting hard stop. Both current profiles use Group0.bit3=1 to permit UART1 power/RTC.
 
 | Location | Contents |
 |---|---|
@@ -18,6 +18,6 @@ Firmware updates use UART0. Query each board independently; the same image suppo
 
 OEM knowledge belongs in [analysis](../analysis/README.md), original inputs in [vendor firmware](../vendor/firmware/), and published release identities in [firmware/releases](firmware/releases/README.md). Generated patch binaries, private configuration exports, captures and historical laboratory records are not published. The release directory contains metadata and reproduction instructions.
 
-The current profiles have offline execution evidence and have not been flashed or hardware-tested. Historical hardware results apply only to their identified builds and test conditions. Start with [build and validation](docs/firmware/build-and-validation.md), then follow the [flash procedure](docs/tools/flashing.md) for the chosen device and image.
+Current profiles passed their mandatory offline execution suites (214 groups for 1.5.4,293 for 1.6.4) and rebuilt byte-identically. They have not been flashed or hardware-tested. Historical hardware results apply only to their identified builds and test conditions. Start with [build and validation](docs/firmware/build-and-validation.md), then follow the [flash procedure](docs/tools/flashing.md) for the chosen device and image.
 
 Current tests consume explicit integrity-checked metadata and binary registries. Frozen source, chained builders and laboratory test dependencies are retained privately and are not included in a public checkout. The [historical runner](tools/run_historical_tests.py) lists their prerequisites or executes explicit suites when those private inputs are available. Research probes may deliberately bind an exact historical image and are documented separately from current release validation.

@@ -1,4 +1,4 @@
-"""Mandatory1.6.3 actual-Thumb mask, parameter, GPIO and priority checks."""
+"""Mandatory1.6.4 actual-Thumb mask, parameter, GPIO and priority checks."""
 import copy
 from .machine import Machine,ascii_frame,frame
 from .marker_uart0_tests import uart0_exchange
@@ -42,7 +42,7 @@ def validate_configurable(original,patched,facts,report):
   n=Machine(patched,facts);n.put(d['nv_primary'],m.read(d['nv_primary'],8192));n.defaults(m.num(r['address']));return n
  def no_flash(m):equal(m.saves,[]);equal(m.nv_ops,[]);equal(m.flash_ops,[])
  def surface():
-  equal(report['patch_version'],'1.6.3');equal(report['image_flags'],0xfe|int(default))
+  equal(report['patch_version'],'1.6.4');equal(report['image_flags'],0xfe|int(default))
   assert report['configurable_hard_stop'] and report['hard_stop']['enabled'] is None
   equal(report['hard_stop']['default_enabled'],default);equal(report['ram_bytes'],4)
   equal(len(report['hooks']),21);equal(report['hooks']['hook_configurable_hard_stop'],h['site'])
@@ -150,7 +150,7 @@ def validate_configurable(original,patched,facts,report):
   answers=[m.transact(packet,True) for m in boards];equal([i for i,x in enumerate(answers) if x],[7])
   equal(boards[7].num(r['group0'])&0xc0,0x40)
   for i,m in enumerate(boards):
-   rtn,data=ascii_payload(m.transact(ascii_frame(i,0x64,b'\3'),True),i);equal((rtn,data[7:10]),(0,b'\1\6\3'))
+   rtn,data=ascii_payload(m.transact(ascii_frame(i,0x64,b'\3'),True),i);equal((rtn,data[7:10]),(0,b'\1\6\4'))
  check('addressed-slave-config-and-version',addressed)
  def refused():
   from .configurable_hardstop import discover_configurable
@@ -164,7 +164,7 @@ def validate_configurable(original,patched,facts,report):
   m=board();answers=[]
   for mode in (0,0x40,0x80,0xc0):
    setmode(m,mode);rtn,data=ascii_payload(m.transact(ascii_frame(1,0x64,b'\3'),True),1);equal(rtn,0);answers.append(data)
-  equal(len(set(answers)),1);equal(answers[0][-1],0xfe|int(default))
+  equal(len(set(answers)),1);equal(answers[0][18],0xfe|int(default))
  check('MNT-default-not-runtime',static)
  equal({t['name'] for t in rows},set(REQUIRED))
  return rows

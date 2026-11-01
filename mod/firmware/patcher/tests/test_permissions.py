@@ -17,7 +17,7 @@ class Permissions(unittest.TestCase):
   cls.original=Image.read(next((ORIGINALS).glob('*16.06.13*ehex')))
   cls.base=probe(cls.original,discover(cls.original))
   cls.facts=copy.deepcopy(cls.base)
-  cls.image,cls.report=build(cls.original,cls.facts,13,maint_version='1.6.3')
+  cls.image,cls.report=build(cls.original,cls.facts,13,maint_version='1.6.4')
  def board(self,bit3=True,bit4=True,address=1):
   m=Machine(self.image,self.facts);m.defaults(address)
   group=(m.num(m.r['group0'])&~0x18)|(8 if bit3 else 0)|(16 if bit4 else 0)
@@ -32,7 +32,7 @@ class Permissions(unittest.TestCase):
   n=Machine(self.image,self.facts);n.put(0x25000,m.read(0x25000,8192));n.defaults(m.num(m.r['address']));return n
  def test_version_and_positive_capability(self):
   m=self.board();rtn,data=self.query(m,0x64,b'\3')
-  self.assertEqual((rtn,len(data),data[:4],data[7:9],data[18]),(0,19,b'MNT\4',b'\1\6',254))
+  self.assertEqual((rtn,len(data),data[:4],data[7:9],data[18]),(0,21,b'MNT\5',b'\1\6',254))
   self.assertTrue(self.report['positive_flags'])
  def test_bit3_one_allows_zero_denies_power_RTC_and_reset(self):
   for enabled in (False,True):
