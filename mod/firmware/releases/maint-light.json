@@ -27,7 +27,7 @@
   "diagnostic_format": 1,
   "diagnostic_bytes": 10,
   "diagnostic_lock_fields": "FF FF 00: unavailable, no lock/cache support",
-  "product": "Seplos BMS 2.0/10E/V16 (EMU1101)",
+  "product": "Seplos BMS 2.0 (EMU1101, hardware V16)",
   "release_status": "current",
   "remote_capabilities": 15,
   "remote_diagnostics": true,

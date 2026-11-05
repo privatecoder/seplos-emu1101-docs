@@ -2,7 +2,7 @@
 
 > **Port notation:** **UART0 = RS485-1/RS485-2 (shared pack bus)**; **UART1 = RS485 pair in the CAN socket**; **UART2 = local display/Bluetooth port**. UART1 carries RS485 traffic; the actual CAN interface uses separate pins in the same socket.
 
-Seplos BMS 2.0/10E/V16 (EMU1101) MAINT 1.5.4 and 1.6.4 support read-only ASCII 64/04 on UART0 and UART1. Only 1.6.4 has lock/cache reporting and verified SOC saving before targeted 45/06. Image flag 20 means diagnostics; image flag 40 separately means checkpoint before reset. MNT05 appends a distinct 16-bit read-capability mask; it does not change these flags. [Remote diagnostics](remote-diagnostics.md) describes the new persisted-content/live-energy read, which is available in both profiles and never forces a checkpoint. A diagnostics flag alone must never imply saving.
+MAINT 1.5.4 and 1.6.4 support read-only ASCII 64/04 on UART0 and UART1. Only 1.6.4 has lock/cache reporting and verified SOC saving before targeted 45/06. Image flag 20 means diagnostics; image flag 40 separately means checkpoint before reset. MNT05 appends a distinct 16-bit read-capability mask; it does not change these flags. [Remote diagnostics](remote-diagnostics.md) describes the new persisted-content/live-energy read, which is available in both profiles and never forces a checkpoint. A diagnostics flag alone must never imply saving.
 
 ## ASCII 64/04 byte contract
 

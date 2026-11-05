@@ -1,5 +1,5 @@
 {
-  "product": "Seplos BMS 2.0/10E/V16 (EMU1101)",
+  "product": "Seplos BMS 2.0 (EMU1101, hardware V16)",
   "current_data": "write_access_data.json",
   "historical_model": "historical_write_model.json",
   "source_files_sha256": {

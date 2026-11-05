@@ -1,6 +1,17 @@
-# Seplos BMS 2.0/10E/V16 (EMU1101)
+# Seplos BMS 2.0 (EMU1101, hardware V16)
 
 > **Port notation:** **UART0 = RS485-1/RS485-2 (shared pack bus)**; **UART1 = RS485 pair in the CAN socket**; **UART2 = local display/Bluetooth port**. UART1 carries RS485 traffic; the actual CAN interface uses separate pins in the same socket.
+
+| Identification field | Reference value |
+|---|---|
+| Seplos product generation | BMS 2.0 |
+| OEM platform | EMU1101 |
+| Product variant | 1101-10E |
+| Hardware version | V16 |
+| OEM reference firmware | 16.06.13 |
+
+[Product identification and supporting evidence](analysis/hardware/product-identification.md)
+separate the Seplos generation, product option code, board version and firmware.
 
 Firmware, protocol and hardware references, reproducible MAINT patches and analysis tools. The analysis covers seven OEM images from 16.04.06 to 16.06.13. The reference for current behavior is 16.06.13 unless another version is stated.
 

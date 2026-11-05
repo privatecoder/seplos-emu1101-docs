@@ -36,7 +36,7 @@
   "hard_stop_image_bit0": "immutable build default for inherited parameters; not runtime state",
   "reset_error_rtn": 8,
   "reset_success_ack": false,
-  "product": "Seplos BMS 2.0/10E/V16 (EMU1101)",
+  "product": "Seplos BMS 2.0 (EMU1101, hardware V16)",
   "release_status": "current",
   "remote_capabilities": 15,
   "remote_diagnostics": true,

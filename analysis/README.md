@@ -1,5 +1,6 @@
-# Seplos BMS 2.0/10E/V16 (EMU1101) analysis
+# BMS analysis
 
+- [Product, hardware and firmware identification](hardware/product-identification.md)
 - [Firmware architecture, parameters and behavior](firmware/README.md)
 - [Hardware specifications, address chain and connection topologies](hardware/README.md)
 - [Communication protocols and firmware updates](protocols/README.md)

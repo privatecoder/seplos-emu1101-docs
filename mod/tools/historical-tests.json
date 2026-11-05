@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "product": "Seplos BMS 2.0/10E/V16 (EMU1101)",
+  "product": "Seplos BMS 2.0 (EMU1101, hardware V16)",
   "default_workspace": "local/history/snapshots/mod-before-current-cleanup-2026-10-26/project",
   "inventory": "../source-manifest.json",
   "requirements": [

@@ -2,7 +2,9 @@
 
 > **Port notation:** **UART0 = RS485-1/RS485-2 (shared pack bus)**; **UART1 = RS485 pair in the CAN socket**; **UART2 = local display/Bluetooth port**. UART1 carries RS485 traffic; the actual CAN interface uses separate pins in the same socket.
 
-Seven firmware images for the Seplos BMS 2.0/10E/V16 (EMU1101) (manufacturer photograph confirms an EMU1101 10E/V16 board). The files in [`vendor/firmware/`](../../vendor/firmware) are the unmodified vendor `.ehex` files, as extracted from the ZIP archives in which the vendor distributes them. Use the hashes below to check that a file you got elsewhere is identical.
+Seven OEM firmware images for the BMS, targeting the EMU1101 platform and hardware V16. The files in [`vendor/firmware/`](../../vendor/firmware) are the unmodified vendor `.ehex` files, as extracted from the ZIP archives in which the vendor distributes them. Use the hashes below to check that a file you got elsewhere is identical.
+
+[Product, hardware and firmware naming](../hardware/product-identification.md) keeps hardware V16 separate from the complete OEM firmware version.
 
 ## Hashes
 
@@ -31,7 +33,7 @@ shasum -a 256 vendor/firmware/*.ehex
 - `_9600` (16.04.06): RS485-1/2 run at 9600 baud instead of 19200.
 - `_SP80` (16.06.05): special build, one byte different from 16.06.04 (charge MOSFET also off during "intermittent recharge waiting").
 
-The [manufacturer catalogue photograph](../hardware/hardware-specifications.md#sh-energy-catalogue-emu1101-product-family), PDF p.11, shows PCB silkscreen `EMU1101_PCBA-V16` and a product sticker `1101-48100-10E-V16`. It directly documents a 10E/V16 board in the EMU1101 family. The header string remains literally `EMU1101_10D_HW16`; the reason for its `10D` token is not established by the photograph.
+The [manufacturer catalogue photograph](../hardware/hardware-specifications.md#sh-energy-catalogue-emu1101-product-family), PDF p.11, shows PCB silkscreen `EMU1101_PCBA-V16` and a product sticker `1101-48100-10E-V16`. It directly documents an EMU1101 board in variant 1101-10E with hardware V16. The header string remains literally `EMU1101_10D_HW16`; the reason for its `10D` token is not established by the photograph.
 
 ## Which version?
 

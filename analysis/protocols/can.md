@@ -1,4 +1,4 @@
-# Seplos BMS 2.0/10E/V16 (EMU1101): CAN inverter protocols
+# CAN inverter protocols
 
 > **Port notation:** **UART0 = RS485-1/RS485-2 (shared pack bus)**; **UART1 = RS485 pair in the CAN socket**; **UART2 = local display/Bluetooth port**. UART1 carries RS485 traffic; the actual CAN interface uses separate pins in the same socket.
 
@@ -14,13 +14,13 @@ Confidence: **confirmed** = directly from the code · **probable** · **assumpti
 
 [Seplos BMS CAN Protocoll V1.0.pdf](<../../vendor/docs/protocol%20specs/Seplos%20BMS%20CAN%20Protocoll%20V1.0.pdf>) is the original **SEPLOS CANBUS Protocol V1.0**, copyright 2020. It has six PDF pages including the cover; printed pages 1–5 correspond to PDF pages 2–6. File metadata gives 2020-06-13. SHA-256: `264cdf6e2348c121ffd04b9af287f55b038702862c36a3b333d06a1fe8ddb0a6`.
 
-It is a useful primary source for the intended Pylontech-style CAN layout. It does not identify 10E/V16 or OEM 16.06.13 and is not a specification for UART1/RS485, all selectable CAN profiles, or MAINT services. Firmware addresses and behavior below refer to OEM .13. Manufacturer statements and code-derived behavior are distinguished; no hardware capture was performed.
+It is a useful primary source for the intended Pylontech-style CAN layout. It does not identify the 1101-10E variant, hardware V16 or OEM 16.06.13 and is not a specification for UART1/RS485, all selectable CAN profiles, or MAINT services. Firmware addresses and behavior below refer to OEM .13. Manufacturer statements and code-derived behavior are distinguished; no hardware capture was performed.
 
 | Subject / PDF page | Manufacturer document | OEM .13 implementation and interpretation |
 |---|---|---|
 | Timing and frame type, p.2 | Standard CAN, 500 kbit/s, one-second cycle. Declares compatibility with Pylontech V1.3 and Goodwe V1.5. | Corroborates profile 1's 11-bit/500 kbit/s, one-second burst. It does not cover the MUST 29-bit/100 kbit/s exception or independently certify a particular inverter. See driver/dispatcher `0x9A88`/`0xAEBA`. |
 | Inverter heartbeat, p.2 | Requests inverter `0x305` with eight zero bytes every second. | No application receive/heartbeat-timeout path is used: CAN interrupts are disabled and receive routine `0xC580` is not called. Do not infer that missing `0x305` causes a firmware communication alarm or exposes an incoming control command. CAN link-layer acknowledgement is separate from this application heartbeat. |
-| DIP role/address, pp.2–3 | Slaves 1–15 use DIP1–4; master DIP5–8 table covers 2–15 total packs. | Consistent with DIP5–8 encoding **slave count**, not total packs. For two packs only DIP5 is ON. Unlike the conflicting H150/H200 tables, this table leaves DIP8 OFF for 2–8 packs. Its omitted 16-pack row is not proof of a 15-pack firmware limit. |
+| DIP role/address, pp.2–3 | Slaves 1–15 use DIP1–4; master DIP5–8 table covers 2–15 total packs. | Consistent with DIP5–8 encoding **slave count**, not total packs. For two packs only DIP5 is ON. Unlike the conflicting H150 table, this table leaves DIP8 OFF for 2–8 packs. Its omitted 16-pack row is not proof of a 15-pack firmware limit. |
 | `0x351`, pp.4–5 | Charge voltage/current limit, discharge current limit/voltage, 0.1 V/A units; low byte first (note on p.6). | Corroborates the existing offsets/scales. It gives no derivation for CVL/CCL/DCL, heating overrides or ramp behavior; those come from `0x98A8` and the frame builders. |
 | `0x355`, p.5 | 16-bit SOC/SOH in whole percent; single module or system average. | Confirms field positions/scales, not an averaging algorithm. OEM .13 fixes SOH at 100 and has its own aggregate SOC and 98% cap. A published SOH field is not proof of a working health estimator. |
 | `0x356`, p.5 | Voltage 0.01 V, current 0.1 A and temperature 0.1 °C; voltage labelled signed. | Offsets/scales match; the decoded firmware table below treats voltage as unsigned. Profile 1 additionally fills bytes 6–7 with minimum cell temperature. The PDF does not specify that extra field or the selected temperature source. |

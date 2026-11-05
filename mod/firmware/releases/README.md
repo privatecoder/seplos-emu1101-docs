@@ -2,7 +2,7 @@
 
 > **Port notation:** **UART0 = RS485-1/RS485-2 (shared pack bus)**; **UART1 = RS485 pair in the CAN socket**; **UART2 = local display/Bluetooth port**. UART1 carries RS485 traffic; the actual CAN interface uses separate pins in the same socket.
 
-Seplos BMS 2.0/10E/V16 (EMU1101) current release identities refer to exact OEM 16.06.13-based images. Historical identifiers, checksums and release facts remain in the [changelog](../CHANGELOG.md) and unchanged local manifests.
+Current release identities refer to exact OEM 16.06.13-based images. Historical identifiers, checksums and release facts remain in the [changelog](../CHANGELOG.md) and unchanged local manifests.
 
 - [MAINT 1.5.4](maint-light.json): lightweight profile with positive UART1 power/RTC permission and storage diagnostics, history and calibration/checkpoint/energy reads.
 - [MAINT 1.6.4](maint-full.json): full profile with persistent individual lock, verified SOC checkpoint before reset and configurable hard stop, history and calibration/checkpoint/energy reads.
