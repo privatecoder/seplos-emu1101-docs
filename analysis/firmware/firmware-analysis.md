@@ -98,7 +98,7 @@ From `0xCC1C` (06.13; 06.11 `0xC9A4`, 06.04 `0xBFC0`, 06.03 `0xB854`, 04.06 `0xB
 
 | Offset | Content | Remark |
 |---|---|---|
-| +0x00 | `10 06` | **Firmware version 16.06**, the only version information in the image. 04.06 has `10 04`. The patch number (03/04/05/11/12/13) appears **nowhere in the image** (proof: 06.04 and 06.05 differ in exactly one byte, see [CHANGELOG](firmware-changelog.md)) *(confirmed)* |
+| +0x00 | `10 06` | **Stored firmware version 16.06**; 04.06 has `10 04`. No separate self-describing patch/build-date field has been identified in the seven retained images. 06.04 and 06.05 have the same metadata and differ only in one charge-block mask byte; this pair does not update an independent release counter. See §4.1 and the [changelog](firmware-changelog.md). |
 | +0x02 | `CAN:PNG_DYE_Luxp_TBB` | Name of CAN protocol 1 (Pylontech; Deye, Luxpower, TBB …) |
 | +0x16 | `CAN:Growatt_SPF_SPH ` | Protocol 2 |
 | +0x2A | `CAN:Victron         ` | Protocol 3 |
@@ -116,6 +116,53 @@ Further strings:
 - `EMU110110E` (10 characters): default device name. It is copied to RAM `0x20000042` and output in CID2 0x47/0x51 and Modbus.
 - `EMU110110S-XXXX-20220120-00001` (three times): default/placeholder serial number (barcode), identical in all versions.
 - New in 06.13 is a short byte table (`0C 36 33 42 45 48 4B 4F 73 …`, from `0x1182`). This is not a data table but the **jump table of the ASCII dispatcher** for CID2 0xA0–0xAB (behind `bl 0xCBE4` at `0x117E`, Keil `switch8`). *(confirmed)*
+
+---
+
+### 4.1 Release identity, dates and ordering
+
+The two stored version bytes distinguish the examined 16.04 and 16.06 firmware
+lines. They do not distinguish the retained 16.06.03/.04/.05/.11/.12/.13 releases.
+The 256-byte container headers and entry/EOF records are identical across all
+seven files.
+
+There is date-like content in the application:
+`EMU110110S-XXXX-20220120-00001`. This is a default serial-number template,
+repeated three times and unchanged in every retained image, including files
+labelled as 2025 releases. Its `20220120` token does not identify the build date
+of the particular file.
+
+The filename dates and complete version labels were searched in decoded
+application bytes as ASCII/UTF-16, compact/separated dates, numeric32 and packed
+BCD representations; UTC-midnight Unix32 values were also checked. No matches
+for those exact release/date patterns were found. No build/release/version
+keyword string identified a metadata block. These are bounded searches, not
+proof against every undocumented binary encoding or a statement about future
+firmware.
+
+A concrete counterexample is stronger than the string search: 16.06.04 and
+16.06.05 SP80 have equal length and differ at exactly one application byte,
+`0x658A`: `71` → `73` (`MOVS r4,#0x71` → `MOVS r4,#0x73`). This is the
+charge-block event mask; there is no separately changed patch number or build
+timestamp in that pair.
+
+**Exact identity and chronological order are separate.** Compare the full
+application/container SHA-256 with the [retained release catalogue](original-images.md)
+to identify a known file. A new hash means different bytes; it does not prove
+that an unknown file is newer. Vendor filenames, download provenance and
+release records establish the catalogue labels. Renaming an older file does
+not change its application identity. ZIP/filesystem timestamps are external
+metadata. The unavailable bootloader's anti-rollback behavior is not established
+by this image audit.
+
+The [offline knowledge lookup](../../mod/docs/tools/knowledge-library.md) already
+supports exact application/container identification. MAINT additionally exposes
+its bound OEM base, modification version and build ID through 64/03 MNT; this
+is added metadata and must not be assumed present in OEM firmware.
+
+The source-bound scan, complete string candidates and reproduction script are
+retained in the ignored identity evidence collection
+(`oem-image-version-audit-2026-11-05`).
 
 ---
 

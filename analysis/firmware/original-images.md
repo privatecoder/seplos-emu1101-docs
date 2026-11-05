@@ -10,7 +10,7 @@ Seven OEM firmware images for the BMS, targeting the EMU1101 platform and hardwa
 
 `.ehex` = the vendor file. "Image" = the decoded flash image (Intel-HEX records after the 256-byte header, gaps filled with `0xFF`, starting at address 0), produced with [`ehex2bin.py`](../../mod/tools/firmware-analysis/ehex2bin.py).
 
-| File | Version | Build date | Suffix | .ehex size (bytes) | .ehex SHA-256 | .ehex MD5 | Image size (bytes) | Image SHA-256 |
+| File | Version | Date in filename | Suffix | .ehex size (bytes) | .ehex SHA-256 | .ehex MD5 | Image size (bytes) | Image SHA-256 |
 |---|---|---|---|---|---|---|---|---|
 | `CAN1101[V16.04.06_PN01_220924_9600].ehex` | 16.04.06 | 2022-09-24 | 9600 | 136024 | `2b00410571fcb9dac04c4cb8640a84ab583ee7536ab562a594325b45752f6198` | `d788d6ae486e6466f8b9d00a321bc269` | 48096 | `fa38fbd4dba02eb4bc759612802b61b26582a6c3d49da80f36acae86bd5d5890` |
 | `CAN1101[V16.06.03_PN01_230412].ehex` | 16.06.03 | 2023-04-12 | – | 135701 | `246e1eca5637bcc1e16c27f64501c2024c57726ebd84d4a413dcb3e71b813d9e` | `585ed8c9aa7ca94eaab2cb6298cf519a` | 47980 | `689d3819eb9f73e12473764094843acfd619a58e5ec0c7b1da76724dac364706` |
@@ -28,7 +28,12 @@ shasum -a 256 vendor/firmware/*.ehex
 
 ## File name and header
 
-- File name: `CAN1101[V<HW>.<Major>.<Patch>_PN01_<YYMMDD>[_Suffix]].ehex`, e.g. `V16.06.13` = hardware line 16, firmware 06, patch 13, built 2025-06-07. The firmware itself only knows `16.06` (`0x10 0x06`); the patch number exists only in the file name (see [firmware analysis](firmware-analysis.md)).
+Dates in the table are decoded from vendor filenames; no matching embedded
+build timestamp has been identified. Exact hashes identify retained files,
+while filenames and release provenance supply their version/date labels.
+[Embedded identity and its limits](firmware-analysis.md#41-release-identity-dates-and-ordering).
+
+- File name: `CAN1101[V<HW>.<Major>.<Patch>_PN01_<YYMMDD>[_Suffix]].ehex`, e.g. `V16.06.13` = hardware line 16, firmware 06, patch 13, filename date 2025-06-07. The application stores `16.06` (`0x10 0x06`); no separate embedded patch field has been identified (see [firmware analysis](firmware-analysis.md)).
 - All images share the same 256-byte header (16 pseudo Intel-HEX records): `SWM181RCT6_64_M0` (MCU Synwit SWM181, Cortex-M0), `EMU1101_10D_HW16`, `RS485Y19200N9600`, padded with `0x55`.
 - `_9600` (16.04.06): RS485-1/2 run at 9600 baud instead of 19200.
 - `_SP80` (16.06.05): special build, one byte different from 16.06.04 (charge MOSFET also off during "intermittent recharge waiting").
