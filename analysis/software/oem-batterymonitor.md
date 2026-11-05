@@ -2,7 +2,7 @@
 
 > **Port notation:** **UART0 = RS485-1/RS485-2 (shared pack bus)**; **UART1 = RS485 pair in the CAN socket**; **UART2 = local display/Bluetooth port**. UART1 carries RS485 traffic; the actual CAN interface uses separate pins in the same socket.
 
-BatteryMonitor is the OEM monitoring and configuration application for Seplos BMS devices, including Seplos BMS 2.0/10E/V16 (EMU1101). The versions examined are **V2.1.12_20** and **V2.1.13_20**, including the latter’s 52 Agreement XML profiles.
+BatteryMonitor is the OEM monitoring and configuration application for several BMS families, including the examined EMU1101 hardware. The versions examined are **V2.1.12_20** and **V2.1.13_20**, including the latter’s 52 Agreement XML profiles.
 
 The findings come from static .NET/CIL analysis, configuration files, XML comparisons and previously documented firmware behavior. The Windows application was not run for the V2.1.13 investigation; no BMS was accessed. A menu item or XML declaration is evidence of what the PC software offers, not proof that a particular firmware accepts the operation.
 
@@ -32,7 +32,7 @@ The application does **not identify the connected BMS hardware and select a matc
 
 Serial port, baud rate, data bits and parity come from application settings, not the root 16S Agreement. The inspected V2.1.12 configuration used 9600 baud as its default. This is an application default, **not proof of the baud rate required by every physical BMS port**.
 
-The OEM user selects the number of packs manually through the “Pack total” / pack buttons, with UI choices up to 20. This UI range does not establish a V16 firmware address range. The application polls selected pack addresses and offers a rotating multi-pack tile display; the V2.1.12 configuration used a four-second `LoopDispDuty`. An XML `freshDuty` value of two seconds was also present, but the V2.1.13 `XmlGetBasic` routine does not read that field. A precise polling interval must therefore not be inferred from this XML element alone.
+The OEM user selects the number of packs manually through the “Pack total” / pack buttons, with UI choices up to 20. This UI range does not establish the address range of the firmware running on hardware V16. The application polls selected pack addresses and offers a rotating multi-pack tile display; the V2.1.12 configuration used a four-second `LoopDispDuty`. An XML `freshDuty` value of two seconds was also present, but the V2.1.13 `XmlGetBasic` routine does not read that field. A precise polling interval must therefore not be inferred from this XML element alone.
 
 See [ports, protocols and bus ownership](../hardware/ports-and-topologies.md) before connecting: an active Seplos master occupies the UART0 pack bus while polling, and the PC's ability to create a command does not make that bus available.
 
@@ -130,7 +130,7 @@ switch count + 8 switch bytes
 10-byte device name
 ```
 
-That V16 layout contains **169 INFO bytes**. An unsuitable profile can therefore affect the structure of a write, not just the screen labels. ASCII `49` uses the selected profile's parameter/group index for individual writes. A generated request is not evidence that every index is implemented by the connected firmware.
+That parameter layout contains **169 INFO bytes**. An unsuitable profile can therefore affect the structure of a write, not just the screen labels. ASCII `49` uses the selected profile's parameter/group index for individual writes. A generated request is not evidence that every index is implemented by the connected firmware.
 
 The hard-coded framing and command handling are described in the [Seplos ASCII analysis](../protocols/seplos-ascii.md). Port-specific write permissions are documented in the [UART capability matrix](../../mod/docs/firmware/uart-write-capabilities.md).
 
@@ -147,13 +147,13 @@ When importing a parameter export, `LoadParamValueFile` matches numeric entries 
 
 Generic exports are provided under [BatteryMonitor configuration exports](../examples/batterymonitor-config-exports/); their [annotated example](../examples/batterymonitor-config-exports/parameter-export-example-annotated.xml) explains the file rather than defining a protocol profile. See also [configuration parameters](../firmware/configuration-parameters.md).
 
-## 7. Selecting a profile for Seplos BMS 2.0/10E/V16 (EMU1101)
+## 7. Selecting a profile for the BMS
 
-For 16S EMU1101, the root `Agreement/16S_V20_ADDR_EN.xml` and Chinese `Agreement/16S_V20_ADDR.xml` are the appropriate starting points. This is supported by the known V16 layout, not the filename alone. A profile change does not change the physical hardware or its firmware capabilities.
+For 16S EMU1101, the root `Agreement/16S_V20_ADDR_EN.xml` and Chinese `Agreement/16S_V20_ADDR.xml` are the appropriate starting points. This is supported by the known parameter layout for hardware V16, not the filename alone. A profile change does not change the physical hardware or its firmware capabilities.
 
 | Profile family | Temperature definitions | Important distinction |
 |---|---|---|
-| Root / EMU1101 | Six: four cell probes, ambient and power stage. | Group7.Bit5 is automatic addressing on the examined V16. |
+| Root / EMU1101 | Six: four cell probes, ambient and power stage. | Group7.Bit5 is automatic addressing on the examined BMS. |
 | EMU1102 | Eight: six cell probes, ambient and power stage. | Not interchangeable merely because the numeric parameter count matches. |
 | EMU1201 | Four without, six with current limiter. | Group7.Bit5 is labelled “Multi-channel extension contact”. |
 | EMU1204 | Five, including limiter temperature. | Group7.Bit5 is labelled as series mode. |
@@ -175,7 +175,7 @@ OEM 16.06.13 announces ten values in that final block (`0x0478`, `movs r3,#0xA`)
 
 ### Translations can change available functions
 
-The German profile omits Group7.Bit6 and Bit7 definitions. On the examined V16 these relate to automatic role/address formation and a CCL calculation variant. All six European profiles also contain an older five-entry CAN list instead of the root profile's seven, with some incorrect labels for OEM .13: for example, ID5 is labelled “Luxpower” while the firmware uses **GINLONG**.
+The German profile omits Group7.Bit6 and Bit7 definitions. On the examined BMS these relate to automatic role/address formation and a CCL calculation variant. All six European profiles also contain an older five-entry CAN list instead of the root profile's seven, with some incorrect labels for OEM .13: for example, ID5 is labelled “Luxpower” while the firmware uses **GINLONG**.
 
 The root list provides IDs 1–7: PN-GDLT, GRWT, VCTR, SMA-SF, GINL, STUD and MUST. Firmware-based interpretation takes precedence over a stale dropdown label.
 
@@ -201,7 +201,7 @@ Checksum boundaries, response validation and block sizing are covered in the [bo
 
 Profiles are useful evidence of OEM intent, but not a complete specification of firmware behavior. For example, P82 “Connection fault impedance” is declared in XML without a demonstrated evaluation path in the examined OEM .13. Some switch labels also differ from the code's behavior.
 
-MAINT preserves the underlying V16 parameter and telemetry formats, but OEM profiles do not describe its additional permissions, persistent pack lock or maintenance/diagnostic commands. Old Group0 labels must not be applied to those new meanings.
+MAINT preserves the underlying parameter and telemetry formats for hardware V16, but OEM profiles do not describe its additional permissions, persistent pack lock or maintenance/diagnostic commands. Old Group0 labels must not be applied to those new meanings.
 
 For an MAINT-aware monitor:
 
@@ -216,7 +216,7 @@ Use the [current capability matrix](../../mod/docs/firmware/uart-write-capabilit
 
 The strongest reusable idea is a **central typed field model** shared by decoding, labels, units, validation, help and import/export. OEM XML can seed or verify that model, but technical identity should use stable IDs rather than translated names. Parameter index, wire position, display name, hardware family and firmware capabilities must remain separate concepts.
 
-For an application focused on Seplos BMS 2.0/10E/V16 (EMU1101), a reviewed internal model or an offline XML import during development may provide the benefit without a freely loadable runtime XML engine. A generic runtime loader becomes useful only if multiple hardware families are genuinely supported and separately validated. Existing OpenBMS models/generators should be checked before adding another schema layer.
+For an application focused on the BMS, a reviewed internal model or an offline XML import during development may provide the benefit without a freely loadable runtime XML engine. A generic runtime loader becomes useful only if multiple hardware families are genuinely supported and separately validated. Existing OpenBMS models/generators should be checked before adding another schema layer.
 
 Useful concrete follow-ups are to check support for the four extra Chinese-profile telemetry fields, correct stale OEM labels against firmware evidence, use stable IDs for exports, and separate UI translation from capabilities. Evaluate these changes against the existing application before adding a new UI or XML loader.
 

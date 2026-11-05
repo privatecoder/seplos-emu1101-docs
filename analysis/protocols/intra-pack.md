@@ -1,4 +1,4 @@
-# Seplos BMS 2.0/10E/V16 (EMU1101): Intra-Pack Communication (CID2 0x5A)
+# Intra-Pack Communication (CID2 0x5A)
 
 > **Port notation:** **UART0 = RS485-1/RS485-2 (shared pack bus)**; **UART1 = RS485 pair in the CAN socket**; **UART2 = local display/Bluetooth port**. UART1 carries RS485 traffic; the actual CAN interface uses separate pins in the same socket.
 

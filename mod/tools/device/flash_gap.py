@@ -1,4 +1,4 @@
-"""Flash a validated Seplos BMS 2.0/10E/V16 (EMU1101) image over isolated UART0.
+"""Flash a validated BMS image over isolated UART0.
 
 Same stream/blocks/frames as FirmwareUpdate.exe (analysis/protocols/bootloader-update-protocol.md);
 only the fixed 350 ms pause is replaced by <gap-ms>. Aborts on anything but the expected ACK.

@@ -19,9 +19,8 @@ RS485 socket pins 4/5 internal communication. Its cable drawing connects 4 → 4
 and 5 → 5. **PDF p.31**, §10.5 shows a directed COM OUT/COM IN chain; §3.22 calls
 automatic DIP addressing optional.
 
-The [48200 manual](<../../vendor/docs/specs/EEL%2048200-1101-10E%20%28EN%29.pdf>) **PDF p.33 / printed p.28**
-instead labels these contacts NC. Neither drawing proves the exact electrical
-implementation on every 10E board.
+The manual drawings do not establish the exact electrical implementation or
+RJ45-to-MCU mapping of every 10E board.
 
 ## Confirmed firmware mechanism
 

@@ -2,7 +2,7 @@
 
 > **Port notation:** **UART0 = RS485-1/RS485-2 (shared pack bus)**; **UART1 = RS485 pair in the CAN socket**; **UART2 = local display/Bluetooth port**. UART1 carries RS485 traffic; the actual CAN interface uses separate pins in the same socket.
 
-Seplos BMS 2.0/10E/V16 (EMU1101), cumulative OEM 16.06.13-based profile with positive UART1 power permission, persistent individual pack lock, storage diagnostics and verified SOC saving before planned reset. One stored setting selects hard stop during intermittent-recharge waiting. The same image supports master and slaves.
+MAINT 1.6.4 is a cumulative firmware profile based on OEM 16.06.13, with positive UART1 power permission, persistent individual pack lock, storage diagnostics and verified SOC saving before planned reset. One stored setting selects hard stop during intermittent-recharge waiting. The same image supports master and slaves.
 
 Both current profiles add addressed UART1 history, active/stored calibration and persisted-capacity/live-energy snapshots without new permission bits. MNT05 is 21 bytes with appended big-endian capability mask 000F. Existing 64/04 remains ten bytes. [Remote diagnostics](remote-diagnostics.md) defines the exact layouts, snapshot limits, shared history cursor and retry semantics. UART2 display behavior is unchanged.
 

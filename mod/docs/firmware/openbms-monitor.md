@@ -2,7 +2,7 @@
 
 > **Port notation:** **UART0 = RS485-1/RS485-2 (shared pack bus)**; **UART1 = RS485 pair in the CAN socket**; **UART2 = local display/Bluetooth port**. UART1 carries RS485 traffic; the actual CAN interface uses separate pins in the same socket.
 
-Seplos BMS 2.0/10E/V16 (EMU1101) current firmware profiles are MAINT 1.5.4 and MAINT 1.6.4. Both provide addressed parameter and identity access, maintenance services, UART0 marker access, UART1 power/RTC and storage diagnostics, plus one-record history, active/stored calibration and persisted-capacity/live-energy snapshots. Only 1.6.4 adds persistent individual pack lock, verified SOC saving before planned reset and configurable recharge-waiting hard stop. The same cumulative image supports master and slaves; each board needs its own compatible firmware. A patched master does not supply patch features to older slaves.
+Current firmware profiles are MAINT 1.5.4 and MAINT 1.6.4. Both provide addressed parameter and identity access, maintenance services, UART0 marker access, UART1 power/RTC and storage diagnostics, plus one-record history, active/stored calibration and persisted-capacity/live-energy snapshots. Only 1.6.4 adds persistent individual pack lock, verified SOC saving before planned reset and configurable recharge-waiting hard stop. The same cumulative image supports master and slaves; each board needs its own compatible firmware. A patched master does not supply patch features to older slaves.
 
 ## Ports, addressing and transactions
 

@@ -1,4 +1,4 @@
-# Seplos BMS 2.0/10E/V16 (EMU1101): Firmware Analysis
+# Firmware Analysis
 
 > **Port notation:** **UART0 = RS485-1/RS485-2 (shared pack bus)**; **UART1 = RS485 pair in the CAN socket**; **UART2 = local display/Bluetooth port**. UART1 carries RS485 traffic; the actual CAN interface uses separate pins in the same socket.
 
@@ -9,6 +9,8 @@ The EMU1101 application uses a Cortex-M0 Thumb image packaged in a Seplos-specif
 Confidence: **confirmed** = read directly from the code/bytes · **probable** = inferred from data flow/context · **assumption** = plausible, not proven. Unless stated otherwise, addresses refer to **V16.06.13**.
 
 ---
+
+[Product, hardware and firmware naming](../hardware/product-identification.md) keeps hardware V16 separate from the complete OEM firmware version.
 
 ## 1. Files examined
 

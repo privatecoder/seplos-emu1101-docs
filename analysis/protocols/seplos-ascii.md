@@ -1,4 +1,4 @@
-# Seplos BMS 2.0/10E/V16 (EMU1101): RS485 ASCII protocol ("MODBUS-ASCII"), reconstructed from the firmware
+# RS485 ASCII protocol ("MODBUS-ASCII"), reconstructed from the firmware
 
 > **Port notation:** **UART0 = RS485-1/RS485-2 (shared pack bus)**; **UART1 = RS485 pair in the CAN socket**; **UART2 = local display/Bluetooth port**. UART1 carries RS485 traffic; the actual CAN interface uses separate pins in the same socket.
 
@@ -416,7 +416,7 @@ Read responses contain 30 bytes. Example string 1 read at address 1: `~200146A20
 
 **Labels on the board** (photos of five EMU1101 PCBA-V16 boards, built 2022–2023; one of them read on the bus) *(observed)*: every board carries two labels.
 
-- **Seplos barcode label:** model line `Model:<voltage><capacity>-1101-10E-SP<nn>-<cells>S` (e.g. `48150-1101-10E-SP85-16S`) and below it `SEPLOS-YYMMDD<4-digit counter>`. On the board that was read, exactly this number was in **string 2** (BMS serial number). String 1 (battery serial number) is set by the pack maker; on this board it had been set by hand to the value of string 2 afterwards, so in finished packs it presumably holds a number of its own. `SP<nn>` is the identifier 0x51 reports (`1101-SP85`).
+- **Seplos barcode label:** model line `Model:<voltage><current>-1101-10E-SP<nn>-<cells>S` (e.g. `48150-1101-10E-SP85-16S`) and below it `SEPLOS-YYMMDD<4-digit counter>`. On the board that was read, exactly this number was in **string 2** (BMS serial number). String 1 (battery serial number) is set by the pack maker; on this board it had been set by hand to the value of string 2 afterwards, so in finished packs it presumably holds a number of its own. `SP<nn>` is the identifier 0x51 reports (`1101-SP85`).
 - **Assembler's QR/DataMatrix label:** bill of materials/variant (e.g. `1101-48150-10E-V16-JC`) and its own number `HG…`/`HX…` + YYMMDD + sequence, dated a few weeks before the Seplos number (assembled, then programmed at Seplos). This number is not in 0xA2/0xA4. One product photo shows a different format (`V16SM…`).
 
 Consequence: if a pack has no BMS serial number (string 2) or a placeholder, the right one can be read off the barcode label and written with 0xA5.

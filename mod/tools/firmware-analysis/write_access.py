@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Current offline capability catalogue for Seplos BMS 2.0/10E/V16 (EMU1101).
+"""Current offline BMS capability catalogue.
 
 Release identities come from mod/firmware/releases. Verification checks current
 input bytes and MNT05 metadata, and does not claim a new native test run.
