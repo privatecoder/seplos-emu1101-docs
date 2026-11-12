@@ -24,9 +24,11 @@ in all four checked images. The 24 MHz system clock used in this probe is an
 emulator fixture, **not a measurement of the BMS clock**; the requested 9600
 baud comes from the actual instructions.
 
-The [manufacturer SDK header](https://github.com/Synwit-Co-Ltd/SWM181_Lib/blob/main/SWM181_StdPeriph_Driver/CSL/SWM181_StdPeriph_Driver/SWM181_uart.h)
-defines TimeoutTime/(Baudrate/10) seconds with a nonempty RX FIFO and no new
-reception. Nominally:
+The [pinned manufacturer SDK and SWM181 manual](../../vendor/docs/mcu-synwit-swm181/SOURCES.md)
+define TimeoutTime/(Baudrate/10) seconds with a nonempty RX FIFO and no new
+reception (manual pp.104–108). Page 104 explicitly recommends leaving one byte
+in the FIFO to guarantee a receive timeout that can delimit frames. Using the
+requested baud rate, nominally:
 
 ```text
 100 × 10 / 9600 seconds = 104.1667 ms
@@ -34,6 +36,13 @@ reception. Nominally:
 
 These are 100 character times at 8N1, **not 100 individual bit times**. CR does
 not end a frame in the receive ISR; the parser checks CR later.
+
+The OEM clock setup selects nominal 48 MHz. The actual integer divider written
+by `0xB970` is 311, giving `48 MHz/[16*(311+1)] = 9615.38` baud and a
+divider-derived timeout of **104 ms**. These calculated values refine the
+requested-rate approximation above; neither is a physical timing measurement.
+The [startup and UART register derivation](../firmware/startup-clock-timers.md#7-uart-initialization-and-nominal-timing)
+is bound to the exact OEM .13 application and actual-instruction replay.
 
 ## 2. Case A: no receive timeout between two frames
 

@@ -12,6 +12,8 @@ Confidence: **confirmed** = read directly from the code/bytes · **probable** = 
 
 [Product, hardware and firmware naming](../hardware/product-identification.md) keeps hardware V16 separate from the complete OEM firmware version.
 
+The [Ghidra OEM review](ghidra-oem-review.md) adds per-image coverage and build-bound C/assembly checks for temperature state, SOC, limits and UART1 Modbus. Its successful exports are not proof that every function is semantically understood.
+
 ## 1. Files examined
 
 | File (`../../vendor/firmware/`) | Lines | SHA-256 (prefix) | Image size | Stack top | Reset vector | Image SHA-256 (prefix) |
@@ -64,7 +66,7 @@ The retained EHEX payloads contain plain Thumb code and no identified whole-imag
 
 - Type 00 records with 16 bytes (the last one shorter), contiguous addresses from `0x0000`, **valid Intel HEX checksums**.
 - No type 04 (Extended Linear Address) records: all seven files contain only types 00, 05 and 01 after the header. *(confirmed)*
-- Type 05 (Start Linear Address) = **`0x000000C1`**. This is the Keil entry `__main` in Thumb mode; the reset handler jumps there after hardware initialization. *(confirmed)*
+- Type 05 (Start Linear Address) = **`0x000000C1`**. This is the Keil entry `__main` in Thumb mode. In .13 the reset stub forwards directly to it; RAM initialization precedes the application hardware initialization at `0x60F0`. *(confirmed)*
 - Type 01 (EOF).
 
 The header is the only difference from regular Intel HEX. Removing the first 16 lines yields a file that any Intel HEX tool can read.
@@ -88,7 +90,7 @@ The header is the only difference from regular Intel HEX. Removing the first 16 
 - **Peripherals:** The base addresses `0x4000_0000`, `0x4100_0000`, `0x4300_0000`, `0x4500_0000`, `0x5000_0000…0x5004_0000` and SCB/NVIC `0xE000_E000` are used. The same peripheral address set is used in all seven images; individual modes, pins and logic still require version-specific comparison. *(confirmed)*
   - GPIO `0x5000_2000` *(confirmed, from all writers)*: outputs bit 10 current limiter, bit 11 heater or relay (low = on), bit 12 **charge MOSFET**, bit 13 **discharge MOSFET**, bit 15 precharge path (soft start); inputs bit 1 button (low = pressed), bits 7/8/9 [pulse addressing](../hardware/internal-address-chain.md#confirmed-firmware-mechanism), bit 14 current limiter stage feedback.
   - GPIO `0x5000_1000`: input bit 0 external on/off switch (BitGroup7 bit 0), output bit 1 supply self-latching *(probable)*, input bit 10 output connection fault (BitGroup5 bit 6). *(confirmed, except the interpretation of bit 1)*
-  - **Timing:** Timer 0 every **5 ms** (measurement, fast overcurrent/short-circuit path, soft start), timer 1 every **1 s** (coulomb/energy counter). The measurement sequencer counts 200 × 5 ms and then starts the main loop, which therefore runs **nominally once per second** (06.13 `0x5FC4`, `0x1ABA`). All "cycles" in the protection logic are seconds. *(confirmed)*
+  - **Timing:** Timer 0 every **5 ms** (measurement, fast overcurrent/short-circuit path, soft start), timer 1 every **1 s** (coulomb/energy counter). The measurement sequencer counts 200 × 5 ms and signals the slow main-loop block, which therefore runs **nominally once per second** (06.13 `0x5FC4`, `0x1ABA`). Counters in that slow protection block use nominal seconds; fast ISR paths and the repeatedly serviced communication block do not. *(confirmed)* Register-level detail (TIMR0/TIMR1, IRQ routing, 48 MHz clock, scheduler flags, watchdog feed condition and bounded GPIO write inventory): [startup, clock and timers](startup-clock-timers.md).
 
 ---
 
@@ -300,7 +302,7 @@ In 06.13, many variables above approx. `0x200000C0` are shifted by **+7 or +8 by
 | `0x200015E0` / `0x200015EC` | u32 | Coulomb counter: maximum (full capacity·3600) / current value (remaining capacity·3600) | confirmed |
 | `0x200000AC` | u8 | **System status** (bit 0 discharging, 1 charging, 2 "Float" = internal "charge path active" flag, not a float charging mode, 3 never set, 4 standby, 5 off, 6 discharge current ≥ 3 A, 7 charge current ≥ 3.01 A (clears below 2.81 A); see [system status](states-and-triggers.md#charging--discharging--standby--off-system-status)) | confirmed |
 | `0x200000B5` | u8 | **On-off state** (bit 0 discharge MOS, 1 charge MOS, 2 current limiting, 3 heater) | confirmed |
-| `0x200000BB` | u8 | (from 06.12) unfiltered hysteresis state of the cell temperature alarms | confirmed |
+| `0x200000BB` | u8 | 06.11: copy of the temperature event state before current-direction masking; 06.12/06.13: independent hysteresis working state, masked by BitGroup2 before charge/discharge lock evaluation | confirmed |
 | `0x200000E8` | u8 | (06.13) state of the 0xAA/0xAB relay (1…4) | confirmed |
 | `0x200000EA…EF` | u8 ×6 | (06.13) 6 data bytes of the 0xAA/0xAB relay | confirmed |
 | `0x200000F7` | u8 | Master system flags: bit 0 discharging, 1 charging, 2 highest cell ≤ OVP + 30 mV, 3 discharging possible, 4 SOC ≤ 5 %, 5 SOC ≤ 9 %, 7 master/inverter communication active (CAN, Modbus, Pylontech) | confirmed |

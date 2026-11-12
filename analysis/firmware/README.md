@@ -2,6 +2,8 @@
 
 - [Configuration parameters and function switches](configuration-parameters.md)
 - [Firmware Analysis](firmware-analysis.md)
+- [Startup, clock, timers and output write sites (06.13)](startup-clock-timers.md)
+- [Ghidra OEM coverage, build-bound findings and architecture](ghidra-oem-review.md)
 - [Unofficial Firmware Changelog](firmware-changelog.md)
 - [Intermittent recharge: soft stop vs. hard stop](intermittent-recharge-soft-vs-hard-stop.md)
 - [Firmware images](original-images.md)

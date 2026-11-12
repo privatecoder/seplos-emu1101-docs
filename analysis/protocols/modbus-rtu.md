@@ -323,7 +323,7 @@ Single-pack parameters (not × pack count):
 | 0x9018 | CCL (**new in 06.13**) | 0.1 A |
 | 0x9019 | DCL (**new in 06.13**) | 0.1 A |
 
-⚠ **06.13 only accepts count 26.** A master that reads 21 registers as before gets **exception 03**. *(confirmed)*
+⚠ **06.13 compares only the low count byte with 26** (`0x43A6`, request byte `0x20000E04`). A normal request for 21 registers gets **exception 03**. This is not full 16-bit validation: malformed requests whose high count byte is nonzero are not proven to be rejected. Their device effect was not tested. *(confirmed: validator code)*
 
 ---
 
@@ -404,6 +404,8 @@ The handler first writes **a single byte** (cell count), then 18 half-words and 
 | 0x3129 | system voltage (new in 06.13) | 0.1 V |
 | 0x312A | system current (new in 06.13) | int16, 0.1 A |
 | 0x312B | 0 (new in 06.13) | |
+
+The 06.13 builder `0x364A` uses signed 32-bit intermediates for current, clamps to ±32700 and emits **one 16-bit word at `0x3102`**. Power is the separate unsigned pair `0x3103` (low) / `0x3104` (high): `raw = low | (high << 16)`, `watts = raw / 100`. Register byte order remains big-endian. Dispatcher `0x45AC` calls validator `0x43A6` first and selects the builder only on success; the validator does not call the dispatcher. [Build-bound review](../firmware/ghidra-oem-review.md).
 
 **Mapping *(assumption, fairly strong)*:** `0x3100` (FC04) together with `0x9000` (FC03) matches the **EPEver Modbus conventions** ("BMS-Link"):
 - real-time data from 0x3100, battery parameters from 0x9000

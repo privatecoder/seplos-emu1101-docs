@@ -2,6 +2,7 @@
 
 - [Product, hardware and firmware identification](hardware/product-identification.md)
 - [Firmware architecture, parameters and behavior](firmware/README.md)
+- [Seven-image Ghidra OEM review](firmware/ghidra-oem-review.md)
 - [Hardware specifications, address chain and connection topologies](hardware/README.md)
 - [Communication protocols and firmware updates](protocols/README.md)
 - [OEM BatteryMonitor](software/oem-batterymonitor.md)

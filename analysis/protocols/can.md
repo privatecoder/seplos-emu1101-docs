@@ -66,15 +66,21 @@ In addition, the CCL is set to 10 A total on warnings and to 0 A when a cell is 
 | Re-init | at boot and when switching **to or from** protocol 7 (ASCII 0xA6 / binary 0x63). Switching between 1–6: store only |
 | Bus-off | `0x9B2E` before each send cycle: on bus-off, the error counters are reset and the controller is restarted |
 | Reception | **none**: IER = 0, receive function `0xC580` is never called |
-| Send dispatcher | `0xAEBA`, **once per main loop pass = 1 s** (call `0x621A` directly after the aggregation `0x99BA`). Sends only if `0x200000F7` bit 7 is set. `0x99BA` sets it only on the master (DIP 0) |
+| Send dispatcher | `0xAEBA`, **once per nominal one-second slow-block pass** (call `0x621A` directly after aggregation `0x99BA`). Sends only if `0x200000F7` bit 7 is set. `0x99BA` sets it only on the master (DIP 0). The surrounding main loop and communication block can run between slow ticks. |
 | Protocol selection | `0x20000024` (1…20). **0 and 8…20 send the protocol 1 set** |
+
+The pinned SWM181 manual/SDK and actual .13 initialization agree on the bit
+timing: at nominal 48 MHz, `BT1=0x23` gives 8 time quanta per bit and a 62.5%
+sample point; `BT0=0x85` gives 500 kbit/s and `0x9D` gives 100 kbit/s.
+All four interrupt-enable configuration bytes are zero. These are code-derived
+register settings, not measured bus timing. [Exact initialization and source limits](../firmware/startup-clock-timers.md#8-can-initialization).
 
 ### 2.1 Send timing *(confirmed, 06.13; constants identical in all versions)*
 
-- **Period: 1 s.** The main loop is started by the measurement sequencer after timer 0 has ticked 200 times (5 ms each, clock = SystemCoreClock/200). At the end of each pass it calls the send dispatcher. The timing is therefore tied to a hardware timer, not to computation time; jitter arises only from the runtime of the preceding main loop.
+- **Nominal period: 1 s.** The measurement sequencer signals the slow block after 200 timer-0 ticks (nominally 5 ms each, load = SystemCoreClock/200). That block calls the send dispatcher after aggregation. The cadence is timer-derived, with latency from work preceding the send call, interrupt service and possible backlog. It is not a measured fixed one-second delivery deadline.
 - **Burst:** Per pass, **all** frames of the active protocol are sent back to back, without selection, counters or alternation between passes.
 - **Gap between two frames:** wait loop `0x9B4C` with 5 × 5400 = 27,000 iterations (Victron/SMA partly 3 × 5400). At a **48 MHz** CPU clock (`SystemCoreClock`, set in `0xC814`, source via startup routine `0xC8FC`) and ≈ 5 cycles per loop iteration, this gives **≈ 2.8 ms** (Victron/SMA ≈ 1.7 ms). Possible flash wait states would lengthen the gap slightly *(order of magnitude confirmed, exact value only measurable)*.
-- An 8-byte frame takes about 0.25 ms at 500 kbit/s (about 1.2 ms for MUST at 100 kbit/s); the gap is therefore sufficient before the next frame is written into the TX buffer. Since the driver sends **single-shot**, a lost frame is only replaced in the next burst (1 s later).
+- An 8-byte frame takes about 0.25 ms at 500 kbit/s (about 1.2 ms for MUST at 100 kbit/s) on an otherwise available bus. The estimated gap exceeds that frame duration, but it does not guarantee TX-buffer readiness under arbitration or bus faults: `0xC4DA` does not wait for SR.TBS (bit 2). Since the driver sends **single-shot**, a lost frame is only replaced in the next burst (nominally 1 s later).
 - Before each burst, `0x9B2E` checks for bus-off and restarts the controller if needed.
 
 | Protocol | Frames per burst (order) | Burst duration |
@@ -141,6 +147,19 @@ There is **no continuous SOC-dependent current-limit curve**. Low-SOC warning (e
 | 7 | master/sending active |
 
 ---
+
+### Version-bound limit behavior
+
+| Build | CCL function | Multi-pack selection / heating floor |
+|---|---|---|
+| 16.06.11 | `0x9620` | Multi-pack path halves the per-pack charge warning independently of BitGroup7 bit 7; heater source ×50 in internal 0.1 A units (5 A per configured pack). |
+| 16.06.12 | `0x963C` | Active/passive selection also applies in the multi-pack path; heater source ×100 (10 A per configured pack). |
+| 16.06.13 | `0x98A8` | The same selection and ×100 heater floor are retained; immediate-zero/heating/overvoltage override order is described above. |
+
+All seven retained protocol-1 dispatchers emit `0x351`, `0x355`, `0x356`,
+`0x359`, `0x370`, `0x371`, `0x35E`, `0x35C`, with eight data bytes each.
+The stable IDs and frame size do not establish identical payload values,
+limits or Deye acceptance. [OEM review and exact build identities](../firmware/ghidra-oem-review.md).
 
 ## 4. Protocol 1 "PNG_DYE_Luxp_TBB" (Pylontech: Deye, Luxpower, TBB …), byte by byte *(confirmed)*
 

@@ -31,10 +31,10 @@ Details: [CAN protocols](../protocols/can.md) · [Modbus RTU](../protocols/modbu
 
 ### Modbus RTU
 - **FC04 `0x3100`: current overflow fixed, power added** *(confirmed)*
-  - 0x3102 current: up to 06.12 unsigned 16 bit · 10, overflow from ±327 A. Now int32, **clamped to ±32700**.
+  - 0x3102 current: up to 06.12 unsigned 16 bit · 10, overflow from ±327 A. From 06.13 the calculation uses signed 32-bit intermediate arithmetic and is **clamped to ±32700** before emitting **one signed 16-bit register** in 0.01 A. The wire field has not become 32 bits.
   - 0x3103/0x3104: up to 06.12 both a copy of the current. Now **power U·|I|/10 as u32, low word first**.
   - New: 0x3128 = 0, 0x3129 voltage 0.1 V, 0x312A current 0.1 A, 0x312B = 0. Length **40 → 44** registers.
-- **FC03 `0x9000`: 21 → 26 registers** (+0, DVL, CVL, CCL, DCL). ⚠ The validator now accepts **only a count of 26**: a master that still reads 21 registers gets **exception 03**. *(confirmed)*
+- **FC03 `0x9000`: 21 → 26 registers** (+0, DVL, CVL, CCL, DCL). ⚠ The validator checks the **low count byte against 26** (not all 16 bits): a master that still reads 21 registers gets **exception 03**. *(confirmed)*
 - **FC03 `0x001F` × 9 new:** 4 cell temperatures, MOS temp., ambient temp. (0.1 °C), CVL, CCL, DCL. Together with the old `0x0025` it forms the map 0x1F–0x27. *(confirmed)*
 
 ### ASCII protocol (RS485) and binary protocol
@@ -48,7 +48,7 @@ Details: [CAN protocols](../protocols/can.md) · [Modbus RTU](../protocols/modbu
 - The shadow byte for the off/on edge (binary 0xA2/0xA3) is now at `0x200000E9`, because `0x200000E8` becomes the tunnel status. *(confirmed)*
 
 ### CAN
-- Protocol 1 (Deye/Pylontech): **unchanged**. *(confirmed)*
+- Protocol 1 (Deye/Pylontech): frame layout and the eight transmitted IDs remain unchanged relative to 06.12. This does not imply identical charge-limit calculation across all older releases; see the 06.11→06.12 CCL changes. *(confirmed)*
 - Victron/SMA: 0x35F capacity now rounded as a 32-bit sum; 0x379 = Σ measured full capacity instead of packs × nominal capacity. *(confirmed)*
 
 ### System
@@ -62,7 +62,7 @@ Details: [CAN protocols](../protocols/can.md) · [Modbus RTU](../protocols/modbu
 ### Battery logic
 - **Bugfix: hysteresis of the cell temperature alarms** (event 3) *(confirmed, code and consequence)*
   - **Up to 06.11:** The hysteresis state was stored in the reported byte `0x20000032`, which was then masked depending on the charge/discharge state. On a change charge ↔ discharge, the state of the other half was lost.
-  - **From 06.12:** The evaluation works on `0x200000BB`, and this byte is now masked with BitGroup2 (06.12 `0x677C`–`0x6786`, 06.13 `0x6946`–`0x6952`); a copy masked by current direction is reported in `0x20000032`. **06.11 only:** the charge/discharge locks read the unmasked copy `0x200000BB` (06.11 `0x6584`–`0x658A`, mask only applied to `0x32` at `0x678A`); a cell temperature protection disabled via BitGroup2 therefore still opened the MOSFET there (correct in 06.05 and from 06.12). *(confirmed)*
+  - **From 06.12:** The evaluation works on `0x200000BB`, and this byte is now masked with BitGroup2 (06.12 `0x677C`–`0x6786`, 06.13 `0x6946`–`0x6952`); a copy masked by current direction is reported in `0x20000032`. **06.11 only:** the charge/discharge locks read the unmasked copy `0x200000BB` (06.11 charge-lock function `0x6E2E`, discharge-lock function `0x6FB8`; tests `0xBB & 0x0A` / `0xBB & 0xA0`; mask only applied to `0x32` at `0x678A`); a cell temperature protection disabled via BitGroup2 therefore still opened the MOSFET there (correct in 06.05 and from 06.12). *(confirmed)*
   - *Consequence up to 06.11* (with P24 = 55 °C, P25 = 50 °C): charging at 56 °C → charge overtemperature protection. Brief discharge → charge bits including their memory are cleared. Charging again at 52 °C → **charging allowed**, although the temperature did not drop below 50 °C. From 06.12 the protection stays active until below 50 °C. Mirror-symmetrically for the discharge temperature protection.
 - **Heating request** (event 4 bit 6): is now set from the temperature alone (≤ parameter 36 on, > 37 off). Up to 06.11 only during active charging/float. The condition "charging or charger detected" is checked from 06.12 by the heater output itself instead; heating therefore still only happens with a charger present, but the request is always reported. *(confirmed)*
 - **"Float" logic** (system status bit 2, per documentation "Floating charge", actually "charger/external voltage detected at the port"; internally on-off bit 6) *(confirmed)*:

@@ -73,3 +73,13 @@ The CCL/DCL registers of most maps mirror the aggregate (`0x20001670`/`0x2000167
 - **Enable/request:** CAN `0x35C` B0 bits 3–7 (prot. 1/5), `0x319` (prot. 2), **Studer `0x0A0` B0 (forbid 0/1, force 2/4)**, **MUST `0x00030200` B4/B6 (forbid)**; Pylontech `0x63` B8; Modbus PACE `0x0B` bits 10/11, `0x0074` bits 4–7, **`0x13`** (×28: bits 6/7; `0x0001`/`0x0010`/`0x0013`: bits 5/6), **`0x1001` bits 0/1**, **`0x3111` bits 0/1**, **`0x3127` bits 15/14/13/3**. (Victron/SMA `0x35A` is a **warning frame** (`0x9E0A`–`0x9F56`), not an enable field.)
 
 **Exceptions that do not follow the aggregate CCL/DCL:** GINLONG/Pylontech charge enable (cell voltage instead of CCL), Studer `+10 A`, Modbus `0x0010×19` (own CCL); `0x9004` is not a CCL mirror at all but a separate threshold. *(confirmed)*
+
+## Version scope of the shared limits
+
+The formula above is for OEM 16.06.13, not every historical image. The CCL
+producer is `0x9620` in .11, `0x963C` in .12 and `0x98A8` in .13. In .11 the
+multi-pack branch always halves the warning threshold; .12 applies the
+active/passive selection there too. The heater minimum changes from 5 to 10 A
+per configured pack at .12. Identical protocol-1 IDs do not imply identical
+upstream limit calculation. [Version table and ordering](can.md#version-bound-limit-behavior),
+[build-bound OEM review](../firmware/ghidra-oem-review.md).
