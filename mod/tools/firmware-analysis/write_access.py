@@ -2,7 +2,7 @@
 """Current offline BMS capability catalogue.
 
 Release identities come from mod/firmware/releases. Verification checks current
-input bytes and MNT05 metadata, and does not claim a new native test run.
+input bytes and EXT05 metadata, and does not claim a new native test run.
 """
 from pathlib import Path
 import argparse
@@ -58,11 +58,11 @@ def available_ports(cell):
     return ports
 
 
-def comparison_rows(rows, oem_column=2, maint_columns=(3, 4)):
+def comparison_rows(rows, oem_column=2, ext_columns=(3, 4)):
     rendered = port_rows(rows)
     for row in rendered:
         original = available_ports(row[oem_column])
-        for column in maint_columns:
+        for column in ext_columns:
             added = available_ports(row[column]) - original
             # Existing strong text already emphasizes its contained UART names.
             parts = re.split(r'(\*\*[^*]*\*\*)', row[column])
@@ -78,12 +78,12 @@ def render():
     profiles = data['profiles']
     doc = (HERE / 'write_access.template.md').read_text()
     chunks = {
-        '@PROFILES@': table(('Firmware', 'Build ID', 'MNT05 image flags', '.ehex file SHA-256'),
+        '@PROFILES@': table(('Firmware', 'Build ID', 'EXT05 image flags', '.ehex file SHA-256'),
             [('Original 16.06.13', '—', '—', f'`{data["base_image"]["ehex_sha256"]}`')] +
-            [(v, f'`{p["build_id"]}`', f'`0x{p["image_flags"]:02X}`', f'`{p["ehex_sha256"]}`') for v, p in profiles.items()]),
-        '@MATRIX@': table(('Value / action', 'Command', 'Original .13', 'MAINT 1.5.4', 'MAINT 1.6.4'), comparison_rows(data['matrix'])),
-        '@READS@': table(('Read operation', 'Command', 'Original .13', 'MAINT 1.5.4', 'MAINT 1.6.4'), comparison_rows(data['selected_read_commands'])),
-        '@GROUP0@': table(('Field', 'Original .13', 'MAINT 1.5.4', 'MAINT 1.6.4', 'Write route / exception'), comparison_rows(data['group0'], oem_column=1, maint_columns=(2, 3))),
+            [(('Light ' if v.startswith('1.5.') else 'Full ')+v, f'`{p["build_id"]}`', f'`0x{p["image_flags"]:02X}`', f'`{p["ehex_sha256"]}`') for v, p in profiles.items()]),
+        '@MATRIX@': table(('Value / action', 'Command', 'Original .13', 'EMU1101-EXT Light 1.5.5', 'EMU1101-EXT Full 1.6.5'), comparison_rows(data['matrix'])),
+        '@READS@': table(('Read operation', 'Command', 'Original .13', 'EMU1101-EXT Light 1.5.5', 'EMU1101-EXT Full 1.6.5'), comparison_rows(data['selected_read_commands'])),
+        '@GROUP0@': table(('Field', 'Original .13', 'EMU1101-EXT Light 1.5.5', 'EMU1101-EXT Full 1.6.5', 'Write route / exception'), comparison_rows(data['group0'], oem_column=1, ext_columns=(2, 3))),
         '@PARAMETERS@': table(('Index', 'Value', 'Raw unit', 'OEM .13 RAM'),
             [(f'P{p["index"]}', p['name'], p['unit'], f'`{p["ram"]:#010x}`') for p in data['parameters']]),
         '@BITS@': table(('Group', 'Bit', 'Meaning'),
@@ -119,34 +119,34 @@ def verify():
         require(image.sha == manifest['app_sha256'], f'{version}: application hash mismatch')
         require(len(image.app) == manifest['app_bytes'], f'{version}: application extent mismatch')
         require(manifest.get('info_format') == 5 and manifest.get('info_bytes') == 21,
-                f'{version}: MNT05 format/length mismatch')
+                f'{version}: EXT05 format/length mismatch')
         capabilities = manifest.get('remote_capabilities')
         require(type(capabilities) is int and capabilities == 0x000f,
-                f'{version}: MNT05 remote capabilities missing or unsupported')
+                f'{version}: EXT05 remote capabilities missing or unsupported')
         try:
             info = bytes.fromhex(manifest['info_hex'])
         except ValueError as exc:
-            raise ValueError(f'{version}: MNT05 malformed info hex') from exc
-        expected = (b'MNT' + bytes([manifest['info_format']]) + bytes.fromhex('10060D') +
+            raise ValueError(f'{version}: EXT05 malformed info hex') from exc
+        expected = (b'EXT' + bytes([manifest['info_format']]) + bytes.fromhex('10060D') +
                     bytes(map(int, version.split('.'))) + bytes.fromhex(manifest['build_id']) +
                     bytes([manifest['image_flags']]) + capabilities.to_bytes(2, 'big'))
         require(info == expected and len(info) == manifest['info_bytes'] == 21,
-                f'{version}: MNT05 release metadata mismatch')
+                f'{version}: EXT05 release metadata mismatch')
         # The handlers replace template bytes 4/5 with the OEM version RAM.
         # payload.s info_copy and marker_uart0.s .Lm0_info_copy define this ABI.
         template = info[:4] + b'\0\0' + info[6:]
-        require(image.app.count(template) == 1, f'{version}: MNT05 template missing or ambiguous in application')
+        require(image.app.count(template) == 1, f'{version}: EXT05 template missing or ambiguous in application')
         offset = image.app.index(template) + 10
         neutral = bytearray(image.app)
         neutral[offset:offset + 8] = b'UPID0000'
         require(hashlib.sha256(neutral).digest()[:8].hex() == manifest['build_id'],
-                f'{version}: MNT05 build ID does not match application')
+                f'{version}: EXT05 build ID does not match application')
         verified[version] = {'manifest': profile['manifest'], 'ehex_sha256': manifest['ehex_sha256'],
                              'app_sha256': image.sha, 'build_id': manifest['build_id'],
                              'info_hex': info.hex().upper(), 'remote_capabilities': capabilities}
     require((len(data['parameters']), len(data['function_bits']), len(data['matrix'])) == (87, 64, 23),
             'capability dimensions changed')
-    return {'passed': True, 'verification': 'current release hashes and MNT05 metadata; no native emulation',
+    return {'passed': True, 'verification': 'current release hashes and EXT05 metadata; no native emulation',
             'profiles': verified, 'parameter_count': 87, 'switch_positions': 64,
             'action_rows': 23, 'hardware_access': False}
 

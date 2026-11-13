@@ -13,7 +13,7 @@ from unicorn.arm_const import (UC_ARM_REG_R0,UC_ARM_REG_R1,UC_ARM_REG_R2,
  UC_ARM_REG_R9,UC_ARM_REG_R10,UC_ARM_REG_R11,UC_ARM_REG_SP,UC_ARM_REG_PRIMASK)
 
 REQUIRED=tuple('remote_diagnostics-'+n for n in (
- 'MNT05-capabilities-and-old-64-04','all-22-addresses-both-ports-no-enable-bits',
+ 'EXT05-capabilities-and-old-64-04','all-22-addresses-both-ports-no-enable-bits',
  'active-calibration-signed-BE-snapshot','stored-calibration-both-pages-raw-LE',
  'calibration-classes-and-native-CRC-independent','SOC-mirror-classes-choice-and-raw',
  'SOC-native-acceptance-independent-of-shape','live-energy-full-width-and-capacity',
@@ -104,9 +104,9 @@ def validate_remote(original,patched,facts,build):
  def contracts():
   equal((build['info_format'],build['info_bytes']),(5,21))
   for port in ('R','C'):
-   m=board();rtn,data=query(m,port,b'\3');equal((rtn,len(data),data[:4],data[19:]),(0,21,b'MNT\5',b'\0\x0f'))
+   m=board();rtn,data=query(m,port,b'\3');equal((rtn,len(data),data[:4],data[19:]),(0,21,b'EXT\5',b'\0\x0f'))
    equal(query(m,port,b'\4'),(0,bytes([1,1,1,1,1,1,1,255,255,0]) if build['patch_version'].startswith('1.5') else bytes([1,1,1,1,1,1,1,0,0,6])))
- check('MNT05-capabilities-and-old-64-04',contracts)
+ check('EXT05-capabilities-and-old-64-04',contracts)
  def addresses():
   for adr in range(22):
    for port in ('R','C'):
@@ -284,10 +284,12 @@ def validate_remote(original,patched,facts,build):
    equal(len(result[1]),0 if fail else 97);equal(m.history_reads,[(0,94,1)]);equal(query(m)[0],0);no_write(m)
  check('history-IRQ-coexistence',coexist)
  def boundaries():
-  expected=5 if build['patch_version'].startswith('1.5') else 21;equal(len(build['hooks']),expected)
-  equal(build['ram_bytes'],0 if expected==5 else 4)
+  expected=(5 if build['patch_version'].startswith('1.5') else 21)+int(bool(build.get('scheduler_atomic')));equal(len(build['hooks']),expected)
+  equal(build['ram_bytes'],0 if build['patch_version'].startswith('1.5') else 4)
   allowed={a for site in build['hooks'].values() for a in range(site,site+4)}
-  if expected==21:allowed.update(range(facts['cutoff']['zero_size_offset'],facts['cutoff']['zero_size_offset']+4))
+  if build.get('scheduler_atomic'):
+   a=facts['scheduler_atomic']['branch_site'];allowed.update(range(a,a+2))
+  if build['patch_version'].startswith('1.6'):allowed.update(range(facts['cutoff']['zero_size_offset'],facts['cutoff']['zero_size_offset']+4))
   if build['hard_stop'].get('changed'):allowed.add(build['hard_stop']['offset'])
   assert all(i in allowed or a==b for i,(a,b) in enumerate(zip(original.app,patched.app)))
  check('no-new-hooks-or-RAM-and-prefix-allowlist',boundaries)

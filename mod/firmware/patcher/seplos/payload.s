@@ -1,4 +1,4 @@
-/* Standalone parameterized MAINT1.5. Provenance: ../PROVENANCE.md */
+/* Shared parameterized EMU1101-EXT Light/Full payload. */
 .syntax unified
 .cpu cortex-m0
 .thumb
@@ -616,7 +616,7 @@ silent:
 .global patch_info_template
 patch_info_template:
 .Lpatch_info_template:
-    .ascii "MNT"
+    .ascii "EXT"
     .byte 3, 0, 0, BASE_REVISION, 1, 5
     .ascii "UPID0000"
     .byte IMAGE_FLAGS

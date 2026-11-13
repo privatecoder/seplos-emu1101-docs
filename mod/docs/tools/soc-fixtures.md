@@ -1,59 +1,19 @@
 # SOC emulator fixtures
 
-The SOC tools execute original Cortex-M0 instructions with synthetic RAM, GPIO and storage inputs. `soc_profile_v16.py` supplies named functions, RAM fields, units and invariants; `probe_soc.py` and `probe_soc_cutoffs.py` exercise the counter and cutoff paths. The profile is research/test support, not a hardware SOC setter.
+The current patcher executes native Cortex-M0 instructions with synthetic RAM, GPIO and storage inputs to verify SOC storage diagnostics and planned-reset behavior. These models provide software evidence for the exact selected image; they are not hardware SOC setters.
 
-## Image and dependency scope
+## Current image and fixture scope
 
-The profile binds OEM 16.06.13 and the historical MAINT 1.6 build `18daf61d8a93671d`. It verifies image hashes, build identity, selected unchanged code ranges and RAM bindings. That scope does not automatically extend to every MAINT 1.6 image or to 1.6.3. The current firmware's behavior and planned-reset extension are described in [SOC analysis](../../../analysis/firmware/soc-capacity-and-persistence.md) and [storage/reset](../firmware/storage-and-reset.md).
+Light 1.5.3 and later provide read-only storage diagnostics. Full 1.6.3 and later additionally verify SOC saving before targeted planned reset. Light 1.5.4 and later and Full 1.6.4 and later expose persisted capacity contents and full-width live energy. The [storage/reset contract](../firmware/storage-and-reset.md) and [remote diagnostics](../firmware/remote-diagnostics.md) define these separate capabilities.
 
-Inputs include the OEM image, the fixed historical release and its preserved report under ignored `local/`. These are intentional version-bound research fixtures; they are separate from the maintained patcher unit-test fixture boundary. Required historical inputs must remain available. The profile refuses a different image rather than silently applying known addresses.
+The maintained [storage diagnostic tests](../../firmware/patcher/seplos/storage_diagnostics_tests.py), [service tests](../../firmware/patcher/seplos/service_tests.py) and [remote diagnostic tests](../../firmware/patcher/seplos/remote_diagnostics_tests.py) construct explicit records and failure states. Native serializers, loaders, CRC routines and guarded hooks execute where covered. Expected record shape and native CRC acceptance remain separate checks. Full-profile cases include checkpoint failures, interrupted mirror writes and boot restore; read-only cases check that querying storage does not repair or save it.
 
-Use the external patcher interpreter with Unicorn 2.1.4 and LLVM. Native execution needs a process that permits Unicorn JIT; no device or network connection is used. From a neutral directory:
+Use the [build and validation procedure](../firmware/build-and-validation.md) with the selected profile and pinned input. Preserve the exact application SHA, build report, resolved source and fixture bindings with results. The [fixture registry](../../firmware/patcher/tests/fixtures/registry.json) and [binary corpus](../../firmware/patcher/corpus.json) define maintained dependencies; a historical report or another image cannot replace them.
 
-```sh
-export SEPLOS_PROJECT='/absolute/path/to/Seplos V2 10E BMS'
-export SEPLOS_PYTHON="$HOME/.local/share/seplos-oem-patcher/venv/bin/python"
-cd /private/tmp
-"$SEPLOS_PYTHON" -I -B "$SEPLOS_PROJECT/mod/tools/firmware-analysis/probe_soc.py" \
-  --out /private/tmp/soc-counter-new.json
-"$SEPLOS_PYTHON" -I -B "$SEPLOS_PROJECT/mod/tools/firmware-analysis/probe_soc_cutoffs.py" \
-  --out /private/tmp/soc-cutoff-new.json
-```
+## Reuse and extension
 
-Output files must be new. Keep new reports under ignored `local/research/soc/evidence/<date-topic>/` or `local/builds/runs/<date-topic>/`.
+For new scenarios, state units and initial conditions, execute native routines in firmware order, and verify intended transitions and unaffected state. Keep image, profile, source and test hashes with results. Resolve new code/RAM contracts and create a separately bound profile before applying expectations to a new image. Never remove identity guards to admit an unknown image.
 
-## Reuse the fixture API
+Frozen research profiles remain under ignored `local/` and require their own source/dependency arrangement, exact inputs and reviewed reports. Their scope does not extend to current releases. The [historical test runner](../../tools/run_historical_tests.py) lists retained prerequisites and explicit suites.
 
-Load the profile by absolute path with `importlib`, which also works under Python `-I`:
-
-```python
-import importlib.util
-import os
-from pathlib import Path
-
-path = Path(os.environ['SEPLOS_PROJECT']) / 'mod/tools/firmware-analysis/soc_profile_v16.py'
-spec = importlib.util.spec_from_file_location('soc_fixture', path)
-profile = importlib.util.module_from_spec(spec)
-spec.loader.exec_module(profile)
-
-loaded = profile.load_images()
-board = profile.new_board(loaded, 'MAINT1.6')
-profile.seed_soc(board, 44)  # Synthetic 4.4%, in tenths of a percent.
-profile.run(board, 'soc_update')
-profile.run(board, 'soc_alarms')
-profile.run(board, 'discharge')
-result = profile.read_state(board)
-assert not result['discharge_permitted']
-```
-
-`new_board` creates a synthetic 16S state and starts from documented test values. These are not universal defaults or values to upload to a real pack. `seed_soc(board, tenths, full=28000)` seeds the counter consistently; `full` is in 0.01 Ah. It does not implement a new counting rule. `write(board, name, value, width, signed=False)` writes another named synthetic RAM field. Names and bit masks are in `RAM`, `FUNCTIONS`, `BITS` and `PROFILE`.
-
-`run` calls the actual mapped firmware routine. `read_state` returns tenths/whole-percent SOC, event bytes, discharge/precharge permission, GPIO state and SOC flags. Permission/GPIO results establish software decisions, not electrical isolation or actual battery current.
-
-## Extending coverage
-
-For a new scenario, state the units and initial conditions explicitly, execute the relevant native routines in firmware order, and assert both the intended transition and relevant unaffected state. Record image, profile and test hashes with the result. Distinguish voltage-rule eligibility, hold timers, whole-percent rounding, charge counter units and learned/rated capacity.
-
-For a new firmware image, resolve functions and RAM fields first, compare code/data contracts, and introduce a separately bound profile before running expectations. Do not remove hash checks to make an unknown image load. Preserve the original profile for reproducible historical cases.
-
-IAP acceptance/storage and GPIO registers are modeled. These fixtures do not establish flash power-failure behavior, ISR latency, electrical gates, bootloader behavior or multi-pack current sharing. Use the [validation methods and limits](../firmware/validation-methods-and-limits.md) with the separate historical image/version qualifications.
+Synthetic counter/GPIO state establishes software decisions rather than electrical isolation or actual current. Modeled IAP/storage does not establish physical flash interruption behavior, ISR latency, bootloader behavior or multi-pack sharing. See [validation limits](../firmware/validation-methods-and-limits.md).

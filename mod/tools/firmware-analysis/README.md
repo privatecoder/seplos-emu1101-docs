@@ -2,12 +2,11 @@
 
 > **Port notation:** **UART0 = RS485-1/RS485-2 (shared pack bus)**; **UART1 = RS485 pair in the CAN socket**; **UART2 = local display/Bluetooth port**. UART1 carries RS485 traffic; the actual CAN interface uses separate pins in the same socket.
 
-The current
-[capability renderer](write_access.py) covers OEM 16.06.13,
-MAINT 1.5.4 and MAINT 1.6.4, with 87 parameters, 64 switch positions and 23
-action rows. Public release JSONs supply current identities; the extracted
-capability data has no imports from historical renderer revisions.
-[Extraction provenance](write_access_provenance.json) records the source hashes.
+The [capability renderer](write_access.py) compares the exact OEM 16.06.13,
+EMU1101-EXT Light 1.5.5 and Full 1.6.5 images, covering 87 parameters, 64 switch
+positions and 23 action rows. Function availability starts at Light 1.5.3+ /
+Full 1.6.3+, with shared remote reads from `.4+` and atomic cleanup from `.5+`.
+Public release JSONs supply the current identities.
 
 ```sh
 PROJECT='/path/to/Seplos V2 10E BMS'
@@ -19,7 +18,7 @@ cd /private/tmp
 ```
 
 `--verify` checks the OEM and two current release EHEX/application hashes,
-MNT05 metadata/template and source-defined build-ID digest against
+EXT05 metadata/template and source-defined build-ID digest against
 `mod/firmware/releases/*.json`. It needs no historical build reports and runs
 no native emulation. The template reserves two zero bytes for the OEM family
 version copied at runtime. This is static input verification, not a fresh
@@ -35,26 +34,18 @@ contracts; [OEM analysis](../../../analysis/README.md) remains separate.
 | `funcs.py A.dis B.dis` | Compare function bodies from explicit disassembly inputs. |
 | `crc.py` | CRC16/XMODEM demonstration and check value. |
 | `batterymonitor_agreement.py` | Inventory the immutable vendor BatteryMonitor ZIP directly; XML/executable bytes are data and are never executed. Optional `--agreement` accepts another ZIP or an extracted Agreement directory. Temporary extraction uses `/private/tmp`. |
-| `soc_profile_v16.py`, `probe_soc.py`, `probe_soc_cutoffs.py` | Named SOC RAM/profile model and native SOC/cutoff counterexamples. |
-| `probe_pack_cutoff.py`, `probe_power_rtc_ccl.py` | Original power/wakeup/current-limit counterexamples. |
-| `probe_cutoff_uart0.py`, `probe_cutoff_uart0_errors.py` | Complete OEM parser/dispatcher behavior for a selected `--build`, including persistence failures. |
-| `probe_uart2_display.py` | Display framing, builder and TX IRQ against explicit saved telemetry/parameters. |
-| `probe_uart1_receive_gap.py` | UART1 timing/buffer behavior with modeled UART time and FIFO. |
-| `probe_write_access.py` | Native parameter/switch/write-path checks against the historical image set. |
+| `probe_pack_cutoff.py` | Original power/wakeup/current-limit counterexamples with synthetic OEM state. |
 | `verify_intra_pack_fixtures.py` | Standard-library checks of private 0x5A captures: strict framing/checksum, decoded expectations and retained source SHA. Never accesses a port. |
-| `probe_address_chain_v16.py` | Native address-chain GPIO behavior with synthetic levels; no claim of physical RJ45 pin mapping. |
 | `probe_legacy_uart0_fc03.py` | Four saved-fact-bound native checks for OEM 16.04.06 versus 16.06.03. |
-| `audit_firmware_v16.py` | `persistence`, `startup`, `uart`, `hooks`, or `all`: historical OEM .13 / MAINT 1.5.1 / 1.6.1 NVM word cuts, startup/watchdog, UART buffers and hook ABI/stack checks. Not a current-release verifier. |
 
-The original catalogue revisions, manual hard-stop transformation and legacy
-emulator are retained in the complete ignored historical workspace.
-Rendered Markdown uses canonical UART names; the extracted JSON retains its literal schema and identifiers for existing consumers.
+Rendered Markdown uses canonical UART names. The catalogue verifies the two current EXT05 releases directly.
 
-All native probes use the existing patcher `seplos` package and Unicorn/LLVM.
-Historical build reports are read from identified bundles under `local/builds/oem16.06.13`, fixtures from
-`local/fixtures/corpus`, releases from `local/releases`,
-and saved facts from topic evidence under `local/research`. The checked [research input registry](../research-inputs.json) binds exact report/fact paths and hashes. Required historical
-inputs must be present; newer images are not silently substituted.
+The OEM-native probes use the patcher `seplos` package and Unicorn/LLVM.
+The checked [research input registry](../research-inputs.json) binds exact
+report/fact paths and hashes. The OEM FC03 probe requires its retained facts;
+the intra-pack verifier requires private capture fixtures. Missing or changed
+inputs fail instead of silently selecting another image. The capability
+renderer separately reads current release metadata and images.
 
 Native JIT execution may be restricted by the calling environment. Run native
 checks in a normal local process when the sandbox disallows Unicorn JIT.

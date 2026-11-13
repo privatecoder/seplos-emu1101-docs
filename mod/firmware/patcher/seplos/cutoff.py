@@ -1,4 +1,4 @@
-"""Conservative MAINT1.6 role discovery and version-specific source composition."""
+"""Conservative EMU1101-EXT Full role discovery and version-specific source composition."""
 from pathlib import Path
 import json,struct
 from .analysis import unique
@@ -10,7 +10,7 @@ def discover_cutoff(image,facts):
  c=Code(image.app);bodies=collect(c,facts);f=facts['functions'];r=facts['ram'];d={}
  for name,signature in json.loads(Path(__file__).with_name('cutoff_signatures.json').read_text()).items():
   hits=[a for a in bodies if [i.token() for i in c.window(a,len(signature))]==signature]
-  if len(hits)!=1:raise ValueError('unsupported MAINT1.6 gate ABI: '+name)
+  if len(hits)!=1:raise ValueError('unsupported EMU1101-EXT 1.6 gate ABI: '+name)
   d[name]=hits[0]
  def calls(at):return [i for i in bodies[at] if i.op=='bl']
  def owner_calls(target):return unique([a for a,body in bodies.items() if any(i.op=='bl' and i.target==target for i in body)],'owner '+hex(target))

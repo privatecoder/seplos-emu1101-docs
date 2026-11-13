@@ -1,4 +1,4 @@
-"""Assemble versioned MAINT appendix and guard every OEM hook/startup edit."""
+"""Assemble versioned EMU1101-EXT appendix and guard every OEM hook/startup edit."""
 from pathlib import Path
 import hashlib
 import re
@@ -8,11 +8,12 @@ from .thumb import llvm,command,encode_bl
 PLACEHOLDER=b'UPID0000'
 
 
-def build(image,facts,base_revision=255,hard_stop=False,*,maint_version):
+def build(image,facts,base_revision=255,hard_stop=False,*,ext_version):
  from .profiles import require_profile
- require_profile(maint_version)
+ require_profile(ext_version)
  positive_flags=True
- revision=True;is_cutoff=maint_version=='1.6.4';service=is_cutoff;configurable=is_cutoff
+ is_cutoff=ext_version.startswith('1.6.');service=is_cutoff;configurable=is_cutoff
+ atomic=ext_version in ('1.5.5','1.6.5')
  if type(base_revision) is not int or not 0<=base_revision<=255:raise ValueError('invalid base revision')
  if image.sha!=facts['original_app_sha256']:raise ValueError('analysis/input digest mismatch')
  from .hardstop import locate,apply
@@ -32,22 +33,21 @@ def build(image,facts,base_revision=255,hard_stop=False,*,maint_version):
   hooks.update(cutoff['hooks']);evidence.extend(cutoff['evidence']);flags|=4
  if positive_flags:flags|=8
  constants.update(UART1=0x50011000,VERSION_ADDRESS=facts['version_address'],BASE_REVISION=base_revision,IMAGE_FLAGS=flags,POSITIVE_FLAGS=int(positive_flags))
- if revision:
-  from .marker_uart0 import discover_marker_uart0,source_revision
-  marker=discover_marker_uart0(image,facts)
-  constants.update({'M0_'+k.upper():v for k,v in marker.items() if type(v) is int})
-  constants['MARKER_CUTOFF']=int(is_cutoff);flags|=16
-  # One owner of the shared BL: revision wrapper chains to the cutoff wrapper.
-  if is_cutoff:hooks.pop('hook_cut_uart0_parser')
-  hooks.update(marker['hooks']);evidence.extend(marker['evidence'])
-  constants['IMAGE_FLAGS']=flags
+ from .marker_uart0 import discover_marker_uart0,source_revision
+ marker=discover_marker_uart0(image,facts)
+ constants.update({'M0_'+k.upper():v for k,v in marker.items() if type(v) is int})
+ constants['MARKER_CUTOFF']=int(is_cutoff);flags|=16
+ # One owner of the shared BL: revision wrapper chains to the cutoff wrapper.
+ if is_cutoff:hooks.pop('hook_cut_uart0_parser')
+ hooks.update(marker['hooks']);evidence.extend(marker['evidence'])
+ constants['IMAGE_FLAGS']=flags
  if service:
   from .service import discover_service,source_service
   servicing=discover_service(image,facts)
   constants.update({'SVC_'+k.upper():v for k,v in servicing.items() if type(v) is int})
   hooks.update(servicing['hooks']);evidence.extend(servicing['evidence']);flags|=0x60
   constants['IMAGE_FLAGS']=flags
- if maint_version=='1.5.4':
+ if ext_version.startswith('1.5.'):
   from .storage_diagnostics import discover_diagnostics,source_diagnostics
   diagnostic=discover_diagnostics(image,facts)
   constants.update({'CUT_'+k.upper():v for k,v in diagnostic.items() if type(v) is int})
@@ -62,14 +62,19 @@ def build(image,facts,base_revision=255,hard_stop=False,*,maint_version):
  from .remote_diagnostics import discover_remote,source_remote
  remote=discover_remote(image,facts)
  constants.update({'REM_'+k.upper():v for k,v in remote.items() if type(v) is int})
+ if atomic:
+  from .scheduler_atomic import discover_scheduler_atomic,source_atomic
+  scheduler=discover_scheduler_atomic(image,facts)
+  hooks.update(scheduler['hooks']);evidence.extend(scheduler['evidence'])
  if len(set(hooks.values()))!=len(hooks):raise ValueError('duplicate OEM hook site')
  payload=Path(__file__).with_name('payload.s').read_text()
  if is_cutoff:payload=source16(payload)
- if revision:payload=source_revision(payload,maint_version)
+ payload=source_revision(payload,ext_version)
  if service:payload=source_service(payload)
- if maint_version=='1.5.4':payload=source_diagnostics(payload)
+ if ext_version.startswith('1.5.'):payload=source_diagnostics(payload)
  if configurable:payload=source_configurable(payload)
  payload=source_remote(payload)
+ if atomic:payload=source_atomic(payload)
  source='\n'.join(f'.equ {k}, 0x{v:x}' for k,v in sorted(constants.items()))+'\n'+payload
  with tempfile.TemporaryDirectory(prefix='seplos-build-') as d:
   d=Path(d);asm=d/'payload.s';obj=d/'payload.o';raw=d/'payload.bin'
@@ -89,39 +94,45 @@ def build(image,facts,base_revision=255,hard_stop=False,*,maint_version):
   proof=next(e for e in evidence if e.get('hook')==name)
   if image.app[site:site+4].hex()!=proof['opcode']:raise ValueError('hook bytes changed')
   out[site:site+4]=encode_bl(site,start+symbols[name])
+ if atomic:
+  site=scheduler['branch_site']
+  if image.app[site:site+2].hex()!=scheduler['branch_opcode']:raise ValueError('scheduler branch bytes changed')
+  out[site:site+2]=bytes.fromhex(scheduler['branch_replacement'])
  if is_cutoff:
   off=cutoff['zero_size_offset']
   if int.from_bytes(out[off:off+4],'little')!=cutoff['zero_size_old']:raise ValueError('startup zero extent changed')
   out[off:off+4]=(cutoff['zero_size_old']+4).to_bytes(4,'little')
- offset=start+symbols['patch_info_template']+(10 if revision else 9)
+ offset=start+symbols['patch_info_template']+10
  if out[offset:offset+8]!=PLACEHOLDER or out.count(PLACEHOLDER)!=1:raise ValueError('build ID placeholder mismatch')
  build_id=hashlib.sha256(out).digest()[:8]
  out[offset:offset+8]=build_id
  allowed={a for site in hooks.values() for a in range(site,site+4)}
+ if atomic:allowed.update(range(scheduler['branch_site'],scheduler['branch_site']+2))
  if is_cutoff:allowed.update(range(cutoff['zero_size_offset'],cutoff['zero_size_offset']+4))
  if hard_stop_detail.get('changed'):allowed.add(hard_stop_detail['offset'])
  if any(x!=y and a not in allowed for a,(x,y) in enumerate(zip(out,image.app))):raise ValueError('non-hook OEM bytes changed')
  result=image.with_app(out)
  if type(image).parse(result.render())!=result:raise ValueError('output container failed roundtrip')
- report={'hard_stop':hard_stop_detail,'info_format':3,'info_bytes':18,'addressed_info':True,'power_rtc':True,'image_flags':flags,'patch_version':'1.5','append_at':start,'appendix_bytes':len(appendix),'app_sha256':result.sha,'build_id':build_id.hex(),'base_revision':base_revision,'base_revision_source':'unknown' if base_revision==255 else 'explicit caller declaration (not code-proven)','entries':{k:start+v for k,v in symbols.items()},'build_id_offset':offset,'disassembly':dis,'resolved_assembly':source}
+ report={'hard_stop':hard_stop_detail,'info_format':5,'info_bytes':21,'addressed_info':True,'power_rtc':True,'image_flags':flags,'patch_version':ext_version,'append_at':start,'appendix_bytes':len(appendix),'app_sha256':result.sha,'build_id':build_id.hex(),'base_revision':base_revision,'base_revision_source':'unknown' if base_revision==255 else 'explicit caller declaration (not code-proven)','entries':{k:start+v for k,v in symbols.items()},'build_id_offset':offset,'disassembly':dis,'resolved_assembly':source}
  report['positive_flags']=positive_flags
- if revision:report.update(info_format=5,info_bytes=21,uart0_marker=True,hooks=hooks,remote_diagnostics=True,remote_capabilities=15)
+ report.update(uart0_marker=True,hooks=hooks,remote_diagnostics=True,remote_capabilities=15)
  if is_cutoff:
-  report.update(patch_version='1.6',cutoff=True,hooks=hooks,ram_bytes=4)
+  report.update(cutoff=True,ram_bytes=4)
   cutoff['entries']={k:v for k,v in report['entries'].items() if k.startswith('hook_cut_')}
- report['patch_version']=maint_version
- if revision:marker['entries']={k:v for k,v in report['entries'].items() if k.startswith('hook_uart0_marker')}
+ marker['entries']={k:v for k,v in report['entries'].items() if k.startswith('hook_uart0_marker')}
  if service:
   report.update(service=True,extended_diagnostics=True,checkpoint_before_reset=True)
   servicing['entries']={k:v for k,v in report['entries'].items() if k.startswith('hook_service_')}
- if maint_version=='1.5.4':
+ if ext_version.startswith('1.5.'):
   report.update(storage_diagnostics=True,extended_diagnostics=True,checkpoint_before_reset=False,ram_bytes=0)
-  if len(hooks)!=5 or hooks!={**facts['hooks'],**marker['hooks']}:raise ValueError('storage diagnostics changed OEM hook set')
- if maint_version=='1.5.4':report['positive_power']=True
+  expected={**facts['hooks'],**marker['hooks'],**(scheduler['hooks'] if atomic else {})}
+  if len(hooks)!=5+int(atomic) or hooks!=expected:raise ValueError('storage diagnostics changed OEM hook set')
+ if ext_version.startswith('1.5.'):report['positive_power']=True
  if configurable:
   report.update(configurable_hard_stop=True,hard_stop_default=bool(constants['HS_DEFAULT']))
   report['hard_stop']={**hard_stop_detail,'enabled':None,'configurable':True,'default_enabled':bool(constants['HS_DEFAULT']),'runtime_from_parameter':True}
   dynamic['entries']={k:v for k,v in report['entries'].items() if k=='hook_configurable_hard_stop'}
-  if len(hooks)!=21:raise ValueError('MAINT1.6.4 must have21 guarded OEM hooks')
+  if len(hooks)!=21+int(atomic):raise ValueError('EMU1101-EXT full guarded OEM hook count')
  remote['entries']={k:v for k,v in report['entries'].items() if k.startswith('hook_remote_')}
+ if atomic:report['scheduler_atomic']={**scheduler,'enabled':True}
  return result,report

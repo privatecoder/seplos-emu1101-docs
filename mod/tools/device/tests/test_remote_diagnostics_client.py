@@ -1,4 +1,4 @@
-"""Offline contracts for MNT05 and the four addressed diagnostic reads."""
+"""Offline contracts for EXT05 and the four addressed diagnostic reads."""
 import importlib.util
 import io
 from contextlib import redirect_stdout
@@ -43,10 +43,11 @@ class RemoteDiagnosticsClient(unittest.TestCase):
         self.c = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(self.c)
 
-    def test_mnt05_preserves_field_positions_and_uses_explicit_capabilities(self):
-        for version, flags in ((b'\1\5\4', 0x3a), (b'\1\6\4', 0xfe)):
+    def test_ext05_preserves_field_positions_and_uses_explicit_capabilities(self):
+        for version, flags in ((b'\1\5\4', 0x3a), (b'\1\5\5', 0x3a),
+                               (b'\1\6\4', 0xfe), (b'\1\6\5', 0xfe)):
             for caps in (0, 1, 2, 4, 8, 15):
-                raw = b'MNT\5\x10\6\x0d' + version + bytes(range(8)) + bytes([flags]) + u16(caps)
+                raw = b'EXT\5\x10\6\x0d' + version + bytes(range(8)) + bytes([flags]) + u16(caps)
                 d = self.c.parse_info(raw)
                 self.assertEqual(d['patch_version'], '.'.join(str(x) for x in version))
                 self.assertEqual(d['build_id'], '0001020304050607')
@@ -60,17 +61,19 @@ class RemoteDiagnosticsClient(unittest.TestCase):
                     self.assertIsNone(d['hard_stop'])
                     self.assertEqual(self.c.hard_stop_state(0x40, flags, 5)['enabled'], True)
 
-    def test_historical_info_does_not_infer_new_capabilities_from_versions(self):
-        for raw in (b'MNT\3\x10\6\x0d\1\6' + bytes(8) + b'\x0e',
-                    b'MNT\4\x10\6\x0d\1\6\xff' + bytes(8) + b'\xfe'):
-            d = self.c.parse_info(raw)
-            self.assertNotIn('capabilities', d)
-            for name in ('uart1_history', 'calibration_pages', 'persisted_soc_contents', 'full_width_energy'):
-                self.assertFalse(d.get(name, False))
+    def test_legacy_prefixes_and_old_formats_are_rejected(self):
+        good = b'EXT\5\x10\6\x0d\1\6\4' + bytes(8) + b'\xfe\0\x0f'
+        legacy = (b'MNT' + good[3:],
+                  b'MNT\2' + good[4:17], b'MNT\3' + good[4:18],
+                  b'MNT\4' + good[4:19], b'EXT\2' + good[4:17],
+                  b'EXT\3' + good[4:18], b'EXT\4' + good[4:19])
+        for raw in legacy:
+            with self.subTest(raw=raw), self.assertRaises(ValueError):
+                self.c.parse_info(raw)
 
-    def test_mnt05_rejects_malformed_lengths_formats_and_reserved_capabilities(self):
-        good = b'MNT\5\x10\6\x0d\1\6\4' + bytes(8) + b'\xfe\0\x0f'
-        for bad in (good[:-1], good+b'\0', b'MNT\6'+good[4:], good[:19]+b'\x80\0', good[:19]+b'\0\x10'):
+    def test_ext05_rejects_malformed_lengths_formats_and_reserved_capabilities(self):
+        good = b'EXT\5\x10\6\x0d\1\6\4' + bytes(8) + b'\xfe\0\x0f'
+        for bad in (good[:-1], good+b'\0', b'EXT\6'+good[4:], good[:19]+b'\x80\0', good[:19]+b'\0\x10'):
             with self.subTest(raw=bad), self.assertRaises(ValueError):
                 self.c.parse_info(bad)
 

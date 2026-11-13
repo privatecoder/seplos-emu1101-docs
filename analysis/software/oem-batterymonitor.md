@@ -197,18 +197,18 @@ BatteryMonitor launches `FirmwareUpdate.exe`; the Agreement XML does not define 
 
 Checksum boundaries, response validation and block sizing are covered in the [bootloader/update protocol analysis](../protocols/bootloader-update-protocol.md), which distinguishes static updater findings, historical measurements and assumptions. The application-port baud rate must not be used to infer a bootloader baud rate without evidence.
 
-## 10. Firmware truth and MAINT extensions
+## 10. Firmware truth and EMU1101-EXT extensions
 
 Profiles are useful evidence of OEM intent, but not a complete specification of firmware behavior. For example, P82 “Connection fault impedance” is declared in XML without a demonstrated evaluation path in the examined OEM .13. Some switch labels also differ from the code's behavior.
 
-MAINT preserves the underlying parameter and telemetry formats for hardware V16, but OEM profiles do not describe its additional permissions, persistent pack lock or maintenance/diagnostic commands. Old Group0 labels must not be applied to those new meanings.
+EMU1101-EXT Light 1.5.3 and later, and Full 1.6.3 and later, preserve the underlying parameter and telemetry formats for hardware V16 while adding addressed access, maintenance, identity and storage diagnostics. All versioned releases use 1=enabled permission bits. Full includes its persistent pack lock, planned-reset checkpoint and configurable hard-stop policy from 1.6.3. Addressed history and 64/05–06 diagnostics begin at Light 1.5.4 / Full 1.6.4. OEM profiles do not describe these extensions, and old Group0 labels must not be applied to their meanings.
 
-For an MAINT-aware monitor:
+For an EMU1101-EXT-aware monitor:
 
 - Determine capabilities per addressed pack using `64/03` format and image flags; use `64/04` for the corresponding extended diagnostics.
 - Apply firmware-specific bit semantics and freshly read runtime permissions.
 - Keep UART0 (RS485-1/2), UART1 (RS485 pair in the CAN socket) and UART2 (local display) distinct.
-- Distinguish Seplos-ASCII requests from addressed MAINT binary requests on UART1. Loading an Agreement adds neither a binary transport nor new handlers to an OEM slave.
+- Distinguish Seplos-ASCII requests from addressed EMU1101-EXT binary requests on UART1. Loading an Agreement adds neither a binary transport nor new handlers to an OEM slave.
 
 Use the [current capability matrix](../../mod/docs/firmware/uart-write-capabilities.md), [ASCII protocol](../protocols/seplos-ascii.md) and [port topology analysis](../hardware/ports-and-topologies.md) for actual access conditions.
 

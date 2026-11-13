@@ -158,8 +158,8 @@ metadata. The unavailable bootloader's anti-rollback behavior is not established
 by this image audit.
 
 The [offline knowledge lookup](../../mod/docs/tools/knowledge-library.md) already
-supports exact application/container identification. MAINT additionally exposes
-its bound OEM base, modification version and build ID through 64/03 MNT; this
+supports exact application/container identification. EMU1101-EXT Light 1.5.3 and later, and Full 1.6.3 and later, additionally expose
+the bound OEM base, modification version and build ID through 64/03 EXT; this
 is added metadata and must not be assumed present in OEM firmware.
 
 The source-bound scan, complete string candidates and reproduction script are
@@ -375,7 +375,7 @@ Application update transport, bootloader frames, manufacturer entry instructions
 
 **It cannot be read out directly.** The image contains only `0x10 0x06` (16.06), or `0x10 0x04` for 16.04. This value is returned by ASCII 0x51 (INFO bytes 10/11), Modbus `0x0001` block register 0x1C, Pylontech 0x51/0x60 and CAN 0x35F/0x320. *(confirmed)*
 
-**It can be derived partially within the seven retained OEM images**, via version-specific functions. Unknown vendor builds and MAINT extensions can change these results; communication failure is not a version identification. All statements come from the code; this has not been tested on a real device.
+**It can be derived partially within the seven retained OEM images**, via version-specific functions. Unknown vendor builds and EMU1101-EXT extensions can change these results; communication failure is not a version identification. All statements come from the code; this has not been tested on a real device.
 
 | Test | Interface | Result → version | Intervention |
 |---|---|---|---|

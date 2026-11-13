@@ -46,6 +46,8 @@ def validate(original,patched,facts,build):
  # Immutable OEM bytes, version and canonical complete-app hash are checked too.
  def integrity():
   allowed={a for site in build.get('hooks',facts['hooks']).values() for a in range(site,site+4)}
+  if build.get('scheduler_atomic'):
+   a=build['scheduler_atomic']['branch_site'];allowed.update(range(a,a+2))
   if build.get('cutoff'):allowed.update(range(facts['cutoff']['zero_size_offset'],facts['cutoff']['zero_size_offset']+4))
   if build.get('hard_stop',{}).get('changed'):allowed.add(build['hard_stop']['offset'])
   assert all(x==y or a in allowed for a,(x,y) in enumerate(zip(original.app,patched.app)))
@@ -57,8 +59,8 @@ def validate(original,patched,facts,build):
    assert build['image_flags']&128 and bool(build['image_flags']&1)==build['hard_stop_default'],'Hard-Stop image default mismatch'
   else:
    mask=patched.app[build['hard_stop']['offset']]
-   assert mask in (0x71,0x73) and int(mask==0x73)==(build['image_flags']&1),'MNT03 Hard-Stop flag/code mismatch'
-  assert build['image_flags']&2,'MNT03 Power/RTC capability missing'
+   assert mask in (0x71,0x73) and int(mask==0x73)==(build['image_flags']&1),'EXT05 Hard-Stop flag/code mismatch'
+  assert build['image_flags']&2,'EXT05 Power/RTC capability missing'
   data=bytearray(patched.app);off=build['build_id_offset'];build_id=data[off:off+8];data[off:off+8]=b'UPID0000'
   assert hashlib.sha256(data).digest()[:8]==build_id
  check('guarded-hooks-startup-and-canonical-build-ID' if (build.get('cutoff') or build.get('uart0_marker')) else 'four-hooks-only-and-canonical-build-ID',integrity)
@@ -185,16 +187,16 @@ def validate(original,patched,facts,build):
  check('stock-Modbus-gate-frame-CRC-and-interleaved-binary-service',modbus_regression)
 
  def info_status():
-  m=board();expected=b'MNT'+bytes([build['info_format']])+bytes(facts['oracle']['base_version'])+bytes([build['base_revision'],*map(int,build['patch_version'].split('.'))])+bytes.fromhex(build['build_id'])+bytes([build['image_flags']])+build['remote_capabilities'].to_bytes(2,'big')
+  m=board();expected=b'EXT'+bytes([build['info_format']])+bytes(facts['oracle']['base_version'])+bytes([build['base_revision'],*map(int,build['patch_version'].split('.'))])+bytes.fromhex(build['build_id'])+bytes([build['image_flags']])+build['remote_capabilities'].to_bytes(2,'big')
   for marker,slaves in ((0xffffffff,11),(0,0),(0x12345678,7)):
    m.put(0x23000,marker.to_bytes(4,'little'));m.put(r['slaves'],bytes([slaves]))
    equal(maintenance(m,b'\x03'),(0,expected));equal(maintenance(m,b'\x02'),(0,marker.to_bytes(4,'little')+bytes([slaves])))
   equal(m.flash_ops,[]);equal(m.saves,[])
- check('64-03-immutable-MNT'+str(build['info_format']).zfill(2)+'-versus-64-02-complete-state',info_status)
+ check('64-03-immutable-EXT'+str(build['info_format']).zfill(2)+'-versus-64-02-complete-state',info_status)
  for address in range(22):
   def addressed_info(address=address):
    m=board(address);m.put(r['group0'],b'\0');m.put(r['slaves'],b'\x0b')
-   expected=b'MNT'+bytes([build['info_format']])+bytes(facts['oracle']['base_version'])+bytes([build['base_revision'],*map(int,build['patch_version'].split('.'))])+bytes.fromhex(build['build_id'])+bytes([build['image_flags']])+build['remote_capabilities'].to_bytes(2,'big')
+   expected=b'EXT'+bytes([build['info_format']])+bytes(facts['oracle']['base_version'])+bytes([build['base_revision'],*map(int,build['patch_version'].split('.'))])+bytes.fromhex(build['build_id'])+bytes([build['image_flags']])+build['remote_capabilities'].to_bytes(2,'big')
    before=m.payload()
    for marker in (0xffffffff,0,0x12345678):
     m.put(0x23000,marker.to_bytes(4,'little'))
@@ -296,4 +298,13 @@ def validate(original,patched,facts,build):
   passed.extend(validate_configurable(original,patched,facts,build))
  from .remote_diagnostics_tests import validate_remote
  passed.extend(validate_remote(original,patched,facts,build))
+ from .hardware_tests import validate_hardware
+ from .uart_timing_tests import validate_uart_timing
+ from .interrupt_tests import validate_interrupts
+ passed.extend(validate_hardware(original,patched,facts,build))
+ passed.extend(validate_uart_timing(original,patched,facts,build))
+ passed.extend(validate_interrupts(original,patched,facts,build))
+ if build.get('scheduler_atomic'):
+  from .scheduler_atomic_tests import validate_scheduler_atomic
+  passed.extend(validate_scheduler_atomic(original,patched,facts,build))
  return passed

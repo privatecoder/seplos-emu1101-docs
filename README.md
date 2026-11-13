@@ -13,22 +13,24 @@
 [Product identification and supporting evidence](analysis/hardware/product-identification.md)
 separate the Seplos generation, product option code, board version and firmware.
 
-Firmware, protocol and hardware references, reproducible MAINT patches and analysis tools. The analysis covers seven OEM images from 16.04.06 to 16.06.13. The reference for current behavior is 16.06.13 unless another version is stated.
+EMU1101-EXT (EMU1101 Extended Firmware). Custom firmware for Seplos BMS 2.0 (EMU1101, hardware V16).
+
+Firmware, protocol and hardware references, reproducible patches and analysis tools. The analysis covers seven OEM images from 16.04.06 to 16.06.13. The reference for current behavior is 16.06.13 unless another version is stated.
 
 | Directory | Content |
 |---|---|
-| [vendor/](vendor/) | Original manufacturer firmware, documents and software. |
+| [vendor/](vendor/) | Manufacturer firmware, documents and software; [privacy treatment](vendor/PRIVACY.md) identifies redacted PDF copies. |
 | [analysis/](analysis/README.md) | OEM firmware behavior, parameters, hardware, topologies, protocols and BatteryMonitor. |
-| [mod/](mod/README.md) | Patcher, release metadata, analysis programs, device helpers and MAINT documentation. |
+| [mod/](mod/README.md) | Patcher, release metadata, analysis programs, device helpers and EMU1101-EXT documentation. |
 | [references/](references/) | Community and other-vendor references. |
 
-The current patch alternatives are [MAINT 1.5.4](mod/docs/firmware/maint-light.md) and [MAINT 1.6.4](mod/docs/firmware/maint-full.md). The [capability matrix](mod/docs/firmware/uart-write-capabilities.md) compares them with OEM 16.06.13. Both add addressed history, active/stored calibration and saved-capacity/live-energy reads without new enable flags. The [firmware changelog](mod/firmware/CHANGELOG.md) records their behavior and build identities.
+The current patch alternatives are [EMU1101-EXT Light 1.5.5](mod/docs/firmware/ext-light.md) and [EMU1101-EXT Full 1.6.5](mod/docs/firmware/ext-full.md). The [capability matrix](mod/docs/firmware/uart-write-capabilities.md) compares them with OEM 16.06.13. Versioned functionality begins at Light 1.5.3 and Full 1.6.3, including 1=enabled permissions, addressed access, maintenance, identity and storage diagnostics; Full additionally includes the persistent pack lock, planned-reset checkpoint and configurable hard-stop policy from 1.6.3. Addressed history, active/stored calibration and persisted-capacity/live-energy reads are available from Light 1.5.4 and Full 1.6.4. Atomic scheduler cleanup is available from Light 1.5.5 and Full 1.6.5. Published builders support Light 1.5.4/1.5.5 and Full 1.6.4/1.6.5. The [feature availability table](mod/docs/firmware/README.md#feature-availability) identifies the first versioned release for each function. The [firmware changelog](mod/firmware/CHANGELOG.md) records their behavior and build identities.
 
-**Test status:** MAINT 1.5.4 passed 214 mandatory native execution groups and 1.6.4 passed 293; both rebuilt byte-identically. Neither current profile has been flashed or tested on hardware. See the [release metadata](mod/firmware/releases/README.md) and [validation limits](mod/docs/firmware/validation-methods-and-limits.md).
+**Test status:** EMU1101-EXT Light 1.5.5 passed 257 mandatory native execution groups and EMU1101-EXT Full 1.6.5 passed 339; both rebuilt byte-identically. Neither current profile has been flashed or tested on hardware. See the [release metadata](mod/firmware/releases/README.md) and [validation limits](mod/docs/firmware/validation-methods-and-limits.md).
 
 **Experimental firmware:** Incorrect firmware, wiring or an interrupted update can render a BMS unusable and compromise battery protection. Use at your own risk. The project is provided "AS IS", without warranty, under the terms of the [license](LICENSE).
 
-The MAINT release directory publishes metadata and checksums; prebuilt MAINT firmware images are not included. Create patched images from compatible OEM inputs using the [build instructions](mod/docs/firmware/build-and-validation.md).
+The EMU1101-EXT release directory publishes metadata and checksums; prebuilt EMU1101-EXT firmware images are not included. Create patched images from compatible OEM inputs using the [build instructions](mod/docs/firmware/build-and-validation.md).
 
 1. Check [ports, protocols and bus ownership](analysis/hardware/ports-and-topologies.md) for the intended inverter and monitor connections.
 2. Follow [build and validation](mod/docs/firmware/build-and-validation.md) to prepare the environment, select a profile and verify the image.
@@ -38,4 +40,4 @@ The MAINT release directory publishes metadata and checksums; prebuilt MAINT fir
 
 Project-authored code and documentation are licensed under the [MIT License](LICENSE). Manufacturer and other third-party material, including `vendor/`, `references/` and OEM portions of firmware images, is outside this grant and is not relicensed by this project.
 
-Original vendor images remain unchanged. Code-derived findings, manufacturer specifications and hardware assumptions are distinguished in the references. Firmware status is not an electrical isolation measurement. The project is unofficial and is not affiliated with Seplos or SH Energy.
+Original OEM firmware images remain unchanged. Vendor PDF copies have [unit identifiers redacted](vendor/PRIVACY.md). Code-derived findings, manufacturer specifications and hardware assumptions are distinguished in the references. Firmware status is not an electrical isolation measurement. The project is unofficial and is not affiliated with Seplos or SH Energy.

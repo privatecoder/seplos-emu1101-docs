@@ -1,4 +1,4 @@
-"""Bounded bootloader entry after one addressed reset, including MAINT1.6.2.
+"""Bounded bootloader entry after one addressed reset, including EMU1101-EXT Full 1.6.3+.
 
 Only RFL probes are repeated; never reset, erase or program. A reset RTN08
 aborts. No fixed bound on actual MCU erase time is claimed. Port must provide

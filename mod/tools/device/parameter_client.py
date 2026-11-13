@@ -1,4 +1,4 @@
-"""Addressed UART1 parameters, MAINT 1.2+ (1.5 permission error supported).
+"""Addressed UART1 parameters, EMU1101-EXT (permission errors supported).
 
 Offline unless a port is explicit.
 """

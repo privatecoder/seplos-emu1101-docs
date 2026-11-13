@@ -33,14 +33,14 @@ Parameter and identity clients provide binary UART1 access, raw serial-number ch
 
 `restart_pack.py` is an action: use one reset, expect no success ACK and verify the same board afterwards. Full-profile reset may report RTN08 instead of resetting. `flash_gap.py`, `flash_recovery.py` and `boot_entry.py` support the retained isolated-device bootloader procedure; follow [flashing](flashing.md) and each client's help. `boot_entry.py` is an importable module, not a standalone CLI. Select the application address explicitly with `flash_gap.py --address`; the bootloader still requires one isolated target.
 
-Offline analysis reads OEM inputs from `vendor/firmware` and selected releases/fixtures from `local/releases` and `local/fixtures`. Put reports, resolved source, disassembly and generated images under `local/builds`; keep raw captures and installation values local. Use explicit fresh output paths. Reusable firmware analysis covers access capabilities, SOC/persistence, power paths, UART ownership and version-bound native emulation. Unknown code shapes remain evidence limits, not an invitation to reuse fixed addresses against another image.
+Offline analysis reads OEM inputs from `vendor/firmware` and selected releases/fixtures from `local/releases` and `local/fixtures`. Keep raw captures and installation values local. Use explicit fresh output paths. Reusable firmware analysis covers access capabilities, SOC/persistence, power paths, UART ownership and version-bound native emulation. Unknown code shapes remain evidence limits, not an invitation to reuse fixed addresses against another image.
 
 Use one shared lock per physical serial/gateway connection, one outstanding request and UART1's practical 200 ms quiet period after the final received byte. Parameter/SN reads on UART1 need no maintenance; UART0 host access needs stopped master polling. Hardware captures and raw evidence belong under `local/devices/lab`; offline analysis evidence uses `local/research/<topic>/evidence`, build outputs use `local/builds/runs` and tool reports use a new dated experiment directory. No example here selects a real adapter, gateway or installation address.
 
 
 ## Research and troubleshooting guides
 
-- [SOC emulator fixture API and extension rules](soc-fixtures.md)
+- [SOC storage and reset fixtures](soc-fixtures.md)
 - [Display values and format troubleshooting](display-troubleshooting.md)
 - [Host framing ambiguity and busy-bus outcomes](../firmware/openbms-monitor.md#transport-ambiguity-and-result-classification)
 

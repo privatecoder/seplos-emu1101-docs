@@ -9,7 +9,6 @@ signals remains unproven.
 
 Code addresses below refer to OEM 16.06.13, application SHA256
 `5c36a7e08fb881b3c2ca6a22888ecb63585c3eb6811fb67b67cc9d0d0ecdde95`.
-The relevant native routines remain byte-identical in MAINT 1.5.2/1.6.3.
 No board was accessed or reconfigured for this investigation.
 
 ## Manufacturer evidence
@@ -90,23 +89,10 @@ capture on a suitable laboratory board would resolve the physical mapping.
 The firmware contains no text or pin diagram that unambiguously assigns an
 RJ45 contact to a GPIO signal.
 
-## Persistent offline checks
+## Offline evidence and validation limits
 
-The [address-chain probe](../../mod/tools/firmware-analysis/probe_address_chain_v16.py) uses the source image and the ignored evidence directory `local/research/address-chain/evidence/Interne-Adressleitungen-2026-10-24/`, with disassembly, source snapshot, dependency hashes and results.
-The probe executes actual OEM Thumb in the existing Unicorn machine with
-synthetic GPIO levels; it opens no serial ports and changes no image or NVM.
+The archived address-chain probe executes actual OEM Thumb routines in Unicorn with synthetic GPIO levels. Its 50 groups cover reception of 1…21, stable high/low limits, exact debounce boundaries, assignment and forwarding of 0…21, and Group7.Bit6. The Group7.Bit5 call gate is checked statically; physical timing and RJ45 wiring are not simulated. The probe opens no serial ports and changes no image or NVM.
 
-**50 groups passed:** receive 1..21, stable high/low limits, exact debounce
-boundaries, assignment plus forwarding 0..21, Group7.bit6, and byte-identical native
-routines in the verified MAINT 1.5.2/1.6.3 images. The Group7.bit5 call gate is
-checked statically; physical timing and RJ45 wiring are not simulated.
+Disassembly, the source snapshot, dependency hashes and results are retained under ignored `local/research/address-chain/evidence/Interne-Adressleitungen-2026-10-24/`. Exact archived custom-image comparisons and build-report bindings are preserved in `local/research/ext-consistency-audit-20261113/topic-analysis.md`. They do not establish validation of current EMU1101-EXT images.
 
-Run with the existing patcher venv/Unicorn, Python `-I` from `/private/tmp`:
-
-```sh
-"$PATCHER_PYTHON" -I "$PROJECT/mod/tools/firmware-analysis/probe_address_chain_v16.py" \
-  --out /private/tmp/seplos-address-chain-new.json
-```
-
-`PATCHER_PYTHON` is the venv Python executable; `PROJECT` is the project root. Output is created exclusively and is not overwritten.
-The probe is bound to OEM .13 and does not silently accept unknown firmware. It also loads the retained MAINT 1.6.3 build report and MAINT 1.5.2/1.6.3 images from ignored `local/`; those historical fixtures are required and are absent from a fresh checkout.
+The probe is archived under ignored `local/`, depends on its original source/dependency arrangement and pinned image/report inputs, and is not a maintained public checkout command. An isolated archived script is insufficient for replay. Current release validation and its limits are described in [firmware validation](../../mod/docs/firmware/validation-methods-and-limits.md).

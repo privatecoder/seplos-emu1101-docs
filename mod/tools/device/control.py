@@ -1,6 +1,6 @@
 """Send one 0x45 control frame (lab board only) and print the raw answer.
 
-Usage: python3 -I ctl45.py <port> <adr-hex> <type-hex> <param-hex>
+Usage: python3 -I control.py <port> <adr-hex> <type-hex> <param-hex>
 INFO = 00 <type> <param>; 19200 baud (pack bus).
 """
 import os

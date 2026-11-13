@@ -14,8 +14,8 @@ class ServiceClient(unittest.TestCase):
   s=importlib.util.spec_from_file_location('service_client',p)
   self.c=importlib.util.module_from_spec(s);s.loader.exec_module(self.c)
  def test_capabilities(self):
-  for flags in (30,126,127):
-   raw=b'MNT\4\x10\6\x0d\1\6\2'+bytes(8)+bytes([flags])
+  for flags in (0x3a,0xfe,0xff):
+   raw=b'EXT\5\x10\6\x0d\1\6\4'+bytes(8)+bytes([flags])+b'\0\x0f'
    d=self.c.parse_info(raw)
    self.assertEqual(d.get('extended_diagnostics'),bool(flags&32))
    self.assertEqual(d.get('checkpoint_before_reset'),bool(flags&64))

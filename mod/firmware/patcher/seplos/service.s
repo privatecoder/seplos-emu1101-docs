@@ -1,4 +1,4 @@
-/*1.6.2: read-only diagnostic, native SOC serialization, verified restart.
+/* Full 1.6.3+: read-only diagnostics, native SOC serialization, verified restart.
  * No service RAM; existing IAP buffers, caller stack and native output codecs.
  */
 .p2align 2
@@ -356,7 +356,7 @@ hook_service_soc_iap:
     pop {r4, pc}
 .ltorg
 
-/* Entry is a nonreturning BL inside the original six-word R power frame.
+/* Entry is a nonreturning BL inside the original six-word UART0 power frame.
  * A failed checkpoint must unwind that frame, never enter the next function.
  */
 .global hook_service_R_reset

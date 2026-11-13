@@ -14,7 +14,7 @@ class BatchTests(unittest.TestCase):
   self.m=load(self,'flash_packs');self.tmp=tempfile.TemporaryDirectory();self.addCleanup(self.tmp.cleanup);self.root=Path(self.tmp.name)
   self.image=self.root/'image.ehex';self.image.write_bytes(b'input-pinned-for-model')
   import hashlib
-  self.meta=dict(name='image.ehex',patch_version='1.6.4',build_id='a8676b52bae281ff',image_flags=254,info_format=5,remote_capabilities=15,info_hex='4D4E540510060D010604A8676B52BAE281FFFE000F',ehex_sha256=hashlib.sha256(self.image.read_bytes()).hexdigest())
+  self.meta=dict(name='image.ehex',patch_version='1.6.4',build_id='a8676b52bae281ff',image_flags=254,info_format=5,remote_capabilities=15,info_hex='4558540510060D010604A8676B52BAE281FFFE000F',ehex_sha256=hashlib.sha256(self.image.read_bytes()).hexdigest())
  def plan(self,count=3,mode='master',profile='full'):
   return dict(count=count,mode=mode,profile=profile,addresses=self.m.plan_addresses(count,mode),release=dict(metadata=copy.deepcopy(self.meta),image_path=self.image,prepared=('synthetic',)),gap_ms=350)
  def backend(self,plan):
@@ -140,9 +140,9 @@ class BatchTests(unittest.TestCase):
   import hashlib,struct
   header=b'SWM181RCT6_64_M0EMU1101_10D_HW16RS485'.ljust(256,b'\0')
   image=self.m.transport.flasher.Image(tuple(':10000000'+header[i:i+16].hex().upper()+'AA' for i in range(0,256,16)),struct.pack('<II',0x20002000,0xc1)+bytes(4096-8),(':04000005000000C136',':00000001FF'))
-  app=bytearray(image.app);token=b'MNT\5\0\0\x0d\1\6\4UPID0000\xfe\0\x0f';app[512:533]=token;bid=hashlib.sha256(app).digest()[:8];app[522:530]=bid;image=image.with_app(app);raw=image.render().encode()
+  app=bytearray(image.app);token=b'EXT\5\0\0\x0d\1\6\4UPID0000\xfe\0\x0f';app[512:533]=token;bid=hashlib.sha256(app).digest()[:8];app[522:530]=bid;image=image.with_app(app);raw=image.render().encode()
   meta={**self.meta,'app_bytes':len(app),'app_sha256':image.sha,'ehex_sha256':hashlib.sha256(raw).hexdigest(),'build_id':bid.hex(),'info_bytes':21,'info_hex':(token[:4]+b'\x10\6'+token[6:10]+bid+token[18:]).hex()}
-  directory=self.root/'metadata';directory.mkdir();(directory/'maint-full.json').write_text(json.dumps(meta));self.image.write_bytes(raw);return directory,raw
+  directory=self.root/'metadata';directory.mkdir();(directory/'ext-full.json').write_text(json.dumps(meta));self.image.write_bytes(raw);return directory,raw
  def test_load_release_pins_verified_bytes_without_reopening_for_frames(self):
   directory,raw=self.synthetic_release()
   with patch.object(self.m.transport.flasher,'prepare_image',side_effect=AssertionError('must use pinned bytes')):

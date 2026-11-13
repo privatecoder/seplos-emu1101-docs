@@ -2,22 +2,11 @@
 
 > **Port notation:** **UART0 = RS485-1/RS485-2 (shared pack bus)**; **UART1 = RS485 pair in the CAN socket**; **UART2 = local display/Bluetooth port**. UART1 carries RS485 traffic; the actual CAN interface uses separate pins in the same socket.
 
-Historical comparison images: OEM 16.06.13 and the fixed MAINT 1.6 build
-`18daf61d8a93671d`. SOC arithmetic and block 6 routines are unchanged. The only
-exception in the compared A1 region is the known call to the 1.6 parameter
-serializer at `0x08F8`, which protects the individual pack lock.
+Code addresses and native SOC behavior refer to OEM 16.06.13 unless a version boundary is stated. The arithmetic, capacity-learning rules and native block 6 persistence described below are OEM mechanisms. EMU1101-EXT release-specific persistence and access contracts are identified separately.
 
-Evidence: 79 executable counterexamples (`SOC-2026-10-21-final.json`, local reference, not published)
-and the [persistent analysis tool](../../mod/tools/firmware-analysis/probe_soc.py).
-No serial ports were opened and no real parameters or firmware were changed.
-The CPU executes the actual routines; acceptance/storage of IAP block 6 is
-modeled. This is not a physical NVM dump or a complete bootloader/hardware test. The probe requires the retained fixed MAINT 1.6 release and its build report under ignored `local/`; a fresh checkout lacks these historical fixtures.
+Offline evidence includes 79 executable SOC counterexamples (`SOC-2026-10-21-final.json`) and 24 SOC-cutoff counterexamples (`SOC-Abschaltung-2026-10-21-final.json`), retained under ignored `local/`. The CPU executes actual routines; IAP block 6 acceptance/storage is modeled. These are neither physical NVM dumps nor complete bootloader/hardware tests. No serial ports were opened.
 
-Evidence: 24 SOC cutoff counterexamples (`SOC-Abschaltung-2026-10-21-final.json`, local reference, not published).
-The [reusable code profile](../../mod/tools/firmware-analysis/soc_profile_v16.py) records
-addresses, units, formulas, threshold rules and persistence triggers.
-[Tool usage and reuse](../../mod/docs/tools/README.md).
-Raw evidence is retained locally and is not part of a fresh public checkout.
+The exact historical comparison-image identities, the parameter-serializer exception at `0x08F8`, archived probe/profile sources and replay dependencies are retained in the ignored English topic note `local/research/ext-consistency-audit-20261113/topic-analysis.md`. Those evidence bindings do not validate current EMU1101-EXT images. Current mandatory checks and their limits are documented in [firmware validation](../../mod/docs/firmware/validation-methods-and-limits.md); archived probes are not public checkout tools.
 
 ## 1. Formula and periodic updates
 
@@ -101,15 +90,14 @@ respective reset conditions occur. The full flag clears when rounded SOC ≤P80 
 
 ## 4. What returns after loss of power
 
-[MAINT1.6.4 planned-reset handling](../../mod/docs/firmware/storage-and-reset.md)
+[Planned-reset handling in Full 1.6.3 and later](../../mod/docs/firmware/storage-and-reset.md)
 saves the native SOC record to both flash copies and checks them before an
 addressed UART0/UART1 `45/06` reset. Storage failure returns RTN08 and prevents that
-reset. `64/04` reads mirror diagnostics without repair. This is not SOC
-recalibration; P58/P59, `49` and automatic save triggers remain. MAINT 1.5.4/1.6.4 additionally expose [64/06 persisted capacity and full-width live energy](../../mod/docs/firmware/remote-diagnostics.md) on UART0/UART1. The read does not save or repair either mirror and does not itself change SOC.
+reset. EMU1101-EXT Light 1.5.3 and later, and Full 1.6.3 and later, provide `64/04` mirror diagnostics without repair. This is not SOC
+recalibration; P58/P59, `49` and automatic save triggers remain. EMU1101-EXT Light 1.5.4 and later, and Full 1.6.4 and later, additionally expose [64/06 persisted capacity and full-width live energy](../../mod/docs/firmware/remote-diagnostics.md) on UART0/UART1. The read does not save or repair either mirror and does not itself change SOC.
 
 
-
-The native CRC/mirror readers select a valid primary without comparing age; otherwise a valid backup repairs it. If neither CRC is valid, P59/P58 provide the fallback. Word-interruption checks cover the native routines and MAINT 1.5.1/1.6.1 bindings (historical test scope; see [storage and reset behavior](../../mod/docs/firmware/storage-and-reset.md)). These checks do not identify the cause of any particular power failure.
+The native CRC/mirror readers select a valid primary without comparing age; otherwise a valid backup repairs it. If neither CRC is valid, P59/P58 provide the fallback. Word-interruption evidence for native routines and specific archived custom images has exact bindings in `local/research/ext-consistency-audit-20261113/topic-analysis.md`; it does not establish current release validation. See [storage and reset behavior](../../mod/docs/firmware/storage-and-reset.md) for the current contract and checks. These checks do not identify the cause of any particular power failure.
 
 **Block6** is at flash address `0x2B000`, mirrored at `0x2C000`.
 It contains remaining capacity, learned full capacity, energy counters and cycles.
@@ -174,8 +162,7 @@ Schematic arithmetic example: at 250 Ah full capacity, 40% corresponds to
 100.00 Ah remaining, encoded as 10000. This is not a target that can be inferred
 from neighboring pack voltages.
 
-**The compared MAINT 1.6 does not support `49` over UART1** (RTN04 in the
-counterexample). UART1-A1 and UART2-A1 do not replace `49/3B`. A polling master
+**`49` remains a UART0 command** in OEM .13 and EMU1101-EXT Light 1.5.3 and later / Full 1.6.3 and later; the extensions do not add it to UART1. UART1-A1 and UART2-A1 do not replace `49/3B`. A polling master
 must first enter maintenance or otherwise stop its polling before UART0 host access.
 This analysis performed no real SOC correction.
 

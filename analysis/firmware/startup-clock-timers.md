@@ -117,12 +117,81 @@ reset intent are established, but an exact physical **4 s versus 8 s** reset
 deadline is not settled by these conflicting sources. No elapsed reset time was
 measured.
 
-**Backlog and possible race:** `0x1C46–0x1C56` tests whether the previous slow
-tick is still pending and increments `0x20000B5F`, saturating at 10; otherwise it
-clears the counter. This is backlog detection, not proof that a lost write was
-detected. The main-loop A8 read-modify-write at `0x624E–0x625A` is not protected
-against interrupts. An ISR update between its load and store could be lost;
-that interleaving is a static possibility, not a measured failure.
+### Backlog, flag coalescing and a controlled lost update
+
+`0x1C46–0x1C56` tests whether the previous slow tick is still pending and
+increments `0x20000B5F`, saturating at 10; otherwise it clears the counter.
+This detects backlog, not every lost flag update. A8 bit 2 is one pending-work
+bit, not a tick counter: setting it again while it is already set coalesces
+requests.
+
+The main-loop read-modify-write at `0x624E–0x625A` is unprotected. It loads
+A8, sets bit 3, clears bit 2 and stores the whole byte. A controlled native
+instruction test demonstrates that this can overwrite an independent update
+of **bit 1, the measurement-enable flag**, by the wake path:
+
+| Step | Native action | A8 |
+|---|---|---|
+| 1 | Main cleanup loads the byte at `0x624E` | `0x04` |
+| 2 | TIMR0 interrupts before the next instruction. With startup count 601, wake status `0x200000F1` bit 5 set and wake counter `0x200015DC` at 200, `0x8B54` calls measurement reinitialization `0x18C4`. Its store at `0x1910` clears bit 2. | `0x00` |
+| 3 | Wake code stores measurement-enable bit 1 at `0x8BDA` and consumes the wake status. | `0x02` |
+| 4 | Main cleanup resumes with its older loaded value and stores at `0x625A`. | `0x08` |
+
+With cleanup completed before TIMR0, the same wake path instead leaves A8 at
+`0x0A`, retaining measurement enable. A separate native control starts with
+A8=`0x06` and measurement counter 199: the sequencer sets already-pending bit 2,
+and cleanup leaves `0x0A`. This is coalescing, not the independent enable-bit
+loss above.
+
+The demonstrated instruction window uses explicit synthetic call states. A
+bounded native sleep/wake replay confirms the wake-counter progression from a
+specified synthetic sleep state. It does **not** establish that normal complete
+execution reaches that aged wake counter while main cleanup is pending. Such
+coincidence may require a delayed or stalled main loop. Full-system
+reachability, physical occurrence and failure frequency remain unproven. The
+mandatory test records this as inherited-behavior **characterization**; a pass
+does not mean the firmware is race-free. EMU1101-EXT Light 1.5.4 / EMU1101-EXT Full 1.6.4 retain this OEM code.
+
+If measurement enable is lost in this way, later TIMR0 ticks skip the seven
+bit-1-gated measurement/fast/protection calls listed above. Possible effects
+include stalled measurements, delayed voltage/temperature and charge/discharge
+decisions, stale SOC/status/CAN values, and interruption of the gated fast
+current and precharge processing. This is broader than a single delayed slow
+tick. TIMR0's common tail, UART handlers and the independent comparator IRQ0
+short-circuit path are not disabled by this flag alone. The result establishes
+neither that every protection stops nor that every fast protection continues.
+If required measurement/slow-loop progress bits stop arriving, watchdog feeds
+can eventually be withheld; no physical reset deadline was measured.
+
+The maintained native cases and their model limits are described in
+[firmware validation](../../mod/docs/firmware/validation-methods-and-limits.md#deterministic-interrupt-and-uart-models).
+
+### Atomic cleanup from EMU1101-EXT Light 1.5.5 / Full 1.6.5
+
+These profiles replace the initial `0x624E` load/OR pair with a guarded BL to a
+24-byte appendix. The branch at `0x6252` then skips the displaced native store
+and returns to `0x625C`. The independent skip branch at `0x6254` is unchanged.
+Source-derived CFG checks bind R5 to A8 and R6 to 8 and reject alternative entry
+into the overwritten or displaced cleanup instructions.
+
+The helper saves R2/return link, reads PRIMASK, masks interrupts, freshly reads
+A8, sets bit 3, clears bit 2, stores the byte, restores the saved PRIMASK and
+returns. An interrupt that updates wake measurement enable executes either
+before the fresh read or after the protected store; the cleanup cannot overwrite
+that update through its old loaded value. The incoming interrupt mask, R2–R12,
+SP and native R0/R1/NZCV effects are retained. BL supplies a new return link;
+incoming LR preservation is not claimed. The helper temporarily uses eight
+stack bytes and no additional persistent RAM.
+
+The introduced masked interval is six instructions (fresh load through mask
+restore), with no calls inside it. Native tests sweep 13 instruction boundaries
+under both incoming masks, 2,048 flag/mask/CV cases, and ordered/coalesced/new
+slow-tick controls. Removing exclusion, moving the load outside it, forcing an
+unconditional enable, or changing continuation/skip behavior fails the named
+regression. These are controlled maskable-IRQ tests, not measured physical
+latency or a complete firmware concurrency proof. The OEM negative control
+continues to reproduce the original loss; physical occurrence in installations
+remains unproven.
 
 ## 6. GPIO 0x50002000: all direct output writes *(confirmed)*
 

@@ -14,7 +14,7 @@ Confidence: **confirmed** = directly from the code · **probable** · **assumpti
 
 [Seplos BMS CAN Protocoll V1.0.pdf](<../../vendor/docs/protocol%20specs/Seplos%20BMS%20CAN%20Protocoll%20V1.0.pdf>) is the original **SEPLOS CANBUS Protocol V1.0**, copyright 2020. It has six PDF pages including the cover; printed pages 1–5 correspond to PDF pages 2–6. File metadata gives 2020-06-13. SHA-256: `264cdf6e2348c121ffd04b9af287f55b038702862c36a3b333d06a1fe8ddb0a6`.
 
-It is a useful primary source for the intended Pylontech-style CAN layout. It does not identify the 1101-10E variant, hardware V16 or OEM 16.06.13 and is not a specification for UART1/RS485, all selectable CAN profiles, or MAINT services. Firmware addresses and behavior below refer to OEM .13. Manufacturer statements and code-derived behavior are distinguished; no hardware capture was performed.
+It is a useful primary source for the intended Pylontech-style CAN layout. It does not identify the 1101-10E variant, hardware V16 or OEM 16.06.13 and is not a specification for UART1/RS485, all selectable CAN profiles, or EMU1101-EXT services. Firmware addresses and behavior below refer to OEM .13. Manufacturer statements and code-derived behavior are distinguished; no hardware capture was performed.
 
 | Subject / PDF page | Manufacturer document | OEM .13 implementation and interpretation |
 |---|---|---|
@@ -30,7 +30,7 @@ It is a useful primary source for the intended Pylontech-style CAN layout. It do
 | `0x371`, p.6 | Four 16-bit extremum-location fields without an explanation of their numbering. | The builder supplies one-based **pack numbers**, with the high bytes zero, rather than a complete cell-address encoding. The source alone does not define that distinction. |
 | `0x35E`, p.6 | Incomplete manufacturer ASCII table with the text “Energy” and only Byte0/Byte1 labels. | The actual eight bytes are `53 48 45 6E 65 72 67 79`, **SHEnergy**. The PDF cannot supply a complete eight-byte literal or a serial identity. |
 
-Use this PDF as protocol provenance and the code-derived tables below as the OEM .13 decoder contract. It supplies no addressed CAN parameter writes, power/reset control, clock setting or individual-slave CAN query. Those remote functions use the separately wired UART1 RS485 pair where supported by MAINT. The manufacturer's declared compatibility does not replace an exact frame/profile match.
+Use this PDF as protocol provenance and the code-derived tables below as the OEM .13 decoder contract. It supplies no addressed CAN parameter writes, power/reset control, clock setting or individual-slave CAN query. Those remote functions use the separately wired UART1 RS485 pair where supported by EMU1101-EXT Light 1.5.3 and later / Full 1.6.3 and later; consult the capability matrix for each operation and permission. The manufacturer's declared compatibility does not replace an exact frame/profile match.
 
 ## 1. Summary for protocol 1
 

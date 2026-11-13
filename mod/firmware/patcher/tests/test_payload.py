@@ -8,12 +8,12 @@ from seplos.machine import probe,Machine,frame,ascii_frame
 
 class Payload(unittest.TestCase):
  def test_builder_implemented(self):self.assertTrue((ROOT/'seplos'/'build.py').exists(),'parametric builder missing')
- def test_all_compatible_oem_maints(self):
+ def test_all_compatible_oem_ext_profiles(self):
   from seplos.build import build
   for path in sorted((ORIGINALS).glob('*16.06.*.ehex')):
    with self.subTest(image=path.name):
     original=Image.read(path);facts=probe(original,discover(original))
-    patched,report=build(original,facts,maint_version='1.5.4')
+    patched,report=build(original,facts,ext_version='1.5.4')
     changed={a for a,(x,y) in enumerate(zip(original.app,patched.app)) if x!=y}
     allowed={a for site in report['hooks'].values() for a in range(site,site+4)}
     self.assertLessEqual(changed,allowed)
@@ -30,7 +30,7 @@ class Payload(unittest.TestCase):
     self.assertTrue(info.startswith(b'~20004600'),info)
     data=bytes.fromhex(info[13:-5].decode())
     self.assertEqual(len(data),21)
-    self.assertEqual(data[:4],b'MNT\x05')
+    self.assertEqual(data[:4],b'EXT\x05')
     self.assertEqual(data[18],58|int('SP80' in path.name))
     self.assertEqual(data[6:10],b'\xff\x01\x05\x04')
 

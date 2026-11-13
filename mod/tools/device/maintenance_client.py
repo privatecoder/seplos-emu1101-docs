@@ -1,20 +1,26 @@
-"""Send a maintenance command to patched UART1, or print the frame offline.
+"""Send an EMU1101-EXT command over UART0/UART1, or print the frame offline.
 
 Examples (nothing is sent without --serial or --tcp):
-  python3 -I maintenance_client.py status
-  python3 -I maintenance_client.py info
-  python3 -I maintenance_client.py status --serial /dev/ttyUSB0
-  python3 -I maintenance_client.py start --serial /dev/ttyUSB0
-  python3 -I maintenance_client.py stop --tcp 192.0.2.1:8899
+  python3 -I maintenance_client.py status --uart UART1
+  python3 -I maintenance_client.py info --uart UART0
+  python3 -I maintenance_client.py status --uart UART1 --serial /dev/ttyUSB0
+  python3 -I maintenance_client.py start --uart UART1 --serial /dev/ttyUSB0
+  python3 -I maintenance_client.py stop --uart UART1 --tcp 192.0.2.1:8899
 
-Current profiles: MAINT1.5.4/1.6.4; recognizes MNT02/03/04/05 and five-byte raw status; older status replies
-are rejected. On UART1, INFO03 supports addressed packs0..21; status/start/stop remain master-only.
-1.5.2/1.6.2 add addressed diagnostics (64/04, ten bytes, no writes) on UART0 and UART1.
-1.5.4/1.6.4 add one-record history, calibration pages and checkpoint/live energy reads.
-History shares the UART0/UART1 cursor; do not interleave independent readers. These
-reads are snapshots, not guaranteed next-boot SOC or an atomic history download.
-On UART0 (1.5.1/1.6.1 and later), addressed status/stop/info use19200; start is unsupported. This tool never
-sends 0x45 or bootloader frames and never flashes firmware.
+EMU1101-EXT (EMU1101 Extended Firmware): custom firmware for Seplos BMS 2.0
+(EMU1101, hardware V16). Current profiles are Light 1.5.5 and Full 1.6.5;
+Light 1.5.4 and Full 1.6.4 are reference builders. Every versioned release uses
+1=enabled and 0=denied permission semantics. Only the 21-byte EXT05 identity is
+accepted. Marker command 64/02
+returns the current five-byte raw status. UART1 supports addressed reads for
+packs 0..21; status/start/stop remain master-only. UART0 supports addressed
+status/stop/info at 19200 baud; start is unsupported.
+
+Addressed diagnostics (64/04, ten bytes), one-record history, calibration pages
+and checkpoint/live energy reads work on UART0 and UART1. History shares the
+UART0/UART1 cursor; do not interleave independent readers. These reads are
+snapshots, not guaranteed next-boot SOC or an atomic history download. This tool
+never sends 0x45 or bootloader frames and never flashes firmware.
 """
 
 # Resolve shared tool paths independently of the working directory and Python -I.
@@ -56,7 +62,7 @@ def frame(code, info, address=0):
 
 
 def normalize_uart(value):
-    """Return canonical selectors; preserve existing API and CLI callers."""
+    """Normalize the named UART0/UART1 selectors and short port aliases."""
     aliases = {"UART0": "UART0", "UART1": "UART1", "R": "UART0", "C": "UART1"}
     if value not in aliases:
         raise ValueError("UART must be UART0 or UART1")
@@ -93,44 +99,39 @@ def parse_response(raw, address=0):
 
 
 def parse_info(info):
-    """Decode MNT02/03/04 and MNT05 with explicit capability bits."""
-    if (len(info), info[:4]) not in ((17,b"MNT\x02"),(18,b"MNT\x03"),(19,b"MNT\x04"),(21,b"MNT\x05")):
-        raise ValueError("unknown maintenance info format or length")
-    version_end = 10 if info[3] >= 4 else 9
+    """Decode the current 21-byte EXT05 identity and explicit capabilities."""
+    if len(info) != 21 or info[:4] != b"EXT\x05":
+        raise ValueError("unknown EMU1101-EXT info format or length; expected EXT05")
+    flags = info[18]
+    caps = int.from_bytes(info[19:21], "big")
+    if caps & ~0x000f:
+        raise ValueError("unknown EMU1101-EXT capability bits")
     result = {
-        "base_version": ("%d.%02d.?" % (info[4],info[5])) if info[6]==255 else "%d.%02d.%02d" % (info[4],info[5],info[6]),
-        "patch_version": ".".join(str(x) for x in info[7:version_end]),
-        "build_id": info[version_end:version_end+8].hex(),
+        "base_version": ("%d.%02d.?" % (info[4], info[5])) if info[6] == 255 else "%d.%02d.%02d" % (info[4], info[5], info[6]),
+        "patch_version": ".".join(str(x) for x in info[7:10]),
+        "build_id": info[10:18].hex(),
+        "info_format": 5, "image_flags": flags,
+        "hard_stop": bool(flags & 1), "positive_flags": bool(flags & 8),
+        "uart0_marker": bool(flags & 16), "extended_diagnostics": bool(flags & 32),
+        "checkpoint_before_reset": bool(flags & 64), "configurable_hard_stop": bool(flags & 128),
+        "capabilities": caps, "uart1_history": bool(caps & 1),
+        "calibration_pages": bool(caps & 2), "persisted_soc_contents": bool(caps & 4),
+        "full_width_energy": bool(caps & 8),
     }
-    if info[3] >= 3:
-        flags=info[18] if info[3] >= 4 else info[17]
-        result.update(info_format=info[3],image_flags=flags,hard_stop=bool(flags&1),positive_flags=bool(flags&8))
-        if info[3] >= 4:
-            result["uart0_marker"] = bool(flags&16)
-            result["extended_diagnostics"] = bool(flags&32)
-            result["checkpoint_before_reset"] = bool(flags&64)
-            result["configurable_hard_stop"] = bool(flags&128)
-            if flags&128:
-                result["hard_stop_default"] = bool(flags&1)
-                result["hard_stop"] = None  # Current state requires47/Group0.
-    if info[3] == 5:
-        caps = int.from_bytes(info[19:21], "big")
-        if caps & ~0x000f:
-            raise ValueError("unknown maintenance capability bits")
-        result.update(capabilities=caps, uart1_history=bool(caps & 1),
-                      calibration_pages=bool(caps & 2), persisted_soc_contents=bool(caps & 4),
-                      full_width_energy=bool(caps & 8))
+    if flags & 128:
+        result["hard_stop_default"] = bool(flags & 1)
+        result["hard_stop"] = None  # Current state requires 47/Group0.
     return result
 
 
-def hard_stop_state(group0, image_flags, info_format=4):
-    """Decode an actual Group0 read; bit0 is a default with MNT04/05 bit7."""
+def hard_stop_state(group0, image_flags, info_format=5):
+    """Decode an actual Group0 read; bit0 is a default with EXT05 bit7."""
     if type(group0) is not int or not 0<=group0<=255 or type(image_flags) is not int or not 0<=image_flags<=255:
         raise ValueError("Group0 and image flags must be bytes")
-    if type(info_format) is not int or info_format not in (2,3,4,5):
-        raise ValueError("unknown maintenance info format")
+    if type(info_format) is not int or info_format != 5:
+        raise ValueError("unknown EMU1101-EXT info format")
     default=bool(image_flags&1)
-    if info_format<4 or not image_flags&128:
+    if not image_flags&128:
         return dict(configurable=False,initialized=None,enabled=default,default_enabled=default,source="image")
     initialized=not bool(group0&128)
     return dict(configurable=True,initialized=initialized,
@@ -423,15 +424,12 @@ def main():
             raise SystemExit(str(error)) from error
         print("base=%s patch=%s build-id=%s" % (
             details["base_version"], details["patch_version"], details["build_id"]))
-        if "hard_stop" in details:
-            hard_stop=("configurable (default=%s; state requires Group0)" % ("on" if details["hard_stop_default"] else "off")) if details.get("configurable_hard_stop") else ("on" if details["hard_stop"] else "off")
-            print("info-format=%d image-flags=0x%02X hard-stop=%s positive-flags=%s" % (details["info_format"], details["image_flags"], hard_stop, "yes" if details["positive_flags"] else "no"))
-        if "extended_diagnostics" in details:
-            print("diagnostics=%s checkpoint-before-reset=%s" % ("yes" if details["extended_diagnostics"] else "no", "yes" if details["checkpoint_before_reset"] else "no"))
-        if "capabilities" in details:
-            print("capabilities=0x%04X history=%s calibration=%s persisted-soc=%s full-width-energy=%s" % (
-                details["capabilities"], details["uart1_history"], details["calibration_pages"],
-                details["persisted_soc_contents"], details["full_width_energy"]))
+        hard_stop=("configurable (default=%s; state requires Group0)" % ("on" if details["hard_stop_default"] else "off")) if details["configurable_hard_stop"] else ("on" if details["hard_stop"] else "off")
+        print("info-format=%d image-flags=0x%02X hard-stop=%s positive-flags=%s" % (details["info_format"], details["image_flags"], hard_stop, "yes" if details["positive_flags"] else "no"))
+        print("diagnostics=%s checkpoint-before-reset=%s" % ("yes" if details["extended_diagnostics"] else "no", "yes" if details["checkpoint_before_reset"] else "no"))
+        print("capabilities=0x%04X history=%s calibration=%s persisted-soc=%s full-width-energy=%s" % (
+            details["capabilities"], details["uart1_history"], details["calibration_pages"],
+            details["persisted_soc_contents"], details["full_width_energy"]))
         return
     try:
         details = parse_status(info)

@@ -110,6 +110,34 @@ class KnowledgeTests(unittest.TestCase):
             self.assertTrue(any(error['problem'] == 'artifact-source-binding-mismatch'
                                 for error in knowledge.refresh(root)['errors']))
 
+    def test_refresh_indexes_ext_builds_and_distinguishes_reference_releases(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            bundle = root/'local/builds/oem16.06.13/ext-light-1.5.4/0123456789abcdef'
+            bundle.mkdir(parents=True)
+            image = bundle/'firmware.ehex'
+            image.write_text(self.valid_container())
+            identity = knowledge.read_image(image)
+            report = dict(status='passed', ext_version='1.5.4', tests=[dict(passed=True)],
+                          output_file_sha256=identity['file_sha256'],
+                          build=dict(app_sha256=identity['app_sha256'], build_id='0123456789abcdef', patch_version='1.5.4'))
+            (bundle/'report.json').write_text(json.dumps(report))
+            release = root/'local/releases/example.ehex'
+            release.parent.mkdir(parents=True)
+            release.write_text(self.valid_container())
+            metadata = root/'mod/firmware/releases/references/ext-light.json'
+            metadata.parent.mkdir(parents=True)
+            metadata.write_text(json.dumps(dict(name='example.ehex',patch_version='1.5.4',
+                ehex_sha256=identity['file_sha256'],app_sha256=identity['app_sha256'],release_status='reference')))
+            result = knowledge.refresh(root)
+            self.assertEqual(result['errors'], [])
+            builds = json.loads((root/'local/index/builds.json').read_text())
+            self.assertEqual(len(builds['canonical']), 1)
+            images = json.loads((root/'local/index/images.json').read_text())
+            release_record = next(row for row in images['images'] if row['path']=='local/releases/example.ehex')
+            self.assertIn('reference-release', release_record['roles'])
+            self.assertNotIn('current-release', release_record['roles'])
+
     def test_filename_and_unrelated_boolean_do_not_mean_pass(self):
         self.assertEqual(knowledge.report_status({'build': {'positive_flags': True}})['verdict'], 'unclassified')
         self.assertEqual(knowledge.report_status({'status': 'passed', 'tests': []})['verdict'], 'recorded-pass')

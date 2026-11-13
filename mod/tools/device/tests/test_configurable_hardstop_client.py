@@ -8,13 +8,13 @@ from _paths import PROJECT_ROOT, TOOLS_ROOT, PATCHER_ROOT, LOCAL_ROOT
 from pathlib import Path
 import importlib.util,unittest
 
-class HardStopClient163(unittest.TestCase):
+class ConfigurableHardStopClient(unittest.TestCase):
  def setUp(self):
-  p=Path(__file__).resolve().parents[1]/'maintenance_client.py';s=importlib.util.spec_from_file_location('hs163_client',p)
+  p=Path(__file__).resolve().parents[1]/'maintenance_client.py';s=importlib.util.spec_from_file_location('configurable_hardstop_client',p)
   self.m=importlib.util.module_from_spec(s);s.loader.exec_module(self.m)
- def test_MNT04_dynamic_is_not_current_state(self):
+ def test_EXT05_dynamic_is_not_current_state(self):
   for flags in (254,255):
-   d=self.m.parse_info(b'MNT\4\x10\6\x0d\1\6\3'+bytes(8)+bytes([flags]))
+   d=self.m.parse_info(b'EXT\5\x10\6\x0d\1\6\4'+bytes(8)+bytes([flags])+b'\0\x0f')
    self.assertTrue(d.get('configurable_hard_stop'));self.assertIsNone(d['hard_stop'])
    self.assertEqual(d['hard_stop_default'],bool(flags&1))
  def test_effective_state_all_values(self):
@@ -30,8 +30,8 @@ class HardStopClient163(unittest.TestCase):
     out=self.m.hard_stop_group0(group,enabled)
     self.assertEqual(out&0x3f,group&0x3f);self.assertFalse(out&128)
     self.assertEqual(bool(out&64),enabled)
- def test_legacy_images_stay_static(self):
-  for flags in (50,51,126,127):
+ def test_light_image_uses_static_hard_stop_state(self):
+  for flags in (0x3a,):
    d=self.m.hard_stop_state(255,flags)
    self.assertFalse(d['configurable']);self.assertEqual(d['enabled'],bool(flags&1))
  def test_invalid_values_rejected(self):

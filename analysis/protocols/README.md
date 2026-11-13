@@ -14,4 +14,4 @@
 
 The [CAN reference](can.md#manufacturer-can-specification-scope-and-differences) compares the original Seplos CANBUS V1.0 PDF with OEM .13, including heartbeat, alarm fields and the `0x70`/`0x370` discrepancy.
 
-These references cover the original V16.04.06–V16.06.13 images, with version-specific qualifications. UART1 receive ownership also compares the explicitly identified historical MAINT builds; current MAINT service extensions are documented in the [UART write-capability matrix](../../mod/docs/firmware/uart-write-capabilities.md).
+These references cover the original V16.04.06–V16.06.13 images, with version-specific qualifications. UART1 receive ownership distinguishes OEM behavior, release-baseline EMU1101-EXT behavior and the limits of archived counterexamples; current EMU1101-EXT service extensions are documented in the [UART write-capability matrix](../../mod/docs/firmware/uart-write-capabilities.md).

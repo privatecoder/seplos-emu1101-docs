@@ -2,7 +2,7 @@
 
 > **Port notation:** **UART0 = RS485-1/RS485-2 (shared pack bus)**; **UART1 = RS485 pair in the CAN socket**; **UART2 = local display/Bluetooth port**. UART1 carries RS485 traffic; the actual CAN interface uses separate pins in the same socket.
 
-MAINT 1.5.4 and 1.6.4 support read-only ASCII 64/04 on UART0 and UART1. Only 1.6.4 has lock/cache reporting and verified SOC saving before targeted 45/06. Image flag 20 means diagnostics; image flag 40 separately means checkpoint before reset. MNT05 appends a distinct 16-bit read-capability mask; it does not change these flags. [Remote diagnostics](remote-diagnostics.md) describes the new persisted-content/live-energy read, which is available in both profiles and never forces a checkpoint. A diagnostics flag alone must never imply saving.
+EMU1101-EXT Light 1.5.3 and later, and Full 1.6.3 and later, support read-only ASCII 64/04 on UART0 and UART1. Full 1.6.3 and later additionally provide lock/cache reporting and verified SOC saving before targeted 45/06. Image flag 20 means diagnostics; image flag 40 separately means checkpoint before reset. EXT05 appends a distinct 16-bit read-capability mask; it does not change these flags. [Remote diagnostics](remote-diagnostics.md) describes the new persisted-content/live-energy read, which is available from Light 1.5.4 and Full 1.6.4 and never forces a checkpoint. A diagnostics flag alone must never imply saving.
 
 ## ASCII 64/04 byte contract
 
@@ -17,19 +17,19 @@ Request exactly INFO 04, LENGTH `E002`. The board answers its own address 0–21
 | 4 | SOC primary record | Record class |
 | 5 | SOC backup record | Record class |
 | 6 | SOC comparison | Comparison code |
-| 7 | Lock in primary parameter record | 1.6.4:00 unlocked, 01 locked, FF unknown; 1.5.4: FF unavailable |
+| 7 | Lock in primary parameter record | Full: 00 unlocked, 01 locked, FF unknown; Light: FF unavailable |
 | 8 | Lock in backup parameter record | Same encoding as byte 7 |
-| 9 | Runtime lock cache | 1.6.4 flags below; 1.5.4:00 unavailable |
+| 9 | Runtime lock cache | Full flags below; Light: 00 unavailable |
 
 Record class 0 means all 256 record bytes are FF; 1 means valid expected structure and CRC; 2 means invalid. Parameter structure includes A0/171 and all four section markers; SOC structure is A0/20. Comparison 0 means not comparable, 1 both valid and identical, 2 both valid and different. Comparison covers 173 parameter bytes or 22 SOC bytes, including CRC, and ignores unused word padding. Valid differences establish neither age nor which copy is newer.
 
-On 1.6.4 byte 9.bit0 indicates nonzero runtime latch, bit 1 cached consistency equal to 1, bit 2 valid cache magic A6. Consistency is observed, not recomputed. Without bit 2, runtime values are unconfirmed/null. Invalid parameter records have unknown recorded lock state. Example `01010101010101000006` means valid identical mirrors, recorded locks clear, valid consistent cache and runtime latch clear.
+In Full 1.6.3 and later byte 9.bit0 indicates nonzero runtime latch, bit 1 cached consistency equal to 1, bit 2 valid cache magic A6. Consistency is observed, not recomputed. Without bit 2, runtime values are unconfirmed/null. Invalid parameter records have unknown recorded lock state. Example `01010101010101000006` means valid identical mirrors, recorded locks clear, valid consistent cache and runtime latch clear.
 
-On 1.5.4 example `01010101010101FFFF00` means valid identical parameter/SOC mirrors and no lock/cache capability. **FF FF 00 does not mean unlocked.** Reserved Group0.bit5 can affect the complete parameter comparison but has no lock meaning on this profile.
+In Light 1.5.3 and later example `01010101010101FFFF00` means valid identical parameter/SOC mirrors and no lock/cache capability. **FF FF 00 does not mean unlocked.** Reserved Group0.bit5 can affect the complete parameter comparison but has no lock meaning on this profile.
 
 The query reads flash directly without calling the repairing OEM reader. It never writes or repairs NVM, changes parameters or runtime cache, or borrows UART/display buffers. Existing IAP buffers are reused. Later ordinary loaders can still repair mirrors. Unknown formats/codes must not display as healthy. Diagnostics provides no historical reset cause, authoritative newer-copy selection, record age or current SOC percentage.
 
-## Verified reset in 1.6.4
+## Verified reset in Full 1.6.3 and later
 
 Targeted INFO `00 06 00` remains valid on UART0/UART1 45. The native UART0 updater form VER 26 with INFO `01 06 00` is also supported. UART1 requires fresh Group0.bit3=1; denial returns RTN05 without saving. UART0 is independent of UART1 permission but needs stopped master polling. FF neither saves nor resets. Other foreign UART0 requests retain native failure handling without a new action.
 
@@ -41,7 +41,7 @@ Block 6 contains remaining charge, learned full capacity, charge/discharge energ
 
 The contextual hook recognizes the exact saved caller LR in the native serializer's guarded stack frame. Automatic saves keep the OEM IAP path. A short IRQ mask protects serialization; the original mask is restored before flash. OEM erase/program end with unconditional CPSIE, so there is no continuous interrupt mask during flash. The wrapper restores its caller's original mask before returning or resetting.
 
-In 1.5.4 reset retains its native behavior and has no verified SOC checkpoint or new SOC-storage RTN08 contract. Ordinary native save triggers, including applicable A1 capacity correction, remain.
+In Light 1.5.3 and later reset retains its native behavior and has no verified SOC checkpoint or new SOC-storage RTN08 contract. Ordinary native save triggers, including applicable A1 capacity correction, remain.
 
 ## Host and bootloader entry
 

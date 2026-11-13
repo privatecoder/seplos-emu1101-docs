@@ -1,4 +1,4 @@
-"""MAINT 1.3: read addressed Battery_SN/BMS_SN via UART1, serial or TCP.
+"""EMU1101-EXT: read addressed Battery_SN/BMS_SN via UART1, serial or TCP.
 
 Without --serial/--tcp prints only the two raw read requests. No write support.
 """

@@ -26,7 +26,7 @@ class ReleaseVerification(unittest.TestCase):
         return module
 
     def metadata(self):
-        return json.loads((PROJECT_ROOT / 'mod/firmware/releases/maint-light.json').read_text())
+        return json.loads((PROJECT_ROOT / 'mod/firmware/releases/ext-light.json').read_text())
 
     def test_existing_release_matches_full_identity(self):
         module = self.verifier()
@@ -61,7 +61,7 @@ class ReleaseVerification(unittest.TestCase):
         metadata = self.metadata()
         raw = (RELEASES / metadata['name']).read_bytes()
         for version in ('1.5', '1.6', '1.5.2', '1.6.2'):
-            with self.subTest(version=version), self.assertRaisesRegex(ValueError, 'unsupported MAINT version'):
+            with self.subTest(version=version), self.assertRaisesRegex(ValueError, 'unsupported EMU1101-EXT version'):
                 module.verify_existing(raw, {**metadata, 'patch_version': version})
 
     def test_rejects_wrong_remote_format_length_or_capability_mask(self):
@@ -109,7 +109,7 @@ class ReleaseVerification(unittest.TestCase):
             self.assertFalse(report['rebuild'])
             self.assertEqual(report['profiles'], 2)
             self.assertEqual({row['existing']['patch_version'] for row in report['results']},
-                             {'1.5.4', '1.6.4'})
+                             {'1.5.5', '1.6.5'})
             for row in report['results']:
                 self.assertEqual(len(row['existing']['build_id']), 16)
                 self.assertEqual(len(row['existing']['ehex_sha256']), 64)

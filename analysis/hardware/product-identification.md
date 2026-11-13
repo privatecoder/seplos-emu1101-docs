@@ -52,11 +52,13 @@ its number does not specify the configured cell count.
 
 Three independent labels support the hardware interpretation:
 
-1. The [retained board photograph](<../../vendor/images/PCB front and back.jpg>)
-   carries `EMU1101_PCBA-V16` and `SH ENERGY TECH` in the silkscreen.
+1. Board-photo evidence retained privately carries `EMU1101_PCBA-V16` and
+   `SH ENERGY TECH` in the silkscreen. The original photograph is not published
+   because it contains unit identifiers.
 2. The [SH Energy catalogue, PDF p.11](<../../vendor/docs/oem catalog/SH Energy BMS-Catalog.pdf#page=11>)
-   identifies EMU1101 and shows the same silkscreen plus sticker
-   `1101-48100-10E-V16`. These markings are image content.
+   identifies EMU1101 and shows the same silkscreen plus product-variant sticker
+   `1101-48100-10E-V16`. These markings remain visible in the privacy-redacted
+   copy; unit serials and QR labels are removed.
 3. [TÜV SÜD report 085-282360233-000, PDF p.13](https://www.comp-gmbh.com/wp-content/uploads/2023/05/trf.pdf#page=13)
    identifies the BMS as `EMU1101 PCBA-V16`, explicitly separates hardware
    version `V16` from software version `16.04`, and lists the product variant
@@ -82,7 +84,7 @@ other release-specific evidence. The two stored version bytes alone do not
 identify the patch release. [Container and version evidence](../firmware/firmware-analysis.md),
 [original image hashes](../firmware/original-images.md).
 
-MAINT 1.5.4 and MAINT 1.6.4 are separate modification-release numbers. They are
+EMU1101-EXT Light 1.5.5 and EMU1101-EXT Full 1.6.5 are separate modification-release numbers. They are
 based on OEM 16.06.13 and do not rename the physical hardware.
 
 ## Seplos generation, document and software versions

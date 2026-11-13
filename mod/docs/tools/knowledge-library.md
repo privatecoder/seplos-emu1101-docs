@@ -55,7 +55,7 @@ verification.
 | `local/index/dependencies.json` | File/model SHA256/size bindings, logical research inputs and environment requirements. |
 | `local/index/paths.json` | Migration lookup from original locators to canonical retained files. |
 | `local/artifacts/firmware/<full-app-sha>/` | Exact decoded OEM application, ELF, disassembly and extraction binding. |
-| `local/builds/oem*/maint-VERSION/BUILD-ID/` | Complete build reports, image, resolved payload and saved source/reproduction data. |
+| `local/builds/oem*/ext-VERSION/BUILD-ID/` | Complete build reports, image, resolved payload and saved source/reproduction data. |
 | `local/builds/runs/` | Supporting runs, including failures and corrective counterparts. |
 | `local/research/` | Short English topic notes with evidence and tool pointers. |
 | `local/history/` | Source-bound decisions, sessions, complete frozen snapshots and compatibility inputs. |

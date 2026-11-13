@@ -10,7 +10,7 @@ The [Seplos MODBUS-ASCII Protocol V2.0 specification](<../../vendor/docs/protoco
 
 Confidence: **confirmed** = directly from the code · **probable** = inferred from data flow · **assumption**. Without a tag, *confirmed* applies.
 
-This page describes the **original firmware**. [UART write capabilities](../../mod/docs/firmware/uart-write-capabilities.md) compares its writable values with MAINT 1.5.4 and MAINT 1.6.4; their UART1 extensions are separate from the OEM command set.
+This page describes the **original firmware**. [UART write capabilities](../../mod/docs/firmware/uart-write-capabilities.md) compares its writable values with EMU1101-EXT Light 1.5.5 and EMU1101-EXT Full 1.6.5; their UART1 extensions are separate from the OEM command set.
 
 > Despite its name, this is **not Modbus**. It is an ASCII protocol according to YD/T1363.3, which Pylontech also uses. A real Modbus RTU slave exists in addition, see [modbus-rtu.md](modbus-rtu.md).
 
@@ -287,7 +287,7 @@ The value set lives in RAM only and is only a starting point: the 1 s SOC logic 
 
 ### 5.6 CID2 0x4B: Read history
 
-MAINT 1.5.4/1.6.4 additionally expose this read on addressed UART1, including slaves. The original UART0 command is unchanged. See [remote diagnostics](../../mod/docs/firmware/remote-diagnostics.md) for cursor sharing, EEPROM-error retry and capability discovery.
+EMU1101-EXT Light 1.5.4 and later, and Full 1.6.4 and later, additionally expose this read on addressed UART1, including slaves. The original UART0 command is unchanged. See [remote diagnostics](../../mod/docs/firmware/remote-diagnostics.md) for cursor sharing, EEPROM-error retry and capability discovery.
 
 - **Storage:** external I²C EEPROM (device 0xA4), ring buffer with 128 bytes per record, **max. 500 records**, header at 0xFF00. Written by `0x5998`, triggered by `0x5DB2` (called at `0x621E` in the main loop's 1-s block) *(certain, 06.13; 04.06/06.11/06.12 identical)*:
   - **at once on a change** of the system status (`0x2000003A`: `0x20`/`0x02`/`0x01`/`0x10`) or of event bytes 1–5, 6 (without bit 7) and 7 (bits 4–7 only) since the last trigger; event 8 does not count. Hence records one second apart when messages change (bench board);

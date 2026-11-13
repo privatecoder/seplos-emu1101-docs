@@ -11,7 +11,7 @@ The registry records the original project-relative report names, complete source
 
 ## Binary prerequisites
 
-[corpus.json](../../corpus.json) is the authoritative list of all 16 required binary inputs, with exact filenames, sizes and SHA-256 values. The seven OEM images remain under `vendor/firmware`; historical regression images remain under `local/fixtures/corpus`; the access-control regression image remains under `local/releases`. Current release EHEX files also remain under `local/releases`. No firmware binary belongs in this metadata directory.
+[corpus.json](../../corpus.json) is the authoritative list of all 16 required binary inputs, with exact filenames, sizes and SHA-256 values. The seven OEM images remain under `vendor/firmware`; historical regression images remain under `local/fixtures/corpus`; the access-control regression image remains under `local/releases`.
 
 `corpus.corpus_groups()` checks every named input and rejects missing or changed files. Extra EHEX files do not extend the regression corpus. The normal test suite exercises the OEM images and the historical images as explicit compatibility/refusal inputs. Missing inputs are prerequisites to restore, never a reason to skip tests.
 
@@ -27,8 +27,8 @@ cd /private/tmp
 "$SEPLOS_PYTHON" -I -B "$SEPLOS_PROJECT/mod/firmware/patcher/verify_releases.py" --rebuild --out /private/tmp/seplos-rebuild-new
 ```
 
-Both commands use the two current JSON files under `mod/firmware/releases` as identity authorities and require the pinned OEM source and exact release EHEX files. The first checks existing EHEX/APP hashes, APP extent, MNT template, version, flags and build ID. The second additionally reconstructs each profile through the real CLI worker, including its mandatory emulator suite, checks identical EHEX bytes, and publishes the worker evidence into the fresh output directory. Metadata-only verification does not execute emulator tests. No existing output directory is overwritten.
+Both commands use the two current JSON files under `mod/firmware/releases` as identity authorities and require the pinned OEM source and exact release EHEX files. The first checks existing EHEX/APP hashes, APP extent, EXT template, version, flags and build ID. The second additionally reconstructs each profile through the real CLI worker, including its mandatory emulator suite, checks identical EHEX bytes, and publishes the worker evidence into the fresh output directory. Metadata-only verification does not execute emulator tests. No existing output directory is overwritten.
 
-The MNT APP template reserves two zero bytes for OEM major/minor. Its handler fills those bytes when answering INFO=03. Verification checks the template and reconstructs those two bytes from the pinned OEM version facts before comparing `info_hex`.
+The EXT APP template reserves two zero bytes for OEM major/minor. Its handler fills those bytes when answering INFO=03. Verification checks the template and reconstructs those two bytes from the pinned OEM version facts before comparing `info_hex`.
 
-`--metadata-dir` selects reviewed metadata for either supported current profile. Retired profile versions are rejected. A metadata `build_report` locator is never followed. `--images` and `--source` accept explicit input locations; the source must still match the reviewed OEM digest. All generated artifacts belong in a fresh local or temporary directory, never alongside immutable fixtures.
+`--metadata-dir` selects reviewed metadata for any of the four supported versions, including the 1.5.4/1.6.4 references. Retired profile versions are rejected. A metadata `build_report` locator is never followed. `--images` and `--source` accept explicit input locations; the source must still match the reviewed OEM digest. All generated artifacts belong in a fresh local or temporary directory, never alongside immutable fixtures.

@@ -13,11 +13,11 @@ class CLI(unittest.TestCase):
    for version,flags,minimum in (('1.5.4',58,194),('1.6.4',254,273)):
     for mode in ('analyze','patch'):
      dest=Path(tmp)/(version+'-'+mode)
-     result=self.run_cli(mode,OEM,'--maint-version',version,'--base-revision','13','--out',dest)
+     result=self.run_cli(mode,OEM,'--ext-version',version,'--base-revision','13','--out',dest)
      self.assertEqual(result.returncode,0,result.stdout+result.stderr)
      report=json.loads((dest/'report.json').read_text())
      self.assertIs(report['positive_flags'],True)
-     self.assertEqual(report['maint_version'],version)
+     self.assertEqual(report['ext_version'],version)
      if mode=='patch':
       self.assertEqual(report['build']['image_flags'],flags)
       self.assertEqual(report['build']['patch_version'],version)
@@ -27,26 +27,26 @@ class CLI(unittest.TestCase):
  def test_full_profile_refuses_unsupported_gate_ABI(self):
   with tempfile.TemporaryDirectory() as tmp:
    old=next(ORIGINALS.glob('*16.06.03*ehex'));dest=Path(tmp)/'refused'
-   result=self.run_cli('analyze',old,'--maint-version','1.6.4','--out',dest)
+   result=self.run_cli('analyze',old,'--ext-version','1.6.4','--out',dest)
    self.assertEqual(result.returncode,1,result.stdout+result.stderr)
    report=json.loads((dest/'report.json').read_text())
-   self.assertIn('unsupported MAINT1.6 gate ABI',report['error'])
+   self.assertIn('unsupported EMU1101-EXT 1.6 gate ABI',report['error'])
    self.assertFalse((dest/'firmware.ehex').exists())
  def test_patch_refuses_overwrite_and_double_patch(self):
   with tempfile.TemporaryDirectory() as tmp:
    dest=Path(tmp)/'result'
-   result=self.run_cli('patch',OEM,'--maint-version','1.5.4','--out',dest)
+   result=self.run_cli('patch',OEM,'--ext-version','1.5.4','--out',dest)
    self.assertEqual(result.returncode,0,result.stdout+result.stderr)
    self.assertTrue((dest/'firmware.ehex').is_file())
-   self.assertEqual(self.run_cli('patch',OEM,'--maint-version','1.5.4','--out',dest).returncode,2)
+   self.assertEqual(self.run_cli('patch',OEM,'--ext-version','1.5.4','--out',dest).returncode,2)
    other=Path(tmp)/'double'
-   result=self.run_cli('patch',dest/'firmware.ehex','--maint-version','1.5.4','--out',other)
+   result=self.run_cli('patch',dest/'firmware.ehex','--ext-version','1.5.4','--out',other)
    self.assertNotEqual(result.returncode,0)
    self.assertFalse((other/'firmware.ehex').exists())
  def test_bad_container_publishes_report_only(self):
   with tempfile.TemporaryDirectory() as tmp:
    source=Path(tmp)/'bad.ehex';source.write_text(':00\n');out=Path(tmp)/'report'
-   result=self.run_cli('patch',source,'--maint-version','1.5.4','--out',out)
+   result=self.run_cli('patch',source,'--ext-version','1.5.4','--out',out)
    self.assertNotEqual(result.returncode,0)
    self.assertTrue((out/'report.json').is_file())
    self.assertFalse((out/'firmware.ehex').exists())
@@ -55,7 +55,7 @@ class CLI(unittest.TestCase):
   for code in ('import os;os.abort()','import time;time.sleep(10)','pass'):
    with tempfile.TemporaryDirectory() as tmp:
     worker=Path(tmp)/'worker.py';worker.write_text(code)
-    report,artifacts=run_worker(OEM,'patch',timeout=1,worker=worker,maint_version='1.5.4')
+    report,artifacts=run_worker(OEM,'patch',timeout=1,worker=worker,ext_version='1.5.4')
     self.assertEqual(report['status'],'worker_failed');self.assertEqual(artifacts,{})
 
 if __name__=='__main__':unittest.main()

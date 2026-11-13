@@ -122,7 +122,7 @@ def flash_session(port, prepared, *, gap_ms=350, address=0):
 
     `prepared` must be the immutable result of prepare_image. The caller owns
     the port and log. The 0x51 return check is preliminary; a batch caller must
-    additionally compare parameters, serials and exact MAINT identity.
+    additionally compare parameters, serials and exact EMU1101-EXT identity.
     """
     entry.ascii.valid_address(address)
     if type(gap_ms) is not int or gap_ms < 0:

@@ -1,4 +1,4 @@
-"""Mandatory revision-one R64 proof through real OEM parser AND encoder.
+"""Mandatory UART0 64 proof through the real OEM parser and encoder.
 
 Only the physical UART0 sender boundary is intercepted; dispatcher returns
 normally so register/stack checks cover the whole original call frame.
@@ -46,7 +46,7 @@ def validate_uart0_marker(original,patched,facts,report):
  def query(m,info=b'\2',target=None):
   address=m.num(r['address']);raw=uart0_exchange(m,ascii_frame(address if target is None else target,0x64,info))
   return ascii_payload(raw,address) if raw else None
- expected=b'MNT\5'+bytes(facts['oracle']['base_version'])+bytes([report['base_revision'],*map(int,report['patch_version'].split('.'))])+bytes.fromhex(report['build_id'])+bytes([report['image_flags']])+report['remote_capabilities'].to_bytes(2,'big')
+ expected=b'EXT\5'+bytes(facts['oracle']['base_version'])+bytes([report['base_revision'],*map(int,report['patch_version'].split('.'))])+bytes.fromhex(report['build_id'])+bytes([report['image_flags']])+report['remote_capabilities'].to_bytes(2,'big')
  def layout():
   equal((report['info_format'],report['info_bytes'],len(expected)),(5,21,21))
   assert report['uart0_marker'] and report['image_flags']&16

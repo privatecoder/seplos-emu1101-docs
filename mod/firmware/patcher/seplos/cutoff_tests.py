@@ -1,7 +1,95 @@
-"""Mandatory1.6 real Thumb/CRC/flash transaction and output-path regressions."""
+"""Mandatory Full-profile real Thumb/CRC/flash transaction and output-path regressions."""
 from .machine import Machine,PowerLoss,ascii_frame,frame
 from unicorn import UC_HOOK_MEM_WRITE
 from unicorn.arm_const import UC_ARM_REG_SP,UC_ARM_REG_R0,UC_ARM_REG_R1,UC_ARM_REG_R2
+
+FAST_REQUIRED=(
+ 'cutoff-fast-current-signed-threshold-and-gates',
+ 'cutoff-persistent-off-fast-current-boundaries',
+)
+
+
+def _fast_current_roles(original,facts):
+ """Derive the signed operand and event byte from the native handover branch."""
+ import re
+ from .thumb import Code
+ from .analysis import unique
+ code=Code(original.app);body=code.body(facts['cutoff']['fast']);thresholds=[]
+ for ins in body:
+  m=re.fullmatch(r'(r\d+), #(0x[0-9a-f]+|\d+)',ins.args)
+  w=code.window(ins.at,4)
+  if ins.op!='movs' or not m or len(w)!=4 or w[1].op!='lsls' or w[2].op!='cmp' or w[3].op!='blt':continue
+  shift=re.fullmatch(rf'{m[1]}, {m[1]}, #(0x[0-9a-f]+|\d+)',w[1].args)
+  operand=re.fullmatch(rf'(r\d+), {m[1]}',w[2].args)
+  if shift and operand and int(m[2],0)<<int(shift[1],0)==1000:thresholds.append((ins.at,operand[1]))
+ at,reg=unique(thresholds,'signed fast-current threshold branch')
+ operands=[]
+ for ins in body:
+  following=code.ins.get(ins.at+ins.size)
+  if ins.at>=at or ins.literal is None or not 0x20000000<=ins.literal<original.sp or not following or following.op!='ldr':continue
+  base=ins.args.split(',')[0]
+  m=re.fullmatch(rf'{reg}, \[{base}(?:, #(0x[0-9a-f]+|\d+))?\]',following.args)
+  if m:operands.append(ins.literal+(int(m[1],0) if m[1] else 0))
+ current=unique(operands,'native signed fast-current operand')
+ prior=[i for i in body if i.at<at and i.literal is not None and 0x20000000<=i.literal<original.sp
+        and code.ins.get(i.at+i.size) and code.ins[i.at+i.size].op=='ldrb']
+ if not prior:raise ValueError('missing fast-current interlock operand')
+ event=prior[-1].literal
+ return current,event
+
+
+def validate_fast_handover(original,patched,facts,report):
+ """Native boundary checks independent of the slow charge-recovery current."""
+ from .selftest import ascii_payload
+ d=facts['cutoff'];r=facts['ram'];e=d['entries'];current,event=_fast_current_roles(original,facts)
+ gpio=0x50002000;mask=(1<<10)|(1<<12)|(1<<13)|(1<<15);rows=[]
+ values=(-1001,-1,0,999,1000,1001)
+ def board():
+  m=Machine(patched,facts);m.defaults(1)
+  m.put(r['group0'],bytes([m.num(r['group0'])|0x18]))
+  m.put(d['onoff'],b'\3');m.put(d['onoff']+1,b'\3')
+  m.put(gpio,((1<<1)|(1<<12)|(1<<13)|(1<<14)).to_bytes(4,'little'))
+  return m
+ def prepare(m,value):
+  m.put(r['group0']+4,bytes([m.num(r['group0']+4)&~0x10]))
+  m.put(r['group0']+6,bytes([m.num(r['group0']+6)|0x40]))
+  m.put(event,bytes([m.num(event)&~0x40]))
+  m.put(current,value.to_bytes(4,'little',signed=True))
+ def observe(m):
+  writes=[]
+  def callback(uc,access,address,size,value,user):
+   if address==gpio:writes.append(value)
+  m.uc.hook_add(UC_HOOK_MEM_WRITE,callback);return writes
+ def controls():
+  for value in values:
+   m=board();prepare(m,value);m.put(d['onoff'],b'\2');m.put(d['onoff']+2,b'\2');m.put(event-1,b'\0')
+   m.run(d['fast']);expected=4 if value>=1000 else 2
+   assert m.num(d['onoff'])==expected,(value,hex(current),m.num(d['onoff']))
+   assert bool(m.num(event)&0x40)==(value>=1000),value
+   assert bool(m.num(gpio,4)&(1<<12))==(value<1000),value
+  for gate in ('switch-disabled','charge-disabled','already-limited','interlock-set'):
+   m=board();prepare(m,1001);m.put(d['onoff'],b'\2');m.put(d['onoff']+2,b'\2')
+   if gate=='switch-disabled':m.put(r['group0']+6,bytes([m.num(r['group0']+6)&~0x40]))
+   elif gate=='charge-disabled':m.put(d['onoff'],b'\0');m.put(gpio,(m.num(gpio,4)&~(1<<12)).to_bytes(4,'little'))
+   elif gate=='already-limited':m.put(d['onoff'],b'\6');m.put(d['onoff']+2,b'\6')
+   else:m.put(event,bytes([m.num(event)|0x40]))
+   before=m.num(d['onoff']);m.run(d['fast']);assert m.num(d['onoff'])==before,gate
+ def locked():
+  for value in values:
+   m=board();response=ascii_payload(m.transact(ascii_frame(1,0x45,b'\0\4\x1f'),True),1)
+   assert response==(0,b'') and m.num(d['ram'])==1 and len(m.nv_ops)==4,value
+   assert not m.num(d['onoff'])&0x17 and not m.num(gpio,4)&mask,value
+   # Preserve the real Off result: never synthesize new OnOff bits after it.
+   prepare(m,value);writes=observe(m)
+   for _ in range(3):
+    m.run(e['hook_cut_charge']);m.run(e['hook_cut_discharge']);m.run(d['fast']);m.run(d['precharge'])
+   assert m.num(d['ram'])==1 and not m.num(d['onoff'])&0x17,value
+   assert writes and all(not word&mask for word in writes),(value,writes)
+ for name,func in zip(FAST_REQUIRED,(controls,locked)):
+  try:func()
+  except Exception as exc:raise AssertionError(name+': '+str(exc)) from exc
+  rows.append({'name':name,'passed':True})
+ return rows
 
 
 def validate_cutoff(original,patched,facts,report):
@@ -38,6 +126,8 @@ def validate_cutoff(original,patched,facts,report):
  def integrity():
   allowed={a for site in report['hooks'].values() for a in range(site,site+4)}
   allowed.update(range(d['zero_size_offset'],d['zero_size_offset']+4))
+  if report.get('scheduler_atomic'):
+   a=facts['scheduler_atomic']['branch_site'];allowed.update(range(a,a+2))
   if report['hard_stop'].get('changed'):allowed.add(report['hard_stop']['offset'])
   assert all(a in allowed or x==y for a,(x,y) in enumerate(zip(original.app,patched.app)))
   equal(original.sp,patched.sp);equal(d['ram'],original.sp)
@@ -224,5 +314,6 @@ def validate_cutoff(original,patched,facts,report):
   m.put(d['aggregate']+36,(9000).to_bytes(2,'little'))
   m.run(e['hook_cut_ccl']);equal(m.num(d['aggregate']+36,2),expected)
  check('stale-online-record-outside-configured-slaves-does-not-clamp',stale_poll_bit)
+ out.extend(validate_fast_handover(original,patched,facts,report))
  assert len(out)>=30
  return out

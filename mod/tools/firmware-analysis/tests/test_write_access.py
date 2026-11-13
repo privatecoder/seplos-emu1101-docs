@@ -11,7 +11,7 @@ import unittest
 
 HERE = Path(__file__).resolve().parents[1]
 PROJECT = HERE.parents[2]
-PUBLIC = ('maint-light.json', 'maint-full.json')
+PUBLIC = ('ext-light.json', 'ext-full.json')
 
 
 class CatalogueTests(unittest.TestCase):
@@ -71,10 +71,10 @@ class CatalogueTests(unittest.TestCase):
         manifests.mkdir(parents=True)
         images = root / 'local/releases'
         images.mkdir(parents=True)
-        for version, flags, name in (('1.5.4', 0x3a, PUBLIC[0]), ('1.6.4', 0xfe, PUBLIC[1])):
+        for version, flags, name in (('1.5.5', 0x3a, PUBLIC[0]), ('1.6.5', 0xfe, PUBLIC[1])):
             app = bytearray(base.app[:0x1000])
             app[4:8] = (0xc1).to_bytes(4, 'little')
-            info = b'MNT\5\x10\6\x0d' + bytes(map(int, version.split('.'))) + b'UPID0000' + bytes([flags]) + b'\0\x0f'
+            info = b'EXT\5\x10\6\x0d' + bytes(map(int, version.split('.'))) + b'UPID0000' + bytes([flags]) + b'\0\x0f'
             template = info[:4] + bytes(2) + info[6:]
             app[0x200:0x200+len(template)] = template
             build_id = hashlib.sha256(app).digest()[:8]
@@ -97,7 +97,7 @@ class CatalogueTests(unittest.TestCase):
         result = self.command(source)
         self.assertEqual(result.returncode, 0, result.stderr)
         data = json.loads(result.stdout)
-        self.assertEqual(set(data['profiles']), {'1.5.4', '1.6.4'})
+        self.assertEqual(set(data['profiles']), {'1.5.5', '1.6.5'})
         self.assertEqual((len(data['parameters']), len(data['function_bits']), len(data['matrix'])), (87, 64, 23))
         self.assertEqual([p['index'] for p in data['parameters']], list(range(87)))
         self.assertEqual({(p['group'], p['bit']) for p in data['function_bits']},
@@ -107,11 +107,11 @@ class CatalogueTests(unittest.TestCase):
             self.assertEqual(profile['info_format'], 5)
             self.assertEqual(profile['power_rtc_enabled_bit3'], 1)
             self.assertEqual(profile['manifest'], 'mod/firmware/releases/' +
-                             ('maint-light.json' if version=='1.5.4' else 'maint-full.json'))
-        self.assertIsNone(data['profiles']['1.5.4']['extended_off_enabled_bit4'])
-        self.assertIsNone(data['profiles']['1.5.4']['lock_status_bit5'])
-        self.assertEqual(data['profiles']['1.6.4']['extended_off_enabled_bit4'], 1)
-        self.assertEqual(data['profiles']['1.6.4']['lock_status_bit5'], 0)
+                             ('ext-light.json' if version=='1.5.5' else 'ext-full.json'))
+        self.assertIsNone(data['profiles']['1.5.5']['extended_off_enabled_bit4'])
+        self.assertIsNone(data['profiles']['1.5.5']['lock_status_bit5'])
+        self.assertEqual(data['profiles']['1.6.5']['extended_off_enabled_bit4'], 1)
+        self.assertEqual(data['profiles']['1.6.5']['lock_status_bit5'], 0)
         rows = data['selected_read_commands']
         for label, command in (('Read one history record', '4B'),
                                ('Read active/stored calibration', '64/05'),
@@ -134,19 +134,19 @@ class CatalogueTests(unittest.TestCase):
         self.assertNotIn('checkpoint', reset[3].lower())
         self.assertIn('SOC checkpoint', reset[4])
 
-    def test_synthetic_MNT05_verifies_caps_flags_and_neutral_build_id(self):
+    def test_synthetic_EXT05_verifies_caps_flags_and_neutral_build_id(self):
         root, source = self.synthetic_project()
         result = self.command(source, '--verify')
         self.assertEqual(result.returncode, 0, result.stderr)
         report = json.loads(result.stdout)
         self.assertTrue(report['passed'])
         self.assertFalse(report['hardware_access'])
-        self.assertEqual(set(report['profiles']), {'1.5.4', '1.6.4'})
+        self.assertEqual(set(report['profiles']), {'1.5.5', '1.6.5'})
         for version, profile in report['profiles'].items():
             self.assertEqual(profile['remote_capabilities'], 15)
             info = bytes.fromhex(profile['info_hex'])
             self.assertEqual(len(info), 21)
-            self.assertEqual(info[18], 0x3a if version=='1.5.4' else 0xfe)
+            self.assertEqual(info[18], 0x3a if version=='1.5.5' else 0xfe)
             self.assertEqual(info[19:], b'\0\x0f')
 
     def test_synthetic_renderer_labels_only_current_profiles_and_canonical_ports(self):
@@ -154,9 +154,9 @@ class CatalogueTests(unittest.TestCase):
         result = self.command(source, '--markdown')
         self.assertEqual(result.returncode, 0, result.stderr)
         text = result.stdout
-        self.assertIn('MAINT 1.5.4', text)
-        self.assertIn('MAINT 1.6.4', text)
-        self.assertIn('MNT05 image flags', text)
+        self.assertIn('EMU1101-EXT Light 1.5.5', text)
+        self.assertIn('EMU1101-EXT Full 1.6.5', text)
+        self.assertIn('EXT05 image flags', text)
         self.assertIn('capability mask u16 BE 000F', text)
         self.assertIn('| Read one history record |', text)
         self.assertIn('| Read active/stored calibration |', text)
@@ -164,8 +164,11 @@ class CatalogueTests(unittest.TestCase):
         self.assertIn('| Read full-width live charged/discharged energy |', text)
         self.assertIn('| UART0, UART1[W], UART2 |', text)
         self.assertNotRegex(text, r'\b[RCD](?:/[RCD])+\b')
-        self.assertNotIn('1.5.3', text)
-        self.assertNotIn('1.6.3', text)
+        self.assertIn('Light 1.5.3', text)
+        self.assertIn('Full 1.6.3', text)
+        self.assertIn('Light 1.5.4', text)
+        self.assertIn('Full 1.6.4', text)
+        self.assertIn('EXT05 patch bytes are 01 05 05 / 01 06 05', text)
         self.assertNotIn('@PROFILES@', text)
 
     def test_new_interfaces_are_bold_relative_to_available_OEM_routes(self):
@@ -189,7 +192,7 @@ class CatalogueTests(unittest.TestCase):
         self.assertEqual(row('Group0.Bit0')[2:4], ['1 = allow writes over **UART1**']*2)
         self.assertEqual(row('Group0.Bit3')[2:4], ['**1 = allow Power/RTC over UART1**, 0 = blocked']*2)
 
-    def test_MNT05_rejects_missing_unknown_or_mismatched_capabilities(self):
+    def test_EXT05_rejects_missing_unknown_or_mismatched_capabilities(self):
         root, source = self.synthetic_project()
         path = root / 'mod/firmware/releases' / PUBLIC[0]
         original = json.loads(path.read_text())
@@ -208,7 +211,7 @@ class CatalogueTests(unittest.TestCase):
             path.write_text(json.dumps(metadata))
             result = self.command(source, '--verify')
             self.assertNotEqual(result.returncode, 0, metadata)
-            self.assertIn('MNT05', result.stderr)
+            self.assertIn('EXT05', result.stderr)
 
     def test_current_verify_needs_no_historical_modules_or_build_reports(self):
         root, source = self.isolated_project()
@@ -217,11 +220,23 @@ class CatalogueTests(unittest.TestCase):
         self.assertEqual(result.returncode, 0, result.stderr)
         report = json.loads(result.stdout)
         self.assertTrue(report['passed'])
-        self.assertEqual(report['verification'], 'current release hashes and MNT05 metadata; no native emulation')
-        self.assertEqual(set(report['profiles']), {'1.5.4', '1.6.4'})
+        self.assertEqual(report['verification'], 'current release hashes and EXT05 metadata; no native emulation')
+        self.assertEqual(set(report['profiles']), {'1.5.5', '1.6.5'})
         result = self.command(source, '--markdown')
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertIn('All 87 A1 parameters', result.stdout)
+
+    def test_current_catalogue_rejects_previous_release_metadata(self):
+        root, source = self.synthetic_project()
+        path = root / 'mod/firmware/releases' / PUBLIC[0]
+        metadata = json.loads(path.read_text())
+        metadata['patch_version'] = '1.5.4'
+        path.write_text(json.dumps(metadata))
+        for options in ((), ('--markdown',), ('--verify',)):
+            with self.subTest(options=options):
+                result = self.command(source, *options)
+                self.assertNotEqual(result.returncode, 0)
+                self.assertIn('release version mismatch', result.stderr)
 
     def test_current_verify_rejects_mismatched_public_metadata(self):
         root, source = self.isolated_project()
@@ -231,16 +246,15 @@ class CatalogueTests(unittest.TestCase):
         path.write_text(json.dumps(data))
         result = self.command(source, '--verify')
         self.assertNotEqual(result.returncode, 0)
-        self.assertIn('MNT05', result.stderr)
+        self.assertIn('EXT05', result.stderr)
 
-    def test_historical_probe_uses_only_extracted_fixed_model(self):
-        source = (HERE / 'probe_write_access.py').read_text()
-        self.assertNotIn("HERE/'write_access_v16.py'", source)
-        self.assertIn("HERE/'historical_write_model.py'", source)
-        data = json.loads((HERE / 'historical_write_model.json').read_text())
-        encoded = json.dumps(data, sort_keys=True, separators=(',', ':'), ensure_ascii=False).encode()
-        self.assertEqual(hashlib.sha256(encoded).hexdigest(), '270794ff992da3f02e0c1770afca8344c189bfa85bf598e45468ef1f41de9b0e')
-        self.assertEqual(set(data['IMAGES']), {'OEM16.06.13', 'MAINT1.5', 'MAINT1.6'})
+    def test_published_catalogue_has_no_frozen_historical_model(self):
+        for name in ('historical_write_model.py', 'historical_write_model.json',
+                     'write_access_provenance.json', 'probe_write_access.py'):
+            self.assertFalse((HERE / name).exists(), name)
+        source = (HERE / 'write_access.py').read_text()
+        self.assertNotIn('historical_write_model', source)
+
 
     def test_published_matrix_matches_current_renderer(self):
         result = self.command(HERE / 'write_access.py', '--markdown')

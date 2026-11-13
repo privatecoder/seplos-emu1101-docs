@@ -2,7 +2,7 @@
 
 > **Port notation:** **UART0 = RS485-1/RS485-2 (shared pack bus)**; **UART1 = RS485 pair in the CAN socket**; **UART2 = local display/Bluetooth port**. UART1 carries RS485 traffic; the actual CAN interface uses separate pins in the same socket.
 
-`flash_packs.py` updates a declared set of packs over a local USB–RS485 adapter on UART0 at 19200 baud. It uses the existing `flash_gap.py` transfer and `boot_entry.py` entry procedure, then verifies each target before proceeding. The target must match one of the two current [release metadata files](../../firmware/releases/README.md). `--profile light` selects MAINT 1.5.4; `--profile full` selects MAINT 1.6.4. `--image PATH` may select another copy of the exact same release bytes; it does not permit arbitrary firmware.
+`flash_packs.py` updates a declared set of packs over a local USB–RS485 adapter on UART0 at 19200 baud. It uses the existing `flash_gap.py` transfer and `boot_entry.py` entry procedure, then verifies each target before proceeding. The target must match one of the two current [release metadata files](../../firmware/releases/README.md). `--profile light` selects EMU1101-EXT Light 1.5.5; `--profile full` selects EMU1101-EXT Full 1.6.5. `--image PATH` may select another copy of the exact same release bytes; it does not permit arbitrary firmware.
 
 The default invocation only prints an offline plan. **Only `--execute` opens serial ports or performs device operations.** The tool has no TCP transport and never automatically restores parameters, unlocks a pack, clears maintenance, retries a write or invokes recovery.
 
@@ -47,7 +47,7 @@ First inspect a plan without opening either adapter:
 "$PY" -I -B "$TOOLS/flash_packs.py" 12 --mode external --profile full
 ```
 
-The JSON lists every address, exact selected image, MAINT version, build ID, EHEX SHA-256 and ACK gap. `--dry-run` makes the same offline behavior explicit. `--profile light` selects the smaller firmware branch.
+The JSON lists every address, exact selected image, EMU1101-EXT version, build ID, EHEX SHA-256 and ACK gap. `--dry-run` makes the same offline behavior explicit. `--profile light` selects the smaller firmware branch.
 
 ### Seplos master with a separate UART1 maintenance adapter
 
@@ -60,7 +60,7 @@ The JSON lists every address, exact selected image, MAINT version, build ID, EHE
 
 The adapters must be physically distinct; identical paths, resolved aliases and the same `cu.`/`tty.` endpoint are rejected. The script reads master status on UART1 at 9600 baud and waits the practical 200 ms before each UART1 maintenance request. This is a host margin, not measured MCU scheduler latency. If the known marker is inactive, it sends maintenance start once; an already active marker is not rewritten. A fresh status must confirm marker `00000000` and effective slave count 0. Polling bytes already in flight are collected and logged after that confirmation; a full quiet interval must then occur within five seconds.
 
-Maintenance start requires existing compatible MAINT support, the existing start permission and disabled automatic addressing. The tool does not enable these settings. An OEM master cannot acquire this capability from the host script.
+Maintenance start requires existing compatible EMU1101-EXT support, the existing start permission and disabled automatic addressing. The tool does not enable these settings. An OEM master cannot acquire this capability from the host script.
 
 ### Master already paused, or polling manually halted
 
@@ -69,7 +69,7 @@ Maintenance start requires existing compatible MAINT support, the existing start
   --mode master --profile full --port "$UART0_PORT" --execute
 ```
 
-Without `--maintenance-port`, the script never starts maintenance. UART0 must already be available, for example through an active marker or the established manual DIP procedure. An original firmware master may lack `64/02`; complete addressed reachability and bus silence remain necessary. Once the master runs the selected MAINT image, known marker status and effective slave count 0 are checked between packs. Unknown marker values or active polling stop the batch.
+Without `--maintenance-port`, the script never starts maintenance. UART0 must already be available, for example through an active marker or the established manual DIP procedure. An original firmware master may lack `64/02`; complete addressed reachability and bus silence remain necessary. Once the master runs the selected EMU1101-EXT image, known marker status and effective slave count 0 are checked between packs. Unknown marker values or active polling stop the batch.
 
 ### External master with slave addresses 1 through N
 
@@ -86,7 +86,7 @@ A fresh directory is created under `local/devices/flash-logs/batch-TIMESTAMP-ID/
 
 - `report.json`: selected image, phases, current/failed address, confirmed predecessors and maintenance-start attempt/confirmation state. Updates are atomic. A failed start acknowledgement or confirmation does not imply an unchanged marker.
 - `bus.log`: serial TX/RX and maintenance/transfer state. No pending input is silently flushed by the batch transport.
-- `pack-NN-before.json`: full raw/decoded parameter block, device name, both serials, base information, supported MAINT/storage diagnostics and telemetry. All target backups are saved before the first reset.
+- `pack-NN-before.json`: full raw/decoded parameter block, device name, both serials, base information, supported EMU1101-EXT/storage diagnostics and telemetry. All target backups are saved before the first reset.
 - `pack-NN-after.json`: fresh post-flash snapshot, also retained when a subsequent comparison fails.
 
 A target is marked verified only after its application returns, a settling interval has passed, its exact `64/03` payload matches the image metadata and its parameters/device name and both serials match the backup. The expected base family is checked through `51`. Previously present cell or pack voltage readings must not become zero. The next address is not reset until those checks finish successfully.
@@ -117,10 +117,10 @@ If recovery is needed, isolate the actual failed target and establish its bootlo
   "$UART0_PORT" "$IMAGE" "$EXPECTED_SHA256" "$NEW_RECOVERY_LOG"
 ```
 
-Set those three values deliberately; the recovery helper has no pack-address argument. Verify the restored application, exact MAINT identity, parameters and serials separately. The batch script never calls recovery or sends another reset/erase/program retry for you.
+Set those three values deliberately; the recovery helper has no pack-address argument. Verify the restored application, exact EMU1101-EXT identity, parameters and serials separately. The batch script never calls recovery or sends another reset/erase/program retry for you.
 
 ## Validation scope
 
-The device suite uses deterministic serial/storage models, tests both twelve-pack address ranges, malformed/extra/partial responses, all-bank backup ordering, exact post-verification, lock/downgrade guards, source pinning, errors and interruption boundaries. Existing single-pack transfer/ACK/reset tests remain applicable. Native UART0 counterexamples cover OEM 16.06.13 and MAINT 1.6.4 at their exact APP hashes and show foreign requests do not reset other modeled packs. They do not emulate the bootloader or establish physical multidrop timing.
+The device suite uses deterministic serial/storage models, tests both twelve-pack address ranges, malformed/extra/partial responses, all-bank backup ordering, exact post-verification, lock/downgrade guards, source pinning, errors and interruption boundaries. Existing single-pack transfer/ACK/reset tests remain applicable. Native UART0 counterexamples cover OEM 16.06.13 and EMU1101-EXT Full 1.6.5 at their exact APP hashes and show foreign requests do not reset other modeled packs. They do not emulate the bootloader or establish physical multidrop timing.
 
-No board was accessed or flashed during development. The current MAINT images and this batch path still require hardware validation.
+No board was accessed or flashed during development. The current EMU1101-EXT images and this batch path still require hardware validation.

@@ -1,4 +1,4 @@
-"""Mandatory1.6.4 actual-Thumb mask, parameter, GPIO and priority checks."""
+"""Mandatory Full-profile actual-Thumb mask, parameter, GPIO and priority checks."""
 import copy
 from .machine import Machine,ascii_frame,frame
 from .marker_uart0_tests import uart0_exchange
@@ -9,14 +9,14 @@ from unicorn.arm_const import (UC_ARM_REG_PC,UC_ARM_REG_SP,UC_ARM_REG_APSR,
  UC_ARM_REG_R10,UC_ARM_REG_R11,UC_ARM_REG_R12)
 
 REQUIRED=tuple('configurable_hardstop-'+name for name in (
- 'capability-and-21-hook-surface','FF-default-no-migration',
+ 'capability-and-profile-hook-surface','FF-default-no-migration',
  'all256-group0-times256-event6','mask-ABI-and-NZCV',
  'complete-charge-GPIO-mode-selection','discharge-recovery-and-OVP-priority',
  'temperature-and-other-protections','live-selection-without-flash',
  'explicit-R-C-D-parameter-persistence','C-A1-permission-remains',
  'persistent-pack-lock-wins','imports-preserve-all-four-encodings',
  'diagnostics-unchanged-and-no-writes','addressed-slave-config-and-version',
- 'no-new-RAM-and-unknown-native-ABI-refused','MNT-default-not-runtime'))
+ 'no-new-RAM-and-unknown-native-ABI-refused','EXT-default-not-runtime'))
 
 def validate_configurable(original,patched,facts,report):
  r=facts['ram'];f=facts['functions'];h=facts['configurable_hardstop'];d=facts['cutoff'];p=facts['power_rtc'];base=facts['hard_stop']
@@ -42,13 +42,13 @@ def validate_configurable(original,patched,facts,report):
   n=Machine(patched,facts);n.put(d['nv_primary'],m.read(d['nv_primary'],8192));n.defaults(m.num(r['address']));return n
  def no_flash(m):equal(m.saves,[]);equal(m.nv_ops,[]);equal(m.flash_ops,[])
  def surface():
-  equal(report['patch_version'],'1.6.4');equal(report['image_flags'],0xfe|int(default))
+  assert report['patch_version'] in ('1.6.4','1.6.5');equal(report['image_flags'],0xfe|int(default))
   assert report['configurable_hard_stop'] and report['hard_stop']['enabled'] is None
   equal(report['hard_stop']['default_enabled'],default);equal(report['ram_bytes'],4)
-  equal(len(report['hooks']),21);equal(report['hooks']['hook_configurable_hard_stop'],h['site'])
+  equal(len(report['hooks']),21+int(bool(report.get('scheduler_atomic'))));equal(report['hooks']['hook_configurable_hard_stop'],h['site'])
   equal(h['site'],base['offset']);equal(h['parameter_mask'],0xc0)
-  assert len(set(report['hooks'].values()))==21
- check('capability-and-21-hook-surface',surface)
+  assert len(set(report['hooks'].values()))==21+int(bool(report.get('scheduler_atomic')))
+ check('capability-and-profile-hook-surface',surface)
  def FF():
   m=board();equal(m.num(r['group0']),255)
   before=m.payload();equal(charge(m),default);equal(m.payload(),before);no_flash(m)
@@ -150,7 +150,7 @@ def validate_configurable(original,patched,facts,report):
   answers=[m.transact(packet,True) for m in boards];equal([i for i,x in enumerate(answers) if x],[7])
   equal(boards[7].num(r['group0'])&0xc0,0x40)
   for i,m in enumerate(boards):
-   rtn,data=ascii_payload(m.transact(ascii_frame(i,0x64,b'\3'),True),i);equal((rtn,data[7:10]),(0,b'\1\6\4'))
+   rtn,data=ascii_payload(m.transact(ascii_frame(i,0x64,b'\3'),True),i);equal((rtn,data[7:10]),(0,bytes(map(int,report['patch_version'].split('.')))))
  check('addressed-slave-config-and-version',addressed)
  def refused():
   from .configurable_hardstop import discover_configurable
@@ -165,6 +165,6 @@ def validate_configurable(original,patched,facts,report):
   for mode in (0,0x40,0x80,0xc0):
    setmode(m,mode);rtn,data=ascii_payload(m.transact(ascii_frame(1,0x64,b'\3'),True),1);equal(rtn,0);answers.append(data)
   equal(len(set(answers)),1);equal(answers[0][18],0xfe|int(default))
- check('MNT-default-not-runtime',static)
+ check('EXT-default-not-runtime',static)
  equal({t['name'] for t in rows},set(REQUIRED))
  return rows

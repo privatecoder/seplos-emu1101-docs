@@ -289,7 +289,7 @@ def probe(image,facts):
  r['tx']=unique(list({e[1] for e in dtrace if e[0]=='w' and e[2]==1 and e[3]==0x7e}),'TX frame start')
  r['tx_length']=unique(list({e[1] for e in dtrace if e[0]=='r' and e[2]==2 and e[3]==len(response)}),'TX length')
  
- if r['tx_length']-r['tx']<175 or r['rx_meta']-r['rx']<165:raise ValueError(f'UART1 buffers too small for MAINT1.5: {r}')
+ if r['tx_length']-r['tx']<175 or r['rx_meta']-r['rx']<165:raise ValueError(f'UART1 buffers too small for EMU1101-EXT 1.5: {r}')
  # The parser stores command and address; original 51 provides two version bytes.
  r['command']=unique(list({e[1] for e in dtrace if e[0]=='w' and e[2]==1 and e[3]==0x51 and r['rx_meta']<e[1]<r['tx']}),'decoded command')
  # Probe a slave address to disambiguate decoded/local ADR and identify parser address dependency.

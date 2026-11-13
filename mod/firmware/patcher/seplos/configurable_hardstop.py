@@ -1,8 +1,8 @@
-"""Configurable SP80 mask for1.6.4, preserving the original decision order.
+"""Configurable SP80 mask for Full 1.6.3+, preserving the original decision order.
 
 Group0 &C0:00 explicit soft,40 explicit hard,80/C0 inherited image default.
 No parameter migration, write command, event-byte mutation or RAM reservation.
-Only1.6-compatible r3 charge-path ABI is admitted after Cutoff discovery.
+Only the Full-profile r3 charge-path ABI is admitted after lock/gate discovery.
 """
 from pathlib import Path
 import re

@@ -1,0 +1,59 @@
+{
+  "schema": "emu1101-ext-version-comparison-v1",
+  "base_oem_version": "16.06.13",
+  "base_oem_app_sha256": "5c36a7e08fb881b3c2ca6a22888ecb63585c3eb6811fb67b67cc9d0d0ecdde95",
+  "profiles": [
+    {
+      "version": "1.5.4",
+      "variant": "Light",
+      "filename": "EMU1101-EXT_Light_1.5.4.ehex",
+      "metadata": "mod/firmware/releases/references/ext-light.json",
+      "build_id": "ffe3acf7e52bed80",
+      "app_sha256": "927e178e0b4140185e974a786525091b49a37f5618e86729981697f4f90d5003",
+      "ehex_sha256": "6b4549fa89145db7755dde90b72511501b2b5425006028e5f6968e8bac530c1c",
+      "info_hex": "4558540510060D010504FFE3ACF7E52BED803A000F",
+      "tests": 251,
+      "app_bytes": 57304,
+      "identity_only_change_verified": true
+    },
+    {
+      "version": "1.6.4",
+      "variant": "Full",
+      "filename": "EMU1101-EXT_Full_1.6.4.ehex",
+      "metadata": "mod/firmware/releases/references/ext-full.json",
+      "build_id": "4f4d2715c9ee553c",
+      "app_sha256": "b3ab4856a2be678801cf1c7061c6daacb8f9b44b6f6a5aee1020ad64a4c4424a",
+      "ehex_sha256": "bfd2ef0bd7a47f02d9dcd11aac88a34a7095d4f5f4286ba7c89cbbcb946e1172",
+      "info_hex": "4558540510060D0106044F4D2715C9EE553CFE000F",
+      "tests": 333,
+      "app_bytes": 59236,
+      "identity_only_change_verified": true
+    },
+    {
+      "version": "1.5.5",
+      "variant": "Light",
+      "filename": "EMU1101-EXT_Light_1.5.5.ehex",
+      "metadata": "mod/firmware/releases/ext-light.json",
+      "build_id": "082cb731c006aac5",
+      "app_sha256": "a6bd1f959b4fd7baaf84ed2c65207a54f6225203c86e0257953e4d486c42d8fd",
+      "ehex_sha256": "20ee87a808314781479821a107dbad350e165db6a63c88241bec444e02556911",
+      "info_hex": "4558540510060D010505082CB731C006AAC53A000F",
+      "tests": 257,
+      "app_bytes": 57328,
+      "identity_only_change_verified": true
+    },
+    {
+      "version": "1.6.5",
+      "variant": "Full",
+      "filename": "EMU1101-EXT_Full_1.6.5.ehex",
+      "metadata": "mod/firmware/releases/ext-full.json",
+      "build_id": "13464fc91a6e6a20",
+      "app_sha256": "20e26bf8a0a0cd9d9b21c9018fc2c5b4e2325cf510f0c01b48c72da1c684265d",
+      "ehex_sha256": "fae20016130c950ee12e9a90ad0aa0e042b41eda3e46aef1f95469378d800b2f",
+      "info_hex": "4558540510060D01060513464FC91A6E6A20FE000F",
+      "tests": 339,
+      "app_bytes": 59260,
+      "identity_only_change_verified": true
+    }
+  ]
+}

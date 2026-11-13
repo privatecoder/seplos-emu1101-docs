@@ -4,7 +4,7 @@
 
 Overview of the inverter-protocol fields in which the original firmware (16.06.13) reports a **charge current limit (CCL)**, **discharge current limit (DCL)** or an **enable/request bit** (charge/discharge enable, force charge) to the outside. Collected from [can.md](can.md), [modbus-rtu.md](modbus-rtu.md), [pylontech-rs485.md](pylontech-rs485.md) and the code; addresses for 16.06.13.
 
-Use this field-by-field index to merge the same values from different inverter protocols in a monitor. UART0 telemetry and UART2 display status additionally expose actual MOSFET/current-limiter state, including the aggregate on-off byte in extended UART2 status; those are gate-state reports, not the enable/request fields or current limits indexed here. MAINT service controls and policy bits are covered separately by the [UART write-capability matrix](../../mod/docs/firmware/uart-write-capabilities.md).
+Use this field-by-field index to merge the same values from different inverter protocols in a monitor. UART0 telemetry and UART2 display status additionally expose actual MOSFET/current-limiter state, including the aggregate on-off byte in extended UART2 status; those are gate-state reports, not the enable/request fields or current limits indexed here. EMU1101-EXT service controls and policy bits are covered separately by the [UART write-capability matrix](../../mod/docs/firmware/uart-write-capabilities.md).
 
 ## Source of most values
 

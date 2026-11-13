@@ -51,7 +51,7 @@ def main():
  assert out['preinjected_inhibit_is_overwritten']['charge_gpio']
  assert out['synthetic_charger_alarm_after_10s_discharge']['charge_gpio']
  assert not out['off_voltage_wakeup_after_30s']['system_status']&0x20
- result={'oem_sha256':digest,'scope':'unchanged OEM Thumb, synthetic RAM/MMIO; not a MAINT1.6 implementation',
+ result={'oem_sha256':digest,'scope':'unchanged OEM Thumb, synthetic RAM/MMIO; not an EMU1101-EXT Full implementation',
          'hardware_access':False,'firmware_modified':False,'results':out}
  if args.out:
   with args.out.open('x') as f:json.dump(result,f,indent=2);f.write('\n')

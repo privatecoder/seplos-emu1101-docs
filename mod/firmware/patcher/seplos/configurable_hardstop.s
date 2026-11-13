@@ -1,4 +1,4 @@
-/*1.6.3: replace only MOVS r4,#mask;LDRB r3,[r3], before native TST/BNE.
+/* Full 1.6.3+: replace only MOVS r4,#mask;LDRB r3,[r3], before native TST/BNE.
  * r0/r1/r2 contain live Event8 pointer/set/clear values. Preserve those and
  * all other original registers. No event, GPIO, parameter or persistent write.
  * Final MOVS reproduces N/Z; TST/MOVS leave original C/V unchanged as well.

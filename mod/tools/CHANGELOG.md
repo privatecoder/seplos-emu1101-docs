@@ -2,28 +2,40 @@
 
 > **Port notation:** **UART0 = RS485-1/RS485-2 (shared pack bus)**; **UART1 = RS485 pair in the CAN socket**; **UART2 = local display/Bluetooth port**. UART1 carries RS485 traffic; the actual CAN interface uses separate pins in the same socket.
 
+## Tooling and functional-contract consistency, 2026-11-13
+
+- Function availability starts at Light 1.5.3+ / Full 1.6.3+, with shared remote reads at .4+ and atomic scheduler cleanup at .5+. Earlier development contracts remain in the firmware changelog and local evidence.
+- Patcher help uses explicit Light/Full names and the standard 1=enabled permission rule. Source comments and test names describe the supported functions; the control helper example names the actual executable.
+- Renamed device tests for storage diagnostics and configurable hard stop. Firmware execution paths, protocol fields and image identities remain unchanged.
+
+## EXT identity and profile API, 2026-11-13
+
+- Current clients and metadata use EMU1101-EXT Light/Full names and exact ASCII EXT/format 05 identity. Archived identity signatures and layouts are rejected; no compatibility decoder is part of the current tools.
+- Patcher selection uses required `--ext-version` / API `ext_version` for Light 1.5.4, Light 1.5.5, Full 1.6.4 or Full 1.6.5. Release files are `ext-light.json` and `ext-full.json`, with separate .4 reference metadata.
+- Frozen image-bound SOC, UART ownership, address-chain and historical audit probes retain their original bytes and pinned evidence under ignored local history. Current generic OEM probes and the capability renderer remain in the published tool tree.
+
 ## Sequential pack flashing, 2026-11-01
 
-- Added `flash_packs.py`: count-based master (0 through N−1) and external (1 through N) address plans, offline by default. Execution pins reviewed release bytes, saves every target baseline before the first reset and verifies exact MAINT identity, parameters, serials and retained measurements before advancing.
+- Added `flash_packs.py`: count-based master (0 through N−1) and external (1 through N) address plans, offline by default. Execution pins reviewed release bytes, saves every target baseline before the first reset and verifies exact EMU1101-EXT identity, parameters, serials and retained measurements before advancing.
 - Added an exclusive local UART0 transport with strict fragmented-reply/echo handling, extra-response rejection, passive quiet and absent-bootloader checks. Optional distinct UART1 maintenance start is confirmed and never automatically cleared. External requesters must be stopped separately.
 - Light downgrade is refused when an existing individual lock is active or its stored/runtime state is uncertain. Errors stop the whole batch without replay, recovery or advancing. Reports retain phase, verified predecessors and maintenance-start ambiguity.
 - Extracted `prepare_bytes`/`prepare_image` and `flash_session` from `flash_gap.py`, preserving its CLI and transfer stream. Serial receive deadlines now use monotonic time. `boot_entry.py` and manual isolated-target recovery contracts are unchanged.
-- Validation is offline only. The shared-bus batch path and current MAINT releases have not been flashed or tested on physical hardware.
+- Validation is offline only. The shared-bus batch path and current EMU1101-EXT releases have not been flashed or tested on physical hardware.
 
 ## 2.1.0: shared remote diagnostics, 2026-11-01
 
-- Patcher profiles are MAINT 1.5.4 and MAINT 1.6.4. Both add addressed UART1 history and UART0/UART1 active/stored calibration, persisted capacity mirrors and full-width live energy reads. Existing profile-specific power, lock and checkpoint behavior remains.
-- MNT05 identifies all four read capabilities in a separate u16 word; the maintained client validates and decodes the new format and data pages while retaining legacy identity decoding. Read-only CLI actions never initiate writes.
+- Patcher profiles are EMU1101-EXT Light 1.5.4 and EMU1101-EXT Full 1.6.4. Both add addressed UART1 history and UART0/UART1 active/stored calibration, persisted capacity mirrors and full-width live energy reads. Existing profile-specific power, lock and checkpoint behavior remains.
+- Identity format 05 adds all four read capabilities in a separate u16 word. Current EXT05 rebuilds retain that layout; the current client rejects archived signatures/layouts. Read-only CLI actions never initiate writes.
 - Native guards bind calibration/SOC/history roles and reject unreviewed code shapes. Mandatory native feature groups and publisher checks cover both profiles.
-- Current release metadata uses generic `maint-light.json` / `maint-full.json` filenames. The matrix renderer reads their exact MNT05 identities and checksums.
+- The matrix renderer reads exact identity and checksums from generic profile metadata. Current files are `ext-light.json` / `ext-full.json` and bind rebuilt EXT05 images; archived raw identities and original manifests remain unchanged in local history.
 
 ## 2026-10-28
 
 - The public Markdown checker validates Git-visible relative targets and anchors, rejects ignored private evidence links, and supports an index-path mode. It performs no network or firmware execution.
 
-- Patcher2.0.0 produces only MAINT 1.5.3 and 1.6.3. Explicit profile selection is required at CLI/worker/builder boundaries; positive permission polarity is automatic. The separate polarity option and standalone hard-stop build command are removed.
+- Patcher 2.0.0 produces only EMU1101-EXT Light 1.5.3 / EMU1101-EXT Full 1.6.3. Explicit profile selection is required at CLI/worker/builder boundaries; the standard 1=enabled permission semantics apply to every versioned profile. The standalone hard-stop build command is removed.
 - Storage diagnostics, service, configurable hard-stop and permission modules/tests use functional names. Retired-profile reproduction tests, their hash fixture, a standalone-only rendering helper and the obsolete capability-renderer alias are removed from active source. The complete prior source remains under ignored local history.
-- Current firmware bytes, build IDs, capability flags and runtime parameter semantics are unchanged. Both profiles are rebuilt and checked against the retained EHEX and application SHA256 identities.
+- That tool refactor preserved the tested firmware bytes and runtime semantics; the original exact identities remain in local history.
 
 ## 2026-10-27
 
@@ -48,4 +60,4 @@
 - Frozen builders, laboratory exercises and their dependencies remain under ignored `local/`. `run_historical_tests.py` checks the frozen source inventory and runs only explicitly selected offline suites.
 - SOC fixture reuse, display troubleshooting, host framing ambiguity and gateway update limits are documented in the [tool guides](../docs/tools/README.md).
 
-Firmware source and retained OEM/MAINT binaries are unchanged. Tests use synthetic ports and emulated firmware; no device is accessed.
+This 2026-10-26 tool-only revision left firmware source and retained OEM/EMU1101-EXT images unchanged. Its tests used synthetic ports and emulated firmware without device access.

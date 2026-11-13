@@ -4,7 +4,7 @@
 
 Updated 2026-10-26. This guide covers simultaneous inverter, monitor and service
 connections for BMS packs. The reference is **OEM 16.06.13**, with current
-patch alternatives **MAINT 1.5.4 and 1.6.4**. Older OEM differences are explicit.
+patch alternatives **EMU1101-EXT Light 1.5.5 / EMU1101-EXT Full 1.6.5**. Addressed access, maintenance, identity and storage diagnostics begin at Light 1.5.3 / Full 1.6.3; Full also includes the persistent pack lock, planned-reset checkpoint and configurable hard-stop policy from 1.6.3. Runtime permissions use 1=enabled in every versioned release. Older OEM differences are explicit.
 
 **Practical rule:** An inverter on actual CAN leaves UART1 available to a monitor.
 An inverter on UART1 leaves UART0 available only when no Seplos master polls UART0. Two
@@ -23,7 +23,7 @@ communication paths, not new end-to-end tests of every topology with current ima
 | Label | Connection | OEM .13 application | Main restriction |
 |---|---|---|---|
 | **UART0** | UART0, RS485-1/RS485-2, two access points to the same pack bus | 19200 baud, 8N1; Seplos ASCII, PC write commands and intra-pack 0x5A polling | The polling Seplos master does not answer host requests here. |
-| **UART1** | UART1, RS485 pair inside the CAN socket: 1/8=B, 2/7=A, 3/6=GND | 9600 baud, 8N1; individual-pack ASCII, Pylontech-style system ASCII and read-only Modbus RTU; MAINT adds addressed commands | One coordinated requester per segment. Reaching all packs requires their UART1 wires to be connected separately. |
+| **UART1** | UART1, RS485 pair inside the CAN socket: 1/8=B, 2/7=A, 3/6=GND | 9600 baud, 8N1; individual-pack ASCII, Pylontech-style system ASCII and read-only Modbus RTU; EMU1101-EXT adds addressed commands | One coordinated requester per segment. Reaching all packs requires their UART1 wires to be connected separately. |
 | **CAN** | Other wires of that socket: 4=CAN-H, 5=CAN-L | Selected master CAN profile; 500 kbit/s except MUST at 100 kbit/s | Only address 0 transmits; almost all dynamic fields are aggregates, with some local/fixed exceptions. |
 | **UART2** | UART2, local display/Bluetooth port | Binary 55…AA at 9600 baud; local display, parameters and CAN profile selection | No addressed slave proxy or established incoming power/reset command. |
 
@@ -99,7 +99,7 @@ for the change to take effect and for bus silence before sending host requests.
   and polls missing packs. Physical count and configured role differ.
 - **Automatic addressing, Group7.bit5=1:** GPIO pulses can determine the address
   and slave count instead of DIP; bit 6 can turn auto-address 0 into 1. DIP5–8 OFF
-  then does not establish a free UART0 bus. MAINT maintenance start is blocked.
+  then does not establish a free UART0 bus. EMU1101-EXT maintenance start is blocked.
 
 **Code/emulator, .13:** `0x944C` clears the old online mask for pack 0/zero slaves;
 `0x12E2` inserts the local pack; `0x99BA` computes a one-pack aggregate. Other
@@ -134,7 +134,7 @@ below require automatic addressing to be off.
 
 | Case | Inverter/external requester | UART0 owner | UART1 owner | Active monitor | UART0 maintenance/flash | Assessment |
 |---|---|---|---|---|---|---|
-| 1a: single pack 0, zero slaves | Inverter via matching CAN profile | None | None | UART0 or UART1 | UART0 available | Practical standard; OEM UART1 reads, MAINT extends it. |
+| 1a: single pack 0, zero slaves | Inverter via matching CAN profile | None | None | UART0 or UART1 | UART0 available | Practical standard; OEM UART1 reads, EMU1101-EXT extends it. |
 | 1b: single pack | Inverter on UART0, Seplos ASCII and matching baud | Inverter | None | UART1 | Pause inverter requests | Conditional; no concrete inverter established. |
 | 1c: single pack 0, zero slaves | Inverter on UART1, system ASCII 02/12 or Modbus ID 1 | None | Inverter | UART0 | UART0 available | Manufacturer CAN/RM485 route; matching inverter protocol required. |
 | 2a: Seplos-managed chain | Master0 polls UART0; inverter uses CAN | Seplos master | None | UART1 wired to all targets | Stop master polling | Practical standard for inverter plus monitor. |
@@ -164,7 +164,7 @@ requester can also cause multiple answers:
   conflict with auto-address 18. An isolated-master version probe is possible;
   on a shared UART1 bus it is ambiguous.
 - UART1 60–63 at 02/12 are master-only; pack 2 stays silent. Modbus ID 1 is master-only too.
-- MAINT parameter/serial queries and 64/03/04 use the individual target address;
+- EMU1101-EXT parameter/serial queries and 64/03/04 use the individual target address;
   do not replace them with FF scans.
 
 A 200 ms UART1 receive gap is not arbitration. Each physical RS485 segment needs one
@@ -181,12 +181,12 @@ remains one communication domain, including the effects of broadcasts.
 
 Flashing and the full OEM PC command set use **UART0**: device/serial-string writes,
 calibration writes, 49 capacity commands and forced heating. UART2 supports selected
-local parameter functions. OEM UART1 reads; MAINT extends it as described in the
+local parameter functions. OEM UART1 reads; EMU1101-EXT extends it as described in the
 [capability matrix](../../mod/docs/firmware/uart-write-capabilities.md). Patching only the master does
 not extend OEM slaves' UART1 commands.
 
-Current MAINT 1.5.4/1.6.4 also support UART0 64/02, marker clear, 64/03 and 64/04.
-Both profiles also provide addressed UART1 history 4B and UART0/UART1 calibration/checkpoint/energy reads 64/05–06 without new permission flags; see [remote diagnostics](../../mod/docs/firmware/remote-diagnostics.md).
+EMU1101-EXT Light 1.5.3 and later, and Full 1.6.3 and later, support UART0 64/02, marker clear, 64/03 and 64/04.
+Light 1.5.4 and later, and Full 1.6.4 and later, also provide addressed UART1 history 4B and UART0/UART1 calibration/checkpoint/energy reads 64/05–06 without new permission flags; see [remote diagnostics](../../mod/docs/firmware/remote-diagnostics.md).
 Maintenance start remains **UART1 to master 0**, with its permission and automatic
 addressing disabled. It stops only Seplos polling, not an external PC/inverter.
 UART1 64/02/start/stop remain master 0 services; 03–06 work per target. A free-UART0 single

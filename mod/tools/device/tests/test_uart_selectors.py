@@ -36,7 +36,7 @@ class UartSelectorTests(unittest.TestCase):
                 client.request('info', 0, unsupported)
 
     def test_cli_canonical_selection_uses_correct_baud_and_one_request(self):
-        payload = b'MNT\4\x10\6\x0d\1\5\3' + bytes(8) + b'\x3a'
+        payload = b'EXT\5\x10\6\x0d\1\5\4' + bytes(8) + b'\x3a\0\x0f'
         raw = client.frame(0, payload.hex(), 11)
         for uart, baud in (('UART0', 19200), ('UART1', 9600)):
             with self.subTest(uart=uart), patch.object(sys, 'argv', [str(SOURCE), 'info', '--uart', uart, '--address', '11', '--serial', 'synthetic']), redirect_stdout(io.StringIO()), patch.object(client, 'exchange_serial', return_value=(raw, (0, payload))) as exchange:

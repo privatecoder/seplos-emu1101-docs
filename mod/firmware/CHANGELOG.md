@@ -1,236 +1,246 @@
-# Patcher changelog
+# EMU1101-EXT firmware and patcher changelog
 
 > **Port notation:** **UART0 = RS485-1/RS485-2 (shared pack bus)**; **UART1 = RS485 pair in the CAN socket**; **UART2 = local display/Bluetooth port**. UART1 carries RS485 traffic; the actual CAN interface uses separate pins in the same socket.
 
-## MAINT 1.5.4 / 1.6.4: addressed history and remote diagnostics, 2026-11-01
+EMU1101-EXT (EMU1101 Extended Firmware). Custom firmware for Seplos BMS 2.0 (EMU1101, hardware V16).
 
-- Both profiles add addressed UART1 history 4B with the original 97-byte record layout. One request reads one entry; empty rings return RTN00 with no INFO and EEPROM read failures return RTN08. A failed read restores the shared history cursor so retrying next does not skip that record. Original UART0 history remains unchanged.
-- UART0/UART1 64/05 reads active calibration (72 bytes), stored primary (58) or backup (58), including signed current zeros, current samples and record validity. These are reads only; calibration writes remain on their original interfaces.
-- UART0/UART1 64/06 reads raw persisted capacity/SOC mirrors, native acceptance and boot-copy preference plus coherent live capacities/SOC and full u32 charged/discharged energy (68 bytes). No repair or saving occurs. Existing 42 energy encoding is unchanged: threshold 65000 raw (6500.0kWh), fallback 6500 raw (650.0kWh).
-- All new reads require the own address 0–21; foreign/FF remain silent. No new configuration flag or maintenance mode is needed. Existing UART0 master-polling bus ownership still applies. The common history cursor is shared across UART0/UART1; a history download is not an atomic ring snapshot.
-- MNT05 is 21 bytes/LENGTH402A. It retains identity/image-flag offsets and appends a BE capability word 000F for history, calibration, persisted SOC contents and full-width energy. Existing 64/02 and ten-byte 64/04 stay unchanged. Build IDs are `80112d861b8329c4` (1.5.4) and `a8676b52bae281ff` (1.6.4).
-- No additional OEM hook sites or static RAM: light remains five hooks/zero bytes; full remains 21 hooks/four bytes. Group0 permission polarity and full-profile persistent lock, verified reset checkpoint and configurable hard stop remain. There is no parameter conversion.
-- Actual CLI builds passed 214 (light) and 293 (full) mandatory native groups and reproduced both complete EHEX files byte-for-byte. The16-input corpus ran both hard-stop options for each profile:64 runs,30 builds,34 expected refusals and 11,313 grouped native checks. The full patcher regression run passed 118 tests; additional focused publisher/release-verifier checks passed. Device-tool tests passed 85 and analysis-tool tests 20. No hardware access or flashing. UART1 RX injection during modeled EEPROM transfer is checked; complete UART0 polling/timer/protection coexistence, physical I2C/bus timing and electrical behavior remain untested.
+Versioned Light releases start at 1.5.3; versioned Full releases start at 1.6.3. Earlier builds use versionless development identifiers. Development builds have unique dated identifiers without semantic versions. These identifiers track functional development and evidence; they do not assert a new binary identity for archived images. Exact archived inputs, raw identity responses, hashes and original reports remain under ignored `local/`. Current EXT05 identities and checksums are bound by the [release metadata](releases/README.md). The published patcher supports only Light 1.5.4, Light 1.5.5, Full 1.6.4 and Full 1.6.5.
 
-[Read-only wire contract](../docs/firmware/remote-diagnostics.md) · [Release identities](releases/README.md) · [Capability matrix](../docs/firmware/uart-write-capabilities.md)
+## Versioned functional-contract baselines, 2026-11-13
+
+- Light 1.5.3 and Full 1.6.3 are the first versioned baselines. Their standard permission semantics use 1=enabled and 0=denied; the permission reversal belongs only to development entries.
+- Functional descriptions and comparisons begin at those baselines. Shared history/calibration/persisted-capacity/live-energy reads are available from Light 1.5.4+ / Full 1.6.4+; atomic scheduler cleanup is available from Light 1.5.5+ / Full 1.6.5+.
+- Group0.bit4 is an ordinary writable reserved bit in Light; extended-off meaning requires Full capability04. The integration contract distinguishes writability from capability.
+- Exact four-profile EXT05 release identities and firmware execution paths remain unchanged. Development history, original image bindings and historical tool details remain separately preserved.
+
+## development-build-2026-11-13-01: EXT identity and profile API
+
+- The published family is EMU1101-EXT (EMU1101 Extended Firmware), with Light 1.5.x and Full 1.6.x names. The four supported profiles are Light 1.5.4, Light 1.5.5, Full 1.6.4 and Full 1.6.5; select one explicitly with `--ext-version` or API `ext_version`.
+- Rebuilt profiles identify themselves with ASCII EXT (`45 58 54`) and format 05. The four existing semantic versions are unchanged. They retain the existing 21-byte layout, image flags and capability mask 000F. The current client rejects archived signatures/formats; the permission rule is fixed throughout the versioned releases.
+- All four rebuilt images passed their mandatory native suites: 251/333/257/339 groups for Light 1.5.4/Full 1.6.4/Light 1.5.5/Full 1.6.5. [Release metadata](releases/README.md) binds their new build IDs and EHEX/application hashes. Archived raw identities and hardware evidence retain their exact original inputs in local history.
+- Independent rebuilds reproduce all four complete images byte-identically. The four 16-input/32-run corpus matrices pass: 128 runs, 60 successful builds, 68 expected refusals and 25,098 grouped native checks. A byte comparison against each corresponding pre-rename custom image confirms that only the ASCII signature and derived build ID change.
+- The complete patcher regression passes 154 tests with zero failures/errors. Device, analysis, knowledge and shared-tool suites pass 125/22/15/26 tests. No hardware access or flashing. Permissions, parameter layouts, persistence and the atomic .5 scheduler fix retain their documented behavior.
+
+## EMU1101-EXT Light 1.5.5 / Full 1.6.5: atomic scheduler cleanup, 2026-11-12
+
+- Fix the controlled native counterexample in which main-loop A8 cleanup overwrites measurement enable set by the timer wake path. The helper saves/restores the incoming PRIMASK and protects a fresh byte read/modify/write. Its masked interval contains six instructions and no peripheral or flash work; this is an instruction bound, not measured physical latency.
+- Preserve the independent OEM skip path. Source-derived CFG/input proofs guard a BL plus a separate continuation branch and refuse alternative entry into displaced cleanup. One additional hook gives six Light/22 Full hooks. The helper adds 24 application bytes and temporarily uses eight stack bytes; persistent RAM remains zero/four bytes.
+- Six mandatory groups cover 2,048 flag/mask/CV/ABI cases, 26 native wake injections at 13 boundaries, exact mask restoration, native coalesced/new-pending slow ticks and an OEM negative control. Mutations removing/reordering exclusion, changing mask restoration or altering skip/continuation fail their intended assertions. Maskable-IRQ model evidence does not establish physical occurrence, measured latency or absence of other races.
+- Both 16-input/32-run corpus matrices passed: 30 builds, 34 expected refusals and 12,639 grouped native checks. Independent rebuilds reproduced the tested images. OEM .13-based builds pass 257/339 mandatory groups. Capability mask 000F, permissions, persistence and parameter layouts remain unchanged; no parameter migration is required. Light 1.5.4/Full 1.6.4 reference builders remain available.
+- No current profile was flashed or hardware-tested. [Release metadata](releases/README.md) binds the exact current identities and hashes.
+
+## Validation hardening for EMU1101-EXT Light 1.5.4 / Full 1.6.4, 2026-11-12
+
+- Mandatory native tests cover clock selection/readback, UART configurations/dividers, IRQ routing/priorities, timer loads, watchdog modes/progress and CAN selector bit timing. Full additionally exercises signed fast-current thresholds/gates and persistent Off without rearming outputs, including intermediate GPIO writes.
+- Opt-in interrupt tests execute timer/measurement/protection and comparator handlers during diagnostics/history/checkpoint work, with concurrent UART0 reception and deferred native parsing. They check PRIMASK deferral, nesting, exception frames and callee-saved registers. Synthetic ADC inputs, modeled TX boundaries and controlled schedules remain explicit limits.
+- A UART1 time model checks divider-driven timeouts, FIFO limits and merged/separated frames under both conflicting manual interpretations of RX threshold assertion. Mutations and omission checks validate the assertions and publication guards.
+- Native A8 characterization demonstrates stale-store wake measurement-enable loss under synthetic call states. Ordered/coalescing controls distinguish mechanisms. Complete runtime reachability and physical occurrence remain unproven. [Evidence limits](../../analysis/firmware/startup-clock-timers.md#backlog-flag-coalescing-and-a-controlled-lost-update).
+- Strengthened suites passed 251/333 groups without payload changes. Both corpus matrices retained 30 builds/34 refusals and 12,459 grouped checks; final hardware/UART/IRQ models were replayed against successful outputs. The patcher regression passed 144 tests. No hardware access or flashing.
+
+## EMU1101-EXT Light 1.5.4 / Full 1.6.4: addressed history and remote diagnostics, 2026-11-01
+
+- Both profiles add addressed UART1 history 4B with the original 97-byte record layout. One request reads one entry; empty rings return RTN00 with no INFO and EEPROM read failures return RTN08. A failed read restores the shared cursor. UART0 history remains unchanged; downloads are not atomic ring snapshots.
+- UART0/UART1 64/05 reads active calibration (72 bytes), stored primary (58) or backup (58), including signed current zeros, current samples and record validity. Calibration writes remain on their original interfaces.
+- UART0/UART1 64/06 reads persisted capacity/SOC mirrors, native acceptance/boot preference and coherent live capacities/SOC plus u32 charged/discharged energy (68 bytes), without repair or saving. Existing 42 energy encoding is unchanged: threshold 65000 raw (6500.0 kWh), fallback 6500 raw (650.0 kWh).
+- New reads require the own address 0–21; foreign/FF remain silent. No new permission or maintenance mode is needed. UART0 master-polling ownership still applies.
+- Format 05 adds a big-endian capability word 000F to the identity/image-flag layout: 21 bytes, LENGTH 402A. Current releases use the EXT ASCII signature. Existing 64/02 and ten-byte 64/04 remain unchanged. Archived evidence retains the original raw signatures and identities.
+- No additional OEM hook sites or static RAM: five Light/21 Full hooks, zero/four bytes. Permission rules, Full persistent lock, verified reset checkpoint and configurable hard stop remain. No parameter conversion.
+- Original release validation passed 214/293 mandatory groups and reproduced complete images. The 64-run corpus had 30 builds/34 refusals and 11,313 grouped checks. Patcher/device/analysis regressions passed 118/85/20 tests. UART1 RX injection during modeled EEPROM transfer was checked; full polling/timer/protection coexistence, physical I2C and electrical behavior remained untested. No hardware access or flashing.
+
+[Wire contract](../docs/firmware/remote-diagnostics.md) · [Capability matrix](../docs/firmware/uart-write-capabilities.md)
 
 ## Connection and topology documentation, 2026-10-26
 
-- No firmware change. The connection guide distinguishes manufacturer-specified PC/FSU banks without a Seplos master from conditional direct-UART0 inverter use. It documents bus ownership, CAN profiles, monitoring paths and maintenance requirements.
-- UART1-4F also responds locally on slaves; the master alias 02 can collide with pack 2. System commands 60–63 are master-only at 02/12, rather than 00.
-- The legacy UART0 FC03-like CRC read path was identified and natively replayed in 16.04.06: two-byte byte count, response builder `0x1474`. It is absent from the next available build, 16.06.03; register semantics remain incomplete.
-- Initialization confirms UART0 at 9600 baud only in 04.06, UART0 at 19200 in later examined images, and UART1 at 9600 throughout. The 04.06-9600 bootloader rate remains unverified.
-- No new hardware or inverter test, image modification or flashing.
+- No firmware change. Distinguish manufacturer-specified PC/FSU banks without a master from conditional direct-UART0 inverter use; document bus ownership, CAN profiles, monitoring paths and maintenance prerequisites.
+- UART1-4F responds locally on slaves; master alias 02 can collide with pack 2. System commands 60–63 are master-only at 02/12.
+- Native replay identifies the legacy UART0 FC03-like CRC read in 16.04.06: two-byte byte count and response builder `0x1474`. It is absent from the next available build, 16.06.03; register semantics remain incomplete.
+- UART0 initializes at 9600 only in 04.06 and at 19200 in later examined images; UART1 initializes at 9600 throughout. The 04.06 bootloader baud rate remains unverified. No hardware test or flashing.
 
-[Connection guide](../../analysis/hardware/ports-and-topologies.md).
+[Connection guide](../../analysis/hardware/ports-and-topologies.md)
 
-## MAINT 1.5.3: positive power/RTC permission, 2026-10-24
+## EMU1101-EXT Light 1.5.3: first versioned Light release, 2026-10-24
 
-- Group0.bit3=1 permits UART1 power/RTC; 0 denies it. UART0 remains independent, UART1-4D remains unrestricted, and UART1-A1 bit3 protection is unchanged. No parameter conversion.
-- Reuses the existing `POSITIVE_FLAGS` branch without assembler source changes: five unchanged OEM hook sites and zero extra RAM. Exactly 11 application bytes change: one condition byte plus version, flags and build ID. The OEM prefix, including hook bytes, is identical to the lightweight baseline.
-- Bits4/5 remain reserved. No Cutoff, persistent pack lock or SOC checkpoint before reset. Unrestricted addressed UART0/UART1 64/04 storage diagnostics and the other existing functions remain available.
-- MNT04: 19 bytes, LENGTH8026, patch `01 05 03`, build ID `2b89286ed6c14604`, flags `3A` (`3B` with static Hard-Stop). Image flag `08` identifies the polarity of existing functions; Cutoff capability flag `04` is absent.
-- Passed 194 mandatory Thumb groups, 105 patcher tests and 60 tool tests. The 16-image/48-profile corpus produced 28 passes, 20 expected refusals and 8,489 grouped Thumb checks. A regression exposed the publisher trust boundary; the positive-1.6 suite gate now depends on the requested profile rather than the worker's claim.
-- The main matrix was regenerated for OEM.13/1.5.3/1.6.3 only, with file SHA256s. Sources and checks are retained locally; older images were reproduced byte-for-byte.
-- Not flashed or hardware-tested; no commit or push.
+- Establish the cumulative Light baseline: addressed UART1 parameter/serial access, maintenance services, UART0 marker status/clear and firmware identity, UART1 power/RTC access control, and ten-byte UART0/UART1 64/04 storage diagnostics.
+- Group0.bit3=1 permits UART1 power/RTC; 0 denies it. This is the standard rule for every versioned Light and Full release. UART0 remains independent, UART1-4D remains unrestricted and UART1-A1 protects bit3.
+- Five guarded OEM hook sites and zero additional persistent RAM. Bits4/5 remain reserved. There is no persistent pack lock, Full CCL clamp or SOC checkpoint before reset. Storage diagnostic reads require no permission.
+- The identity layout has 19 bytes/LENGTH 8026, image flags 3A or 3B with static hard stop. Flag08 records the standard permission semantics and is set in every versioned release; lock capability04 is absent. Current clients require EXT05.
+- Passed 194 mandatory groups, 105 patcher tests and 60 tool tests. Corpus: 28 passes, 20 expected refusals, 8,489 grouped checks. Publisher suite selection is bound to the requested profile. Validation was offline; no flashing or hardware test.
 
-Contract: `maint153-positive-power.md` (historical local reference, not published).
+## development-build-2026-10-24-03: Light permission semantics
 
-## MAINT 1.6.3: configurable hard stop, 2026-10-24
+- Replace the earlier inverse UART1 power/RTC gate with Group0.bit3=1 permitting access and 0 denying it. This development step precedes the first versioned Light baseline; it is not a change between versioned releases.
+- One condition byte and identity metadata change; the five OEM hook sites, hook bytes and persistent RAM allocation remain unchanged. UART0 behavior, unrestricted UART1 RTC reads and A1 protection of bit3 remain unchanged. Stored parameter bytes are not converted.
+- Image flag08 records the 1=enabled semantics used throughout the subsequent versioned releases. Exact original image identities and source evidence remain under `local/`.
 
-- New stored Hard-Stop selection for intermittent recharge waiting, using Group0.bits6/7 together: `00` explicitly selects soft stop, `40` explicitly selects hard stop, and `80/C0` inherits the build default. Old FF retains soft-stop behavior in the published image. Arbitrary older values with bit7=0 already mean an explicit selection; no NVM migration.
-- A UI switch writes `(fresh_group0 & 0x3f) | (enabled ? 0x40 : 0)`. UART0/UART2 and permitted UART1-A1 update the live value, preserving bits 0–5 and existing protection rules.
-- One additional verified OEM hook before the native Event6 TST/BNE selects mask `71/73` from the parameter: 21 hook sites and 36 additional code bytes. The existing four-byte lock cache remains; no additional permanent RAM.
-- Native temperature, OVP and recovery priorities and the persistent pack lock remain. Group5.bit1 must enable intermittent recharge waiting. Discharge above 10 A for about 10 s can still trigger native charge recovery; this feature does not replace general pack off.
-- MNT04 remains 19 bytes/LENGTH8026; patch `01 06 03`, build ID `baa01ecd5af4eb28`. New image flag `80` identifies configurability; bit0 then represents only the build default, rather than the current state. Published flags are FE, or FF with a hard-stop build default. Determine the current state from 47/Group0 and 64/03 together.
-- Passed 273 mandatory Thumb groups, including all 256×256 Group0/Event6 combinations, 94 patcher tests and 60 tool tests. Final 16-image/48-profile corpus: 22 passes, 26 expected refusals and 7,484 grouped Thumb checks. Independent review was performed. The native .11 recovery-counter address is derived from its accesses rather than assumed.
-- MAINT 1.5.2 is unchanged. The main matrix was regenerated for OEM.13/1.5.2/1.6.3 only, with complete EHEX SHA256s. Sources, emulators and checkers are retained locally.
-- Validation was entirely offline; no flashing, commit or push.
+## EMU1101-EXT Full 1.6.3: first versioned Full release, 2026-10-24
 
-Contract: `maint163-configurable-hard-stop.md` (historical local reference, not published).
+- Establish the cumulative Full baseline: addressed access and maintenance services, UART1 power/RTC access control, UART0 marker services, storage diagnostics, persistent individual pack lock, verified SOC checkpoint before planned reset and configurable recharge-waiting hard stop.
+- Group0.bits6/7 select soft stop (`00`), hard stop (`40`) or inherited image default (`80/C0`). Existing FF inherits soft in the published soft-default profile. Other older bit 7=0 values already select explicitly; no NVM migration.
+- UI writes `(fresh_group0 & 0x3f) | (enabled ? 0x40 : 0)` through UART0/UART2 or permitted UART1-A1, retaining bits 0–5 and existing protections.
+- One additional hook before native Event6 TST/BNE selects mask 71/73: 21 sites, 36 extra code bytes and the existing four-byte lock cache. Native temperature/OVP/recovery and persistent pack-lock priorities remain.
+- Group5.bit1 must enable recharge waiting. Discharge above 10 A for about 10 s can still trigger native recovery. This is separate from general pack off.
+- Image flag 80 identifies configurability; bit 0 then identifies the inherited default. Flags FE mean soft default, FF hard default. Read 47/Group0 and identity together for current state.
+- Passed 273 mandatory groups including all 256×256 Group0/Event6 pairs, 94 patcher tests and 60 tool tests. Corpus: 22 passes/26 refusals, 7,484 grouped checks. The native .11 recovery-counter address is derived from accesses. Offline only; no flashing.
 
-## MAINT 1.5.2: lightweight firmware with storage diagnostics, 2026-10-24
+## development-build-2026-10-24-01: Light storage diagnostics
 
-- New cumulative 1.5 alternative with addressed 64/04 on UART0/UART1 for master and slaves 0–21. Foreign addresses and FF remain silent; no permission is required.
-- Format01 has 10 bytes/LENGTH B014: parameter/SOC record classes and comparisons, read directly from flash without repair or NVM writes. Lock fields FF/FF and cache flags 00 mean unavailable; bit5 remains reserved. The client displays the absent runtime cache as null.
-- The same five OEM hook sites, 472 additional code bytes and no new permanent RAM. No new MOSFET, CCL, parameter-NVM or reset hooks. Bit3=0 remains UART1 power permission; no SOC checkpoint before reset or new parameters.
-- MNT04 remains 19 bytes; patch `01 05 02`, flags `32` (`33` with Hard-Stop), build ID `89d85c61b40e03da`. Application size 56,016 bytes, appendage 2,924 bytes and 220 update blocks.
-- Passed 193 mandatory Thumb groups, 83 patcher tests and 55 tool tests. The 16-image/48-profile corpus produced 28 passes, 20 expected refusals and 8,471 grouped Thumb checks. Independent review included a RED/GREEN correction to an overly narrow Hard-Stop test condition.
-- Previous release hashes, including 1.6.2, were reproduced exactly. All sources, tests, assembler and evidence remain local.
-- The new main matrix covers OEM.13/1.5.2/1.6.2 only, with EHEX SHA256s for all three images. Read, action and Group0 tables compare those same images.
-- Not flashed or hardware-tested; no commit or push.
+- Versionless Light development build adds addressed UART0/UART1 64/04 at addresses 0–21, including slaves; foreign/FF remain silent and no permission is required.
+- Format 01 is ten bytes/LENGTH B014. It reads parameter/SOC record classes and comparisons directly from flash without repair or writes. FF/FF lock fields and cache 00 mean unavailable; bit 5 remains reserved.
+- Five hooks, 472 additional code bytes, no extra persistent RAM. UART1 power still uses inverse bit 3=0 permission; no SOC checkpoint before reset or new parameters. Application 56,016 bytes, appendix 2,924 bytes, 220 update blocks.
+- Passed 193 mandatory groups, 83 patcher tests, 55 tool tests and 8,471 grouped corpus checks with 28 passes/20 expected refusals. A hard-stop test condition was corrected with a failing/passing regression. Offline only; no hardware test.
 
-Contract (`maint152-storage-diagnostics.md`, local reference, not published) · Manifest (`MAINT1.5.2-Diagnose.json`, local reference, not published).
+## development-build-2026-10-24-02: Full storage diagnostics and verified reset
 
-## MAINT 1.6.2: storage diagnostics and verified reset, 2026-10-24
+- Cumulative from development-build-2026-10-22-02 without new parameters. Addressed UART0/UART1 ten-byte 64/04 reads parameter/SOC classes, comparisons, stored locks and cache flags without repair/writes; foreign/FF remain silent.
+- Targeted 45/06 serializes native SOC/capacity, writes primary, verifies before backup, then compares both against intended data. Success has no ACK. Save/verification failure returns RTN08 and prevents reset. UART1 requires bit 3=1; UART0 remains independent. FF neither checkpoints nor resets.
+- Image flags 20/40 identify diagnostics/checkpoint capabilities. Reuses native serializer and IAP/UART buffers; no additional persistent RAM over development-build-2026-10-22-02. Automatic saves and other reset sources retain OEM behavior.
+- Passed 257 mandatory groups, 72 patcher tests, 53 tool tests and 7,292 grouped corpus checks. Cases cover every storage stage, interrupted words in both mirrors, native startup restore, 22 addresses, ABI/IRQ and read-only diagnostics.
+- The local updater uses one reset, bounded RFL probes, complete fragmented RFB collection and WFB-only write ACKs. The separate OpenBMS updater was unchanged. Offline only; physical flash timing/load remains unmeasured.
 
-- Cumulative release from positive 1.6.1; no new configuration parameters.
-- Addressed UART0/UART1 64/04 storage diagnostics for master and slaves 0–21; FF and foreign addresses remain silent. Ten bytes, format 01, LENGTH B014: parameter/SOC copy classes and comparison, stored lock values and cache flags. Direct flash reading without repair or writes.
-- Targeted UART0/UART1 45/06 saves the original SOC/capacity record before reset: primary first, readback before writing backup, then a final comparison of both copies against the intended record. Success has no ACK; storage or verification failure returns RTN08 and prevents reset. UART1 still requires bit3=1; UART0 remains independent. FF neither saves nor resets. Original master on/off broadcasts remain.
-- MNT04 remains 19 bytes; patch `01 06 02`, flags 7E with new capability bits 20/40, build ID `d17402111512af7c`. Older releases remain byte reproducible.
-- Reuses the native serializer and existing IAP/UART buffers; no additional permanent RAM over 1.6.1. Automatic SOC save triggers and other reset sources retain OEM behavior.
-- Passed 257 mandatory actual-Thumb groups, 72 patcher unit regressions, 53 tool regressions and the 16-input/48-profile corpus with expected outcomes and 7,292 Thumb checks. Checks cover failures at each storage stage, word interruptions in both SOC mirrors, native startup restore, all 22 addresses, stack/register/IRQ behavior and diagnostics without NVM writes. Independent code review and fragmented-ACK regressions were included.
-- The local laboratory updater now uses one reset with bounded RFL probes instead of assuming a single 50 ms delay. It collects fragmented RFB responses completely and strictly requires WFB write acknowledgements. The separate OpenBMS updater was unchanged and still needs the documented host adaptation.
-- Only offline verification: no flash, hardware timing/load evidence or measured flash-time guarantee.
+## Capability matrix for development-build-2026-10-22-01 and development-build-2026-10-22-02, 2026-10-24
 
-Contract and evidence limits (`maint162-service-diagnostics.md`, local reference, not published) · Manifest (`MAINT1.6.2-Service.json`, local reference, not published).
+- No firmware change. Compared all 87 parameters and 64 switch positions over UART0/UART1/UART2, inverse Light/positive Full bit 3 polarity, extended off, lock status and UART0 marker access. The catalogue bound exact archived inputs and audit evidence; no new hardware or emulation.
 
-## MAINT 1.5.1/1.6.1 capability matrix, 2026-10-24
+## Flash, startup, UART and hook audit, 2026-10-23
 
-- No firmware change. The main capability matrix at this revision covered only the current 1.5.1/1.6.1 builds, across UART0/UART1/UART2, different bit3 polarity, positive-1.6.1 extended off and lock status, UART0 marker access and MNT04.
-- Included all 87 parameters and 64 switch positions. The previous matrix was retained byte-for-byte as a historical reference. The local standard-library catalogue/renderer verifies exact release hashes and existing audit bindings; no new emulation or hardware access.
+- No firmware change. Passed 321 persistence checks, 51 startup scenarios, 60 UART/interrupt scenarios, 178+237 mandatory groups with passive ABI/stack monitoring and four heater cases.
+- Verified primary-first mirror selection, native SOC block 6 persistence, bounded I2C versus unbounded hardware waits, watchdog liveness gating, unchanged OEM UART0/UART2 ready-frame overwrite, protected UART1 reception and unconditional interrupt enable in OEM flash primitives. Observed stack depths are not universal bounds.
 
-[Capability matrix and historical revisions](../docs/firmware/uart-write-capabilities.md).
+[Validation methods and image limits](../docs/firmware/validation-methods-and-limits.md)
 
-## Flash, startup, UART and MAINT hook audit, 2026-10-23
+## development-build-2026-10-22-02: Full UART0 maintenance marker and identity
 
-- No firmware change. Passed 321 persistence checks, 51 startup scenarios, 60 UART/interrupt scenarios, 178+237 mandatory checks with passive hook ABI/stack monitoring, and four additional heater cases.
-- Recorded primary-first mirror selection and native SOC block 6 persistence; bounded I2C and unbounded hardware-status waits; watchdog liveness gating; unchanged UART0/UART2 ready-frame overwrite; protected MAINT UART1 reception; and unconditional interrupt enable in OEM flash primitives.
-- No new hook ABI violation was found. Observed stack depths are not universal bounds.
+- Adds addressed UART0 64/02 marker status, 64/00 with INFO C35A marker clear and 64/03 identity at 0–21, including slaves. No UART0 maintenance start or broadcast clear; foreign/FF remain silent. UART0 access requires quiet master polling.
+- Only recognized marker 0 is erased and verified; erased FFFFFFFF is idempotent. Unknown marker content is preserved with RTN05; erase/verification failures also return RTN05. UART1 permissions do not gate UART0 reads/clear. The pack lock remains independent.
+- Chains one UART0 parser wrapper with the Full power wrapper, retaining existing buffers/sender and 1=enabled semantics for bits3/4. The three-part identity layout has 19 bytes, ID offset 10 and flags offset 18; flag 10 identifies UART0 marker/identity. No parameter conversion or extra persistent RAM.
+- Passed 237 mandatory groups; combined Light/Full regressions passed 59 patcher/45 tool tests. Full corpus counted 7,052 grouped checks. Additional cases cover UART0 FF-on, malformed hex, RTN08 and marker/lock independence. Offline only; no flashing.
 
-[Validation methods and historical image limits](../docs/firmware/validation-methods-and-limits.md).
+## development-build-2026-10-22-01: Light UART0 marker and identity
 
-## MAINT 1.5.1/1.6.1: maintenance marker and identity over UART0, 2026-10-22
+- Versionless Light development build independently adds the addressed UART0 marker/status/clear/identity contract described above, retaining inverse UART1 power permission bit 3=0.
+- Five hooks, no extra persistent RAM. Raw header/LENGTH/checksum hex characters are checked before OEM normalization. Unknown marker content remains unchanged. No UART0 maintenance start or pack lock.
+- Passed 178 mandatory groups and 8,201 grouped corpus checks; shared patcher/tool regressions passed 59/45. Hard-stop combinations and both UART0/UART1 error paths were checked. Offline only; no flashing.
 
-- New separate OEM 16.06.13-based releases: 1.5.1-Power/RTC and 1.6.1-CUTOFF_POSITIVE. Older images are unchanged. 1.5.1 retains inverse bit3; 1.6.1 uses positive bits 3/4.
-- UART0 adds addressed 64/02 marker status, 64/00 with INFO C35A to clear the marker, and 64/03 firmware identity, at the local address 0–21, including slaves. FF and foreign addresses remain silent. No UART0 maintenance start or broadcast clear. UART0 host access still requires quiet master polling.
-- Erases only the recognized active marker 0; FFFFFFFF is idempotent. Readback precedes RTN00. Unknown marker values are left unchanged and return RTN05 without INFO; recognized erase or verification failures also return RTN05. UART1 permissions do not block UART0 reads or clearing. The individual pack lock is unchanged.
-- MNT04: 19 bytes, three-part patch version, build ID at 10, flags at 18, LENGTH8026, identical on UART0/UART1. New image flag 0x10 means UART0 marker/identity; flags 12 for 1.5.1 and 1E for 1.6.1 without Hard-Stop. MNT02/03 remain unchanged. Client and patcher support the new profiles.
-- One additional UART0 parser wrapper; 1.6.1 chains the existing Cutoff wrapper. Reuses UART0 buffers, encoders and send paths, with no additional RAM bytes. Raw header, LENGTH and checksum hex characters are checked before OEM normalization.
-- Structural UART0 recognition handles existing compiler arrangements of shared send tails; unknown code shapes remain rejected.
-- Build IDs: 1.5.1 `96cb4859ef3c3f3b`, 1.6.1 `cecca6889e95d5c8`. Passed 178/237 mandatory checks, 59 patcher tests and 45 tool tests. Each 16-input/48-profile corpus matrix matched expectations: 8,201/7,052 Thumb checks. Hard-Stop combinations were checked.
-- Additionally checked full UART0 45 chains, FF-on, nonhex input, RTN08 and marker/pack-lock independence. No parameter conversion or flashing.
-- The existing OEM receive-buffer fix remains; UART1 still requires an inter-frame gap.
+## UART1 receive-buffer evidence, 2026-10-21
 
-Contract, operation and MNT04 (`maint-revision1-uart0-marker.md`, local reference, not published) · [Releases and hashes](releases/README.md) · Evidence (`Checks-UART0-Marker-2026-10-22`, local reference, not published).
+- No new firmware build. Native replay covers development-build-2026-10-18-07, development-build-2026-10-18-08 and development-build-2026-10-21-01 against OEM.13.
+- The custom receive guard preserves a completed query while dropping new bytes until processing finishes. OEM can overwrite that query. A completed foreign frame can conversely cause a later own query to be dropped; no second buffer or pipelining exists.
+- Without timeout both OEM and custom firmware can concatenate frames. Nominal timeout is 104.17 ms at 9600 baud; use a provisional 200 ms host gap after the complete response. No worst-case scheduler or electrical guarantee. Passed 228 native counterexamples.
 
-## MAINT 1.5/1.6: included OEM UART1 receive-buffer fix verified, 2026-10-21
+[Receive-gap evidence](../../analysis/protocols/uart1-receive-gap-and-buffer-ownership.md)
 
-- The included fix protects a completely received UART1 frame against subsequent byte overwrites. OEM 16.06.13 can replace a completed own-address query with foreign data before processing it; MAINT preserves and answers the completed query.
-- Verified for MAINT 1.5 Power/RTC build `d75a7b24cb6e8590`. This evidence does not automatically cover older 1.5 files.
-- The protection is already present in that tested 1.5 build and inherited by both 1.6 variants, including CUTOFF_POSITIVE. This entry records existing behavior; no new build or version change.
-- MAINT discards new bytes while its single receive buffer is occupied. An own-address query arriving after an unprocessed foreign frame can therefore be lost. No second receive buffer or pipelining.
-- Adequate frame spacing remains necessary. Without the RX timeout, OEM and MAINT can concatenate a foreign response and an own-address query. UART1 timeout is nominally 104.17 ms at 9600 baud; a provisional 200 ms host gap after the complete response is suggested. No guaranteed main-loop latency bound or new electrical hardware evidence.
-- Passed 228 counterexamples for OEM.13, the selected MAINT 1.5 and both 1.6 builds, executing actual Thumb routines with modeled FIFO/timeout events.
+## development-build-2026-10-21-01: Full permission semantics
 
-[Operational effects, reproducible script and evidence](../../analysis/protocols/uart1-receive-gap-and-buffer-ownership.md).
-
-## MAINT 1.6: additional positive permissions, 2026-10-21
-
-- Separate image `CAN1101[V16.06.13_PN01_250607_MAINT_V1_6_CUTOFF_POSITIVE].ehex`.
-- Bit3=1 permits UART1 power/RTC; bit4=1 enables extended off. No migration or conversion of stored parameters. Bits0/2/5 and bit5 lock-status semantics are unchanged.
-- Opt-in `--positive-flags`, for 1.6 only. New image flag bit3/0x08; flags 0E without Hard-Stop. MNT03/version1.6 remains unchanged; build ID `39e0c5d9ccf13396`.
-- Three condition bytes plus build metadata change; size and RAM are unchanged. Original images remain available.
-- Added mandatory checks for polarity, soft off without a latch, persistence, mode deactivation and unchanged older images. Clients and laboratory helpers were adapted. Passed 223 mandatory checks.
-- The new image was verified offline only and was not flashed.
-
-Contract, hashes and reproducible build (`maint16-positive-flags.md`, local reference, not published).
+- Group0.bit3=1 permits UART1 power/RTC and bit 4=1 enables extended off. No stored-parameter conversion. Bit 5 lock-status semantics and bits 0/2 protections remain.
+- Three conditional instruction bytes plus identity metadata change relative to development-build-2026-10-18-08; size and RAM remain unchanged. Image flag08 records the 1=enabled semantics; flags are0E without hard stop. These semantics are the baseline of the subsequent versioned Full releases.
+- Mandatory polarity, soft-off, persistence, deactivation and older-image controls pass 223 groups. Offline verification only; no flashing.
 
 ## UART write capability matrix, 2026-10-21
 
-- No firmware change. The comparison covered OEM 16.06.13, selected MAINT 1.5 Power/RTC and MAINT 1.6: all 87 parameters, 64 switch positions, service/control commands, gates and storage side effects. Older 1.5 builds without Power/RTC were excluded.
-- UART1 still lacked 49, calibration, serial-number writes and CAN protocol selection. A1/P59 is distinct from 49/3B.
-- A reusable local code catalogue and actual Thumb counterexamples preserved the mapping. Remaining short descriptions of 49 and the rounded-SOC counting floor were corrected.
-
-[Matrix and historical revisions](../docs/firmware/uart-write-capabilities.md).
+- No firmware change. Compared OEM.13, development-build-2026-10-18-07 and development-build-2026-10-18-08 across 87 parameters, 64 switch positions, service/control gates and storage effects.
+- UART1 lacks 49, calibration writes, serial writes and CAN selection. A1/P59 differs from 49/3B. Catalogue/code counterexamples preserve the exact input bindings.
 
 ## SOC and persistence analysis, 2026-10-21
 
-- No firmware change. Seventy-nine executed OEM 16.06.13/MAINT 1.6 CPU counterexamples covered coulomb counting, voltage rules, OVP/UVP, block 6 restore and 49 capacity writes. No physical hardware or NVM dump was used.
-- Ordinary A1 does not save block 6; its capacity-adjustment branch saves only when rated and learned full capacities differ by at least 10 Ah. 49/3A and 49/3B change live capacities without updating parameter fields P58/P59; A1/P59 does not set SOC.
-- Another 24 CPU counterexamples established SOC-only normal discharge inhibition, rounded whole-percent thresholds, the counting floor at healthy minimum cell voltage and native charging recovery. Falsely low SOC alone does not imply inevitable later shutdown. Intermittent recharge waiting alone leaves the charge MOSFET closed without Hard-Stop.
-- A local SHA-bound code profile preserves the function/RAM mapping, units, rules and reusable emulator fixtures.
+- No firmware change. 79 native CPU counterexamples cover OEM.13/development-build-2026-10-18-08 coulomb counting, voltage rules, OVP/UVP, block 6 restore and 49 writes. 24 additional cases cover SOC-only discharge inhibition, whole-percent thresholds, healthy-cell counting floor and charging recovery.
+- Ordinary A1 does not save block 6; capacity adjustment saves only when rated/learned full capacities differ by at least 10 Ah. 49/3A and 49/3B change live capacities without updating P58/P59; A1/P59 does not set SOC. No hardware/NVM dump evidence.
 
-[SOC, capacity and persistence](../../analysis/firmware/soc-capacity-and-persistence.md).
+[SOC and persistence](../../analysis/firmware/soc-capacity-and-persistence.md)
+
+## UART0 storage-error contract for development-build-2026-10-18-08, 2026-10-18
+
+- No firmware change. Targeted 45 on/off reports RTN08 with LENGTH 0000 and no INFO for recognized save/verification failures on UART0 as well as UART1. 36 offline cases cover primary/backup programming failure, final CRC failure and addresses 0/1/11 through the original response encoder.
+- A failed off may already clear RAM bit 5 while both flash copies remain unlocked; reset then loses the lock. Matching readback must not upgrade RTN08 to success. Foreign UART0 requests stay silent; internal probe RTN05 is not a transmitted response. No real flash fault was induced.
+
+## Isolated-master hardware evidence for development-build-2026-10-18-08, 2026-10-18
+
+- Explicitly authorized bench programming transferred 223 blocks in 452 checksum-valid packets matching the archived image. UART1 gates, RTC read/set, reset, persistent lock, FF/foreign protection, A1 protections and old-parameter import were checked.
+- The lock survived 70 s, disabled bit 4 and reset; targeted on released it. CCL/DCL were 0 during/after lock but already 0 beforehand. No loaded electrical gate test, polling/slaves, 12-pack transition or supply-isolation proof. Original parameters/SNs were restored.
+- A reset-helper partial-response defect received a 16-test regression. Hardware evidence applies only to this exact archived build and isolated-master 0 conditions; it does not identify a current EXT05 image.
+
+## development-build-2026-10-18-08: inverse-polarity Full persistent pack lock
+
+- Versionless Full development build retains cumulative Light functions. Bit 4=0 enables extended off; bit 5=0 reports the stored individual lock. Known FF means disabled/unlocked. Targeted 45-off sets/verifies the lock; on clears it. Reset, FF-on, disabled bit 4 and old parameter import do not release it; ordinary FF-off does not set it.
+- Native charge/discharge MOSFET, limiter and precharge requests are off. Recovery/wakeup are suppressed while self-hold/diagnostics remain. No synthetic alarms. CCL is capped downward after native calculation, including heater/ramp/zero cases; DCL retains native counting.
+- UART1-A1 atomically protects bits 2/3/5. UART0/UART2 and saves preserve bit 5 using a four-byte cache. Primary data is checked before backup erase. Damaged/inconsistent mirrors lock without automatic repair. On/off save failures return RTN08, including UART0; matching readback must not turn RTN08 into success.
+- Targeted on repairs inconsistent unlocked data. CCL ignores poll-mask bits outside 0..SLAVES. Dedicated failing/passing counterexamples cover these cases.
+- Native gate/NVM/startup contracts support OEM.11/.12/.13; earlier gate ABIs are refused. 18 hooks, four RAM bytes, 56,624 application bytes, 3,532 appendix bytes, 223 blocks. Passed 211 mandatory groups including 47 lock checks, 37 patcher tests, 14 tool tests and 6,740 corpus checks. 18 UART0 parser-chain cases and 36 UART0 error/encoder cases supplement them.
+
+## development-build-2026-10-18-07: Light inverse power/RTC gate
+
+- Adds addressed UART1 ASCII 45 on/off/local watchdog reset, 4D RTC read and 4E RTC write with 2000–2099 calendar validation. Uses original action/RTC paths and existing UART1 buffers/sender.
+- Group0.bit3=0 permits writes; 1 denies them. Known FF remains denied. UART1-A1 changes to bits 2/3 cause atomic E3; UART0/UART2 configure permissions. RTC reading remains free. Master on/off broadcast remains; reset is local without ACK.
+- Strict raw-address validation prevents OEM normalization from impersonating an own address. Existing receive ownership protects completed frames. Four hooks, no extra persistent RAM, eight temporary stack bytes.
+- Passed 164 mandatory groups, 31 patcher tests, 14 tool tests and 7,949 named corpus checks. No hardware access or flashing at this stage.
+
+## development-build-2026-10-18-06: Light addressed pack identity
+
+- Identity 64/03 responds at the own address 0–21, including slaves. Marker/status/start/stop remain master 0-only. Foreign/FF and slave maintenance stay silent without IAP/parameter effects.
+- Four hooks and existing buffers/parser/sender; no new RAM structure. Structural address guard and mandatory tests cover every generated development image. Passed 26 patcher tests, 103 reference tests, 14 tool tests and 6,941 corpus checks. No flashing.
+
+## Standalone patcher Tool 1.0.0, 2026-10-18
+
+- Builds cumulative functions directly from supported OEM inputs without a historical patch chain. Guarded role/code/RAM/serializer/DIP contracts, mandatory bounded native subprocess tests and atomic output refuse unknown structures and already modified inputs.
+- Includes an offline CLI, pinned environment, sources, emulators and structured reports. Recognizes OEM SP80 hard stop. Standalone hard-stop was an early tool feature; it is absent from the current published CLI. Unknown declared OEM revision remains FF.
+- The 16-input/three-development-profile corpus checks intended builds/refusals. No hardware access or flashing.
+
+## Offline source layout and integrity checks, 2026-10-18
+
+- No firmware change. Source/input relocation preserved firmware bytes. Corpus validation refuses absent/empty input groups; 25 patcher tests, 99 reference tests and 48 expected profile outcomes passed.
+- Identity verification checks exact field offsets/flags and optional metadata rather than comparing only the original prefix. Monitor/helper lookup is independent of the current directory. Seven new offline integration tests passed.
+
+## development-build-2026-10-18-05: Light master identity with image flags
+
+- Adds a distinct immutable hard-stop image flag to the master-only identity response using existing padding. Identity contains 18 decoded bytes/LENGTH A024. Runtime marker remains in 64/02.
+- Four-hook generated appendix uses 54,512 application bytes and 214 blocks. 99 retained identity/reference tests pass. No new hardware evidence.
+
+## development-build-2026-10-18-04: Light independent access permissions
+
+- Group0.bit0 permits UART1-A1 and bit 2 permits UART1 maintenance start. Reads remain free; stop remains possible after start permission is denied. UART1 cannot modify bit 2; unauthorized writes return atomic E3 before validation/IAP. UART0/UART2 configure permissions. Clearing bit 0 can self-lock UART1 writing.
+- Two hooks plus 72 appendix bytes reuse existing buffers/state/storage. 54,512 application bytes, 214 blocks. Known FF permits both services without parameter migration.
+- Passed 94 firmware/client/build checks plus four recovery injections; all 256 Group0 values and native UART0/UART2 serializers/loaders were checked. Prior 76/25 checks remain passing.
+- One development board was flashed and checked as master, then as real slave 1 without another flash. Permission/self-lock/unlock, persistence, marker start/stop and 21 silent malformed/foreign cases passed. Original parameters/SNs were restored; marker off. UART2 was emulated; multi-board/gateway behavior remains unproven.
+
+## development-build-2026-10-18-03: Light split maintenance and identity responses
+
+- Separates firmware identity 64/03 from five-byte marker/slave-count 64/02 and start/stop ACKs. Unknown marker values are readable but cannot produce successful maintenance switching.
+- Replaces only the reserved 336-byte maintenance block without growth: 54,440 application bytes, 214 blocks. Parameter, UART0/UART2, DIP, RX and sender paths remain unchanged. Passed 76 new checks plus 51 parameter, 56 identity and 25 maintenance checks. Not separately flashed.
+
+## UART0 bus-ownership and UART1 service boundary, 2026-10-18
+
+- No firmware change. Maintenance frees the shared UART0 update bus even when updating a slave. UART1 parameter/serial queries need no maintenance mode on the queried slave. The cumulative image provides its services together rather than requiring a chain of installed patches.
+
+## development-build-2026-10-18-02: Light addressed serial identity reads
+
+- Adds addressed UART1 binary A2/A4 with LEN 0 requests and 30 raw-byte String1/Battery_SN and String2/BMS_SN replies. Same image supports master/slaves. No serial writes or ASCII-A2/A4 extension; no identity is rewritten.
+- One hook and 60 appendix bytes; no new persistent RAM/IAP. 54,440 application bytes, 214 blocks. Passed 56 identity, 51 parameter and 25 maintenance checks.
+- Single-board master/slave bench checks cover reads and unchanged parameters/serials. Maintenance remains necessary for shared UART0 update ownership, not UART1 parameter/serial queries. No complete multi-board/gateway proof.
+
+## Parameter-service identity boundary, 2026-10-18
+
+- No firmware change. The parameter read service does not read String1/String2. The OEM Modbus path exposes only the master's 22-byte String1 prefix. Separate addressed serial services are introduced by development-build-2026-10-18-02.
+
+## development-build-2026-10-18-01: Light addressed parameter read/write
+
+- Adds UART1 `55 ADR CMD LEN DATA CRC AA`: 47 reads and A1 writes the local parameter block, at 9600 8N1. Strict unicast 0–21; foreign/FF stay silent. Master mode and UART0 polling need not change.
+- Reuses UART1 buffers/sender/direction control. Validates complete framing/CRC/length before processing, preserves receive ownership and discards overflow until a frame boundary. Switches update only after native validation. P58/full-capacity and possible SOC effects remain OEM.
+- Adds 696 application bytes, 214 blocks. Passed 50 new offline tests plus 25 maintenance tests with actual Cortex-M0 execution and modeled peripherals.
+- One board was flashed and tested as master with UART0 polling and as slave 1: reads, writes, negative frames, readback and reset persistence passed. Original parameters restored, marker off. No gateway, real second slave, CAN-during-IAP, power-loss or interrupted-flash proof.
+
+## development-build-2026-10-13-01: Light maintenance identity and marker validation
+
+- Adds a master-only firmware identity query 64/03 with native OEM version, development identity and build identifier. Marker/status/start/stop remain available. Device identity and serials remain unchanged.
+- Start/stop accept only erased FFFFFFFF or active 00000000 markers; unknown/partial values return RTN05 without erase. DIP still treats every non-erased marker as active.
+- 592 appendix bytes, 211 blocks. Builder guards aligned hooks after metadata, absent relocations and image-derived identity. Single-board bench verified identity, status, start/stop, wrong token and reset persistence. Unknown marker content was not physically tested.
+
+## development-build-2026-10-12-01: Light persistent maintenance service
+
+- Adds master 0-only UART1 ASCII 64 status(INFO 02), start(01 C3 5A) and stop(00 C3 5A).
+- Persistent marker at 0x23000: erased FFFFFFFF is off; DIP treats every other word as active. Native IAP sets/erases it. The DIP hook forces effective slave count 0, permitting ordinary UART0 parameter/update access without physical DIP changes; stop restores configured slave count on the next DIP tick.
+- 488 appendix bytes, 211 blocks. One-board bench checks cover startup, status, start/stop, UART0 responses, polling stop/resume with DIP 5 and marker persistence through reset. Next-day checks cover reflash/power interruption. No original semantic firmware version was queryable; no fabricated 1.0 release is assigned. Multi-pack/gateway behavior remained unproven.
 
 ## OEM on/off analysis, 2026-10-18
 
-- No vendor-firmware change. Logical off does not guarantee that both power paths are disconnected. Normal discharge inhibition includes precharge; charging recovery from 3 A can bypass it.
-- Detected charging and eligible port-voltage wakeup clear off. On only clears the off bit; protection and shutdown causes still determine the outputs. Off alone does not determine CCL/DCL.
-- Earlier blanket statements about precharge and undervoltage were corrected using 16.06.13 code and repeated synthetic OEM counterexamples. No new electrical measurements.
+- No firmware change. Logical off does not guarantee both power paths are disconnected. Precharge and charging recovery matter; detected charging/eligible port-voltage wake can clear off. On clears only the off bit, while protection/shutdown causes still govern outputs. Off alone does not determine CCL/DCL.
 
-[Original on/off behavior](../../analysis/firmware/power-on-off.md).
-
-## MAINT 1.6: UART0 error contract clarified, 2026-10-18
-
-- Targeted 45 on/off returns explicit RTN08/LENGTH0000 without INFO for recognized storage or verification failures over UART0 too. Previous documentation mentioned UART1 only.
-- Added 36 offline cases through the original ASCII response encoder, including primary/backup programming failure and final CRC errors at addresses 0/1/11.
-- A counterexample shows that failed off can already clear bit5 in RAM while both flash copies remain unlocked; the lock is absent after reset. Matching readback must not upgrade RTN08 to success.
-- Internal foreign-address RTN05 in the old probe is not a wire response: UART0 remains silent.
-- Added the persistent counterexample `tools/Analyse/probe_cutoff_uart0_errors.py`. No firmware change or flashing, and no real flash failures were induced.
-
-Evidence (`Checks-UART0-Power-Errors-2026-10-18`, local reference, not published).
-
-## MAINT 1.6: flash and hardware as master 0, 2026-10-18
-
-- The selected build `18daf61d8a93671d` was explicitly authorized for flashing to one development board: 223 blocks, 452 checksum-valid bootloader packets, and a data stream matching the image exactly.
-- Hardware confirmed UART1 power/RTC gating, RTC set/read, reset, persistent pack lock, FF/foreign-address protection, A1 bit protection and old-parameter import.
-- The lock survives disabling bit4 and reset; diagnostics and paths remained off for 70 s. Targeted on releases it persistently. CCL/DCL were 0 during the lock and after reset, but already 0 beforehand in this laboratory setup. No positive load path or 12-pack transition was demonstrated.
-- All original parameters and both serial numbers were restored and compared at the end. Group0 FF: power/RTC denied, extended function disabled, individual lock released and marker off.
-- Corrected the host helper: a 0.7 s reset read without RX synchronization had produced partial responses. Regression first RED, then GREEN; 16 tool tests. No firmware change.
-- Added persistent `cutoff_lab.py` and `cutoff_audit.py` tools with baselines and raw data.
-- Hardware scope: master 0 without polling or slaves. Electrical gate measurements, real slave/master-broadcast/12-pack counterexamples and supply isolation remain open.
-
-Laboratory report (`Labor-2026-10-18`, local reference, not published).
-
-## MAINT 1.6: persistent pack lock, 2026-10-18
-
-- Retains cumulative 1.5 functions; new explicit patcher selection `--maint-version 1.6`. CLI default remains 1.5; the frozen Power/RTC build was reproduced byte-for-byte.
-- Group0.bit4=0 enables extended off; bit5=0 reports the stored individual lock as read-only status. Known old FF parameters mean disabled/unlocked.
-- Targeted 45-off sets and verifies the lock; targeted on clears it. Reset, master FF-on, disabling bit4 and old-parameter imports do not release it. Normal FF-off does not set an individual persistent lock. Master0 retains OEM broadcasting.
-- Actual native charge/discharge MOSFET, limiter and precharge outputs are off. Recovery/wakeup are suppressed, while self-hold and diagnostics remain. No fake alarms.
-- After native calculation, CCL is capped downward to remaining charge capability, including heater minimum, ramp and zero cases. DCL retains native counting.
-- UART1-A1 now atomically protects bits 2/3/5 with E3. UART0/UART2 and all save paths retain bit5 from an additional four-byte cache. No extra UART buffer; the existing sender is reused.
-- Reuses the native parameter block, CRC and flash primitives. Raw primary is checked before erasing backup. Both copies load independently; damaged or inconsistent mirrors lock the pack without automatic default repair. On/off failures return RTN08.
-- Targeted on also repairs inconsistent unlocked data. CCL ignores stale poll-mask bits outside 0..SLAVES. Both review findings were demonstrated with RED/GREEN checks.
-- MNT03 remains 18 bytes, patch `01 06`; image flag bit2 identifies the pack lock. Flags06 without Hard-Stop,07 with it. No new runtime fields in 64/03.
-- Additional gate/NVM/startup ABIs currently support OEM 16.06.11/.12/.13. 06.03/.04/.05 are intentionally rejected for 1.6; existing 1.5/Hard-Stop support remains.
-- Release ID `18daf61d8a93671d`: 56,624 application bytes, 3,532 appendage bytes, 18 hooks, four RAM bytes and 223 update blocks. Passed211 mandatory image checks, including 47 pack-lock checks,37 patcher tests and 14 tool tests.
-- Full16-image/48-profile corpus:22 passes,26 expected refusals and 6,740 Thumb checks. Additionally18 UART0 parser-chain cases at 0/1/11 cover unicast,FF,foreign and invalid ADR.
-- At this release-validation stage no ports were opened, no flash was performed, and no hardware/12-pack evidence was yet available. The separate same-day hardware entry records the later authorized bench test.
-
-Details (`Packsperre-1.6.md`, local reference, not published) · [Releases](releases/README.md) · Corpus matrix (`Validation-Cutoff-Final-2026-10-18`, local reference, not published).
-
-## Power/RTC with a shared gate, still MAINT 1.5, 2026-10-18
-
-- UART1 ASCII45 supports on/off and local watchdog reset only. 4D/4E read/set RTC through the native driver, with strict calendar validation for 2000..2099.
-- Group0.bit3=1 denies power/RTC writes;0 permits them. Known FF old parameters remain denied; no migration. UART1-A1 may change neither bit2 nor bit3: atomic E3 rejection. Permission is granted through OEM UART0/UART2.
-- The explicitly requested master on/off broadcast remains. Reset stays local without an ACK. Physical charge-path inhibition and suppressing charging wakeup are separate 1.6 features.
-- MNT03 remains 18 bytes/patch1.5. Image flag bit1 signals Power/RTC support; bit0 remains Hard-Stop. Unicast only to the own address 0–21; FF and foreign addresses remain silent.
-- Strictly checks raw ADR before the OEM parser, preventing invalid hex characters from impersonating valid destination addresses through normalization. Reproduction and regression are retained.
-- New structural role detection, original action/RTC-BCD probes and 56 additional mandatory checks per MAINT output. Still four OEM hooks and existing UART1 buffers/sender; UART0 buffer unchanged, with eight bytes of temporary stack.
-- Passed31 patcher tests,14 tool tests,48 expected corpus profiles and 7,949 named Thumb checks. Selected build `d75a7b24cb6e8590` passed 164 mandatory checks. No flashing.
-
-[Release and manifest](releases/README.md) · Implementation and contract (`Power-RTC-1.5.md`, local reference, not published) · Test matrix (`Validation-Power-RTC-2026-10-18`, local reference, not published).
-
-## Addressed pack identity, still MAINT 1.5, 2026-10-18
-
-- 64/03 is available at the own address 0–21, including slaves; MNT03/18 bytes is unchanged.
-- 64/02 and maintenance start/stop remain master 0-only. Foreign addresses, FF and slave maintenance remain silent, without IAP or parameter side effects.
-- Extended the parameterized payload and mandatory self-tests of every MAINT image. Still four OEM hooks and existing buffers/parser/sender; no extra RAM structure.
-- Report includes `build.addressed_info=true`; Hard-Stop-only remains without MAINT.
-- Fixed reference build 1.5 ID `297f9f2aa8402e9f`, with a separate minimal address gate. Client, laboratory tools, audit and complete monitor contract were updated.
-- Passed26 patcher tests,103 reference tests,14 tool tests,48 expected corpus profiles and 6,941 named Thumb checks. No hardware access or flashing.
-
-## Directory structure and paths, 2026-10-18
-
-- Original images were kept under `Original Firmware` and selected current images under `Patched Firmware`; firmware bytes and MAINT version 1.5 were unchanged.
-- No historical runtime dependency under the patcher; required project components remained in `seplos`. Nine old images were explicitly retained under `tests/fixtures/legacy`.
-- Independent clients, analysis/laboratory tools, fixed emulator and reference regressions were placed in the sibling `../Tools` directory. Existing analysis/laboratory entry points remained usable through relative links; no duplicate tool sources.
-- Technical knowledge and version texts were placed under `Analyse/Patches`, complete hardware evidence under `Labor-Platine/Patchtests`, and the current monitor contract directly under the patcher.
-- A complete SHA-verified pre-change backup covered 622 files, including all seven ZIPs. The manufacturer update instructions were additionally extracted; no unpacked archive of old patch directories was required.
-- Corpus checker rejects missing or empty input groups. Post-move checks passed 25 patcher tests,99 reference tests and 48 expected profile results.
-- Final review corrected existing MNT03 gaps in laboratory helpers: identity comparison includes extra fields; audit checks 18 bytes, ID at 9 and image flags. MNT02 remains readable. Monitor/wait scripts find their helper independently of the working directory. Seven new offline integration tests passed.
-- No hardware access or flashing.
-
-## Tool 1.0.0, 2026-10-18
-
-- Standalone offline CLI, virtual-environment setup, pinned packages, persistent sources, emulators, structured evidence and instructions.
-- Automatic role recognition, complete code/call/ROM contracts, and actual OEM RAM/version/serializer/UART/DIP probes. No version-address lookup table.
-- Builds cumulative MAINT 1.5 functions directly as an appendage; no patch chain is needed.
-- Optionally adds Hard-Stop or applies only the one-byte Hard-Stop change. Detects and retains existing OEM SP80 behavior.
-- Retains version 1.5 as explicitly requested, now MNT03/18 bytes with a Hard-Stop image flag in 64/03. Unknown OEM revision is marked FF.
-- Mandatory bounded subprocess/Thumb tests before output. Does not overwrite the input or existing target directories. Publishes EHEX atomically.
-- Conservatively rejects unknown structures and already modified MAINT bases. 04.06 is suitable only for Hard-Stop-only because TX170<175.
-- Matrix covers all 16 available images in three profiles, including intended refusals. Evidence under `Validation-2026-10-18-Final`.
-- No flashing, commit or push.
+[Original on/off behavior](../../analysis/firmware/power-on-off.md)

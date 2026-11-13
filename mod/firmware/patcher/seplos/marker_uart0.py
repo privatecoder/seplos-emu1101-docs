@@ -1,4 +1,4 @@
-"""Discover the existing UART0 parser/response ABI for revision-one MAINT.
+"""Discover the existing UART0 parser/response ABI for EMU1101-EXT.
 
 No second UART buffer: a wrapper handles only raw ASCII64 frames; all other
 commands follow the frozen original/cutoff parser path. OEM full-code guards
@@ -67,7 +67,7 @@ def source_revision(source,version):
                       ('cmp r3, #18','cmp r3, #21'),('movs r0, #0x36','movs r0, #0x3c')):
   if source.count(before)!=1:raise ValueError('unknown revision source contract: '+before)
   source=source.replace(before,after)
- if source.count('.byte IMAGE_FLAGS')!=1:raise ValueError('unknown MNT05 flags template')
+ if source.count('.byte IMAGE_FLAGS')!=1:raise ValueError('unknown EXT05 flags template')
  source=source.replace('.byte IMAGE_FLAGS','.byte IMAGE_FLAGS\n    .byte 0, 15')
  if version.startswith('1.6.'):
   if source.count('hook_cut_uart0_parser:')!=1:raise ValueError('missing cutoff parser for UART0 marker chain')

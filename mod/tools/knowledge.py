@@ -124,7 +124,8 @@ def refresh(root):
             bindings[item['path']] = item
 
     metadata = []
-    for path in sorted((root/'mod/firmware/releases').glob('*.json')):
+    for path in sorted(list((root/'mod/firmware/releases').glob('*.json')) +
+                       list((root/'mod/firmware/releases/references').glob('*.json'))):
         add(path)
         metadata.append((path.relative_to(root).as_posix(), load(path)))
 
@@ -133,7 +134,8 @@ def refresh(root):
     image_paths = set()
     for base in ('vendor/firmware', 'local/releases', 'local/fixtures/corpus'):
         image_paths.update((root/base).rglob('*.ehex'))
-    image_paths.update((root/'local/builds').glob('oem*/maint-*/*/*.ehex'))
+    for pattern in ('oem*/ext-*/*/*.ehex', 'oem*/maint-*/*/*.ehex'):
+        image_paths.update((root/'local/builds').glob(pattern))
     images = []
     for path in sorted(image_paths):
         add(path)
@@ -149,7 +151,7 @@ def refresh(root):
                     record['release'] = {'metadata': meta_path,
                         **{key: meta[key] for key in ('patch_version', 'build_id', 'image_flags',
                             'hardware_tested', 'flashed', 'release_status') if key in meta}}
-                    record['roles'].append('current-release')
+                    record['roles'].append('reference-release' if meta.get('release_status') == 'reference' else 'current-release')
             images.append(record)
         except (ValueError, UnicodeError, OSError) as exc:
             errors.append({'path': relative, 'problem': 'invalid-image', 'detail': str(exc)})
@@ -179,7 +181,9 @@ def refresh(root):
                           'files': _relative(root, files)})
 
     canonical = []
-    for path in sorted((root/'local/builds').glob('oem*/maint-*/*/report.json')):
+    report_paths = {path for pattern in ('oem*/ext-*/*/report.json', 'oem*/maint-*/*/report.json')
+                    for path in (root/'local/builds').glob(pattern)}
+    for path in sorted(report_paths):
         data = load(path)
         add(path)
         build = data.get('build', {})
@@ -201,7 +205,7 @@ def refresh(root):
             add(item)
         canonical.append({'path': bundle.relative_to(root).as_posix(),
             'report': path.relative_to(root).as_posix(),
-            'patch_version': build.get('patch_version', data.get('maint_version')),
+            'patch_version': build.get('patch_version', data.get('ext_version')),
             'build_id': build.get('build_id'),
             'input_app_sha256': data.get('input_app_sha256'),
             'output_app_sha256': build.get('app_sha256'),

@@ -30,7 +30,7 @@ class Service(unittest.TestCase):
         cls.original=Image.read(ORIGINALS/'CAN1101[V16.06.13_PN01_250607].ehex')
         cls.facts=fixture('oem-16.06.13-facts')['facts']
         cls.facts=copy.deepcopy(cls.facts)
-        cls.image,cls.report=build(cls.original,cls.facts,13,maint_version='1.6.4')
+        cls.image,cls.report=build(cls.original,cls.facts,13,ext_version='1.6.4')
 
     def board(self,address=1):
         m=Machine(self.image,self.facts);m.defaults(address)
@@ -66,7 +66,7 @@ class Service(unittest.TestCase):
 
     def test_version_and_capabilities(self):
         m=self.board();rtn,data=ascii_payload(m.transact(ascii_frame(1,0x64,b'\3'),True),1)
-        self.assertEqual((rtn,data[:4],data[7:10],data[18]),(0,b'MNT\5',b'\1\6\4',0xfe))
+        self.assertEqual((rtn,data[:4],data[7:10],data[18]),(0,b'EXT\5',b'\1\6\4',0xfe))
 
     def test_diagnostics_read_only_on_R_C_and_slaves(self):
         for adr in (0,1,11,21):
@@ -133,7 +133,7 @@ class Service(unittest.TestCase):
         from seplos.permissions_tests import REQUIRED as P
         from seplos.service_tests import REQUIRED as S
         source=ORIGINALS/'CAN1101[V16.06.13_PN01_250607].ehex'
-        base=dict(schema=SCHEMA,mode='patch',maint_version='1.6.4',positive_flags=True,status='passed',stage='complete',input_file_sha256=hashlib.sha256(source.read_bytes()).hexdigest(),suite='maint164-real-thumb-v1',suite_complete=True,
+        base=dict(schema=SCHEMA,mode='patch',ext_version='1.6.4',positive_flags=True,status='passed',stage='complete',input_file_sha256=hashlib.sha256(source.read_bytes()).hexdigest(),suite='ext164-real-thumb-v1',suite_complete=True,
             tests=[dict(name=n,passed=True) for n in [*REMOTE,*M,*P,*S,*[f'cutoff-{i}' for i in range(40)]]],build=dict(patch_version='1.6.4',info_format=5,info_bytes=21,remote_capabilities=15,remote_diagnostics=True,uart0_marker=True,image_flags=254,positive_flags=True,service=True,extended_diagnostics=True,checkpoint_before_reset=True))
         for kind,error in (('capability','service capabilities missing'),('suite','mandatory service suite incomplete')):
             report=copy.deepcopy(base)
@@ -142,7 +142,7 @@ class Service(unittest.TestCase):
             with tempfile.TemporaryDirectory() as temp:
                 worker=Path(temp)/'worker.py'
                 worker.write_text('from pathlib import Path\nimport json,sys\nr='+repr(report)+'\nPath(sys.argv[sys.argv.index("--out")+1],"report.json").write_text(json.dumps(r))\n')
-                result,artifacts=run_worker(source,'patch',worker=worker,maint_version='1.6.4')
+                result,artifacts=run_worker(source,'patch',worker=worker,ext_version='1.6.4')
                 self.assertEqual(artifacts,{});self.assertIn(error,result['error'])
 
 

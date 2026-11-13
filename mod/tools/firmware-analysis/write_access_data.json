@@ -1,6 +1,6 @@
 {
   "schema": "seplos-write-access-revision6",
-  "date": "2026-11-01",
+  "date": "2026-11-12",
   "base": "OEM16.06.13",
   "base_image": {
     "version": "16.06.13",
@@ -12,8 +12,8 @@
     "value",
     "command",
     "OEM16.06.13",
-    "MAINT1.5.4",
-    "MAINT1.6.4"
+    "EMU1101-EXT Light 1.5.5",
+    "EMU1101-EXT Full 1.6.5"
   ],
   "ports": {
     "R": "RS485-1/2, UART0.19200",
@@ -21,14 +21,14 @@
     "D": "Display, UART2,9600"
   },
   "profiles": {
-    "1.5.4": {
-      "manifest": "mod/firmware/releases/maint-light.json",
+    "1.5.5": {
+      "manifest": "mod/firmware/releases/ext-light.json",
       "power_rtc_enabled_bit3": 1,
       "extended_off_enabled_bit4": null,
       "lock_status_bit5": null
     },
-    "1.6.4": {
-      "manifest": "mod/firmware/releases/maint-full.json",
+    "1.6.5": {
+      "manifest": "mod/firmware/releases/ext-full.json",
       "power_rtc_enabled_bit3": 1,
       "extended_off_enabled_bit4": 1,
       "lock_status_bit5": 0
@@ -302,14 +302,14 @@
       "Group0.Bit1",
       "1 = enable temperature sensor plausibility check",
       "1 = enable temperature sensor plausibility check",
-      "same as 1.5.4",
+      "same as 1.5.5",
       "R, C[W], D"
     ],
     [
       "Group0.Bit2",
       "Reserved, no OEM function",
       "1 = allow maintenance start over C",
-      "same as 1.5.4",
+      "same as 1.5.5",
       "R/D only; a change through C-A1 returns E3 and rejects the entire block."
     ],
     [
@@ -331,7 +331,7 @@
       "Reserved, no OEM function",
       "Reserved, no function",
       "**0 = individual pack lock active**, 1 = clear",
-      "1.5.4: writable through R/C[W]/D. 1.6.4: status only; change only through addressed 45 on/off over R/C[P]."
+      "1.5.5: writable through R/C[W]/D. 1.6.5: status only; change only through addressed 45 on/off over R/C[P]."
     ],
     [
       "Group0.Bit6",
@@ -345,7 +345,7 @@
       "Reserved, no OEM function",
       "Reserved, no function",
       "0 explicit choice, 1 build default",
-      "Edit together with bit 6; legacy FF follows the build default."
+      "Edit together with bit 6; FF follows the build default."
     ]
   ],
   "parameters": [
@@ -1165,7 +1165,7 @@
       "group": 0,
       "bit": 3,
       "mask": 8,
-      "name": "Allow Power/RTC over C: 1 in both MAINT versions; reserved in OEM",
+      "name": "Allow Power/RTC over C: 1 in both EMU1101-EXT variants; reserved in OEM",
       "C_A1_1_6_3": "E3",
       "read_only_1_6_3": false,
       "C_A1_1_5_3": "E3"
@@ -1174,7 +1174,7 @@
       "group": 0,
       "bit": 4,
       "mask": 16,
-      "name": "1.6.4: extended off enabled at 1; 1.5.4 reserved",
+      "name": "1.6.5: extended off enabled at 1; 1.5.5 reserved",
       "C_A1_1_6_3": "W",
       "read_only_1_6_3": false,
       "C_A1_1_5_3": "W"
@@ -1183,7 +1183,7 @@
       "group": 0,
       "bit": 5,
       "mask": 32,
-      "name": "1.6.4: individual pack lock active at 0, status; 1.5.4 reserved",
+      "name": "1.6.5: individual pack lock active at 0, status; 1.5.5 reserved",
       "C_A1_1_6_3": "E3",
       "read_only_1_6_3": true,
       "C_A1_1_5_3": "W"
@@ -1192,7 +1192,7 @@
       "group": 0,
       "bit": 6,
       "mask": 64,
-      "name": "1.6.4: hard-stop selection when bit 7=0; Original/1.5.4 reserved",
+      "name": "1.6.5: hard-stop selection when bit 7=0; Original/1.5.5 reserved",
       "C_A1_1_6_3": "W",
       "read_only_1_6_3": false,
       "C_A1_1_5_3": "W"
@@ -1201,7 +1201,7 @@
       "group": 0,
       "bit": 7,
       "mask": 128,
-      "name": "1.6.4: 0 explicit choice, 1 build default; Original/1.5.4 reserved",
+      "name": "1.6.5: 0 explicit choice, 1 build default; Original/1.5.5 reserved",
       "C_A1_1_6_3": "W",
       "read_only_1_6_3": false,
       "C_A1_1_5_3": "W"

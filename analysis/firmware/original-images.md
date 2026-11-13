@@ -69,5 +69,5 @@ ignored local backup collection. Duplicate download copies are also retained
 locally rather than alongside the canonical OEM files.
 
 Pass an original EHEX to the [offline patcher](../../mod/firmware/patcher).
-Already MAINT-patched inputs are deliberately rejected. Raw backups and
+Already EMU1101-EXT-patched inputs are deliberately rejected. Raw backups and
 locally generated patch images are not included in a fresh public checkout.

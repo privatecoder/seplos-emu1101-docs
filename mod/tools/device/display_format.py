@@ -1,7 +1,7 @@
 """Read or change the display format of one addressed pack.
 
 Select --port explicitly; RS485-1/2 uses UART0 at 19200 baud.
-Optional --uart1 uses CAN-socket RS485 at 9600 baud and requires MAINT parameter access.
+Optional --uart1 uses CAN-socket RS485 at 9600 baud and requires EMU1101-EXT parameter access.
 Only Group7.Bit4 changes; display enable and protection parameters are preserved.
 """
 

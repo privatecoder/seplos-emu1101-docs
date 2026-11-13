@@ -124,8 +124,8 @@ outputs remain fixed 100%.
 | Sleep table maximum 50 µA,typical 0; prose says zero consumption. | Undefined measurement/supply conditions; not proof of zero drain or RTC/SOC retention. |
 | Block diagram draws MOSFETs in the B+→P+ branch. | Not a circuit schematic or sufficient evidence for actual high-/low-side placement, body-diode behavior or isolation. |
 
-H150 does not specify MAINT functions, a 64 service command, a new SOC write
-route, RTC setting over actual CAN, or a universal 55…AA display frame format. The [capability matrix](../../mod/docs/firmware/uart-write-capabilities.md) defines the implemented MAINT access paths.
+H150 does not specify EMU1101-EXT functions, a 64 service command, a new SOC write
+route, RTC setting over actual CAN, or a universal 55…AA display frame format. The [capability matrix](../../mod/docs/firmware/uart-write-capabilities.md) defines the implemented EMU1101-EXT access paths.
 
 Useful future checks are accessory model identification, passive display captures,
 thermistor measurements and tracing automatic address-chain wiring. Alarm/aerosol

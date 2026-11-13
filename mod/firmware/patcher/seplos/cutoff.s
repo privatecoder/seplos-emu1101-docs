@@ -1,4 +1,4 @@
-/* MAINT1.6 only. Existing parameter buffers, CRC, flash and output tails. */
+/* EMU1101-EXT Full only. Existing parameter buffers, CRC, flash and output tails. */
 .p2align 2
 .global hook_cut_record
 .thumb_func

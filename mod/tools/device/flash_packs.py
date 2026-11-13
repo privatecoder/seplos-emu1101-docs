@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Sequential current-MAINT updates over local UART0, offline plan by default.
+"""Sequential current-EMU1101-EXT updates over local UART0, offline plan by default.
 
 COUNT 12: --mode master targets 0..11; --mode external targets 1..12.
 Only --execute opens a port. External requesters must already be stopped.
@@ -32,7 +32,7 @@ def plan_addresses(count,mode):
 
 def load_release(profile,image=None,metadata_dir=None):
  if profile not in ('light','full'):raise ValueError('profile must be light or full')
- path=Path(metadata_dir or METADATA_ROOT)/f'maint-{profile}.json';meta_raw=path.read_bytes();meta=json.loads(meta_raw)
+ path=Path(metadata_dir or METADATA_ROOT)/f'ext-{profile}.json';meta_raw=path.read_bytes();meta=json.loads(meta_raw)
  name=meta['name']
  if Path(name).name!=name or name in ('.','..') or not name.endswith('.ehex'):raise ValueError('Release name must be a plain EHEX filename')
  if not meta['patch_version'].startswith('1.5.' if profile=='light' else '1.6.'):raise ValueError('Release profile/version mismatch')
@@ -101,7 +101,7 @@ def guard_light_downgrade(snapshot,profile):
 
 def require_paused(status):
  # OEM with manually halted polling has no 64/02; full baseline reachability
- # and passive silence are still required. Current MAINT must report zero.
+ # and passive silence are still required. Current EMU1101-EXT must report zero.
  if status is None:return
  if status['flag'] not in (0,1) or status['effective_slaves']!=0:
   raise RuntimeError('Master polling is not confirmed paused, or its marker is unknown')
@@ -116,7 +116,7 @@ def verify_after(before,after,meta):
  address=before['address'];validate_snapshot(after,address)
  for field in ('parameters_hex','battery_sn_hex','bms_sn_hex'):
   if bytes.fromhex(before[field])!=bytes.fromhex(after[field]):raise RuntimeError('Post-flash readback differs: '+field)
- if bytes.fromhex(after['info_hex'] or '')!=bytes.fromhex(meta['info_hex']):raise RuntimeError('Post-flash MAINT build/flags/capabilities differ from selected image')
+ if bytes.fromhex(after['info_hex'] or '')!=bytes.fromhex(meta['info_hex']):raise RuntimeError('Post-flash EMU1101-EXT build/flags/capabilities differ from selected image')
  # 51 carries only the two-byte OEM family version, not an exact patch ID.
  if bytes.fromhex(after['version_hex'])[10:12]!=bytes.fromhex(meta['info_hex'])[4:6]:raise RuntimeError('Post-flash OEM family version mismatch')
 
@@ -165,7 +165,7 @@ def run_batch(plan,backend_factory,out):
     verify_after(baselines[address],after,plan['release']['metadata']);verify_measurements(baselines[address],after)
     if plan['mode']=='master':require_paused(backend.master_status())
     report['verified_addresses'].append(address);report['results'].append(dict(address=address,verified=True,flash=result))
-    record('verified',address);print(f'Pack {address:02d}: exact MAINT identity, parameters and serials verified.',file=sys.stderr,flush=True)
+    record('verified',address);print(f'Pack {address:02d}: exact EMU1101-EXT identity, parameters and serials verified.',file=sys.stderr,flush=True)
    report.update(status='verified',phase='complete',current_address=None);save_json(report_path,report,replace=True)
    return report
  except BaseException as error:
@@ -186,7 +186,7 @@ def main(argv=None):
  parser=argparse.ArgumentParser(description=__doc__)
  parser.add_argument('count',type=lambda text:int(text,10),help='Number of packs, decimal; not the highest address')
  parser.add_argument('--mode',required=True,choices=('master','external'),help='master: addresses 0..N-1; external: 1..N')
- parser.add_argument('--profile',required=True,choices=('light','full'),help='Current reviewed MAINT release')
+ parser.add_argument('--profile',required=True,choices=('light','full'),help='Current reviewed EMU1101-EXT release')
  parser.add_argument('--image',type=Path,help='Alternate path to the exact same release bytes')
  parser.add_argument('--port',help='UART0 USB-RS485 adapter at 19200 baud')
  parser.add_argument('--maintenance-port',help='Optional separate UART1 adapter at 9600 baud; master mode only')

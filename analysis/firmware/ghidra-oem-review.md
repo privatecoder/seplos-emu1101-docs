@@ -9,7 +9,7 @@ All seven retained OEM applications were imported with Ghidra 12.1.4,
 0. The 16 pseudo-HEX header records are separated from the contiguous,
 checksum-valid Intel HEX application. The corpus coverage figures describe
 static analysis; the .13 register checks below additionally include bounded
-instruction replays. No device access, flash operation or MAINT comparison
+instruction replays. No device access, flash operation or EMU1101-EXT comparison
 forms part of this review.
 
 | OEM build | EHEX SHA-256 prefix | Application SHA-256 prefix | Discovered functions / C exports |
@@ -101,7 +101,12 @@ The concrete results include all six active IRQ routes/priorities, the complete
 48 MHz selection, reset-mode watchdog setup and grouped progress mask, UART
 dividers/timeouts, and CAN bit-timing/interrupt settings. The slow-loop backlog
 counter is not a demonstrated lost-update detector. The current-limiter
-handover also requires signed current `[0x20000C94] >= 1000`.
+handover also requires signed current `[0x20000C94] >= 1000`. A controlled native
+interleaving also reproduces a stale main-loop store overwriting the wake
+measurement-enable flag in A8. The
+[flag characterization](startup-clock-timers.md#backlog-flag-coalescing-and-a-controlled-lost-update)
+separates this from pending-tick coalescing and records the affected paths;
+full-system reachability and physical occurrence remain unproven.
 
 The ELF wrappers retain the application bytes exactly at base zero. Explicit
 Thumb symbols seed real vector handlers; they are analyst-added discovery

@@ -2,6 +2,20 @@
 
 > **Port notation:** **UART0 = RS485-1/RS485-2 (shared pack bus)**; **UART1 = RS485 pair in the CAN socket**; **UART2 = local display/Bluetooth port**. UART1 carries RS485 traffic; the actual CAN interface uses separate pins in the same socket.
 
+EMU1101-EXT (EMU1101 Extended Firmware) is custom firmware for Seplos BMS 2.0
+(EMU1101, hardware V16). The current versions are Light 1.5.5 and Full 1.6.5;
+Light 1.5.4 and Full 1.6.4 remain explicit reference builders. The Light branch
+uses 1.5.x; Full uses 1.6.x. Every versioned release uses 1=enabled and 0=denied
+permission semantics.
+
+Addressed parameter/serial access, UART1 power/RTC access control, UART0
+maintenance marker access and storage diagnostics are available in Light 1.5.3+
+and Full 1.6.3+. Persistent individual lock, verified SOC checkpoint before
+planned reset and configurable hard stop are available in Full 1.6.3+.
+Addressed UART1 history and UART0/UART1 calibration and checkpoint/live-energy
+reads are available in Light 1.5.4+ and Full 1.6.4+. Atomic scheduler cleanup is
+available in Light 1.5.5+ and Full 1.6.5+.
+
 Choose adapters explicitly;
 there is no installation-specific serial-port default. Run `--help` offline
 before selecting the operation and transport.
@@ -25,7 +39,7 @@ and pause UART0 master polling before host access to master or slaves.
 
 | Command | Behavior |
 |---|---|
-| `maintenance_client.py` | Marker status/start/stop, MNT02/03/04/05 info, addressed history, calibration and checkpoint/live-energy snapshots; POSIX serial/TCP, standard library. It never sends reset or bootloader commands. |
+| `maintenance_client.py` | Marker status/start/stop, EXT05 identity, addressed history, calibration and checkpoint/live-energy snapshots; POSIX serial/TCP, standard library. It never sends reset or bootloader commands. |
 | `parameter_client.py` | Addressed 47/A1 over serial/TCP, E3 rejection and full readback. Serial requires pyserial 3.5. |
 | `identity_client.py` | Addressed A2/A4 using the parameter client's transports. |
 | `restart-pack` / `restart_pack.py ADDRESS --port DEVICE` | One addressed UART0 reset; confirm an outage and identical version/BMS serial on return. No ACK for reset, no automatic reset retry. Optional `--dry-run` needs no port or pyserial. |
@@ -33,14 +47,14 @@ and pause UART0 master polling before host access to master or slaves.
 | `seplos_query.py PORT BAUD ADR_HEX CID2_HEX [INFO_HEX]` | One allowlisted read-only ASCII command. |
 | `control.py PORT ADR_HEX TYPE_HEX PARAM_HEX` | One raw UART0 45 control frame for an isolated bench; can change power/state, clear history or restart depending on arguments. |
 | `monitor.py SECONDS --port DEVICE`, `wait_and_read.sh PORT` | Read-only query monitoring using the script-relative query helper. |
-| `flash_packs.py COUNT --mode master/external --profile light/full` | Offline plan by default. With `--execute --port DEVICE`, backs up all targets and updates them one by one with exact MAINT/parameter/SN checks; stops on the first error. Optional distinct UART1 `--maintenance-port` can pause master 0. See [sequential flashing](../../docs/tools/batch-flashing.md). |
+| `flash_packs.py COUNT --mode master/external --profile light/full` | Offline plan by default. With `--execute --port DEVICE`, backs up all targets and updates them one by one with exact EMU1101-EXT/parameter/SN checks; stops on the first error. Optional distinct UART1 `--maintenance-port` can pause master 0. See [sequential flashing](../../docs/tools/batch-flashing.md). |
 | `flash_gap.py PORT IMAGE GAP_MS NEW_LOG --address N` | Addressed application reset/verification (decimal N, 0–21; default 0), strict image validation before opening the port, exclusive new log and original 256-byte bootloader blocks with configurable ACK gap. One reset, bounded bootloader entry, abort on invalid ACK, no write replay. |
 | `flash_recovery.py PORT IMAGE EXPECTED_SHA256 NEW_LOG` | Recover a bootloader already answering RFL, without an application reset. Verify image hash, all outgoing frames and all replies. Requires one isolated pack because the bootloader has no pack addressing. |
 | `boot_entry.py` | Importable module: `enter(port, address=N, timeout=3)` sends one reset and repeats only read-only RFL probes. No standalone CLI or erase/program operation. |
 
 Batch count 12 means addresses 0–11 with `--mode master` and 1–12 with `--mode external`. An active maintenance marker leaves master address 0 unchanged. The batch uses one exclusive UART0 descriptor; `flash_gap.prepare_bytes` pins the reviewed input and `flash_gap.flash_session` reuses the one-reset/ACK procedure. Recovery remains manual for an isolated target.
 
-`restart_pack.py` accepts decimal addresses 0–15. It compares command 51 and raw A4 data and requires an observed outage before declaring return. It does not query the MAINT build ID, verify the SOC checkpoint or explicitly decode a reset RTN08; use a checkpoint-aware host for that workflow. A failed return check leaves the action outcome unconfirmed.
+`restart_pack.py` accepts decimal addresses 0–15. It compares command 51 and raw A4 data and requires an observed outage before declaring return. It does not query the EMU1101-EXT build ID, verify the SOC checkpoint or explicitly decode a reset RTN08; use a checkpoint-aware host for that workflow. A failed return check leaves the action outcome unconfirmed.
 
 Display changes save a fresh pre-write snapshot and guard against the OEM A1
 capacity side effect: a difference of at least 10 Ah between learned capacity
@@ -64,20 +78,25 @@ version and persistence boundaries.
 
 ## Read-only remote diagnostics
 
-MAINT 1.5.4/1.6.4 advertise the four reads through the MNT05 capability mask,
-not through version inference. Read fresh `info` for each addressed board.
-Historical MNT03/MNT04 decoding remains supported; it grants none of the new
-capabilities. The [wire contract](../../docs/firmware/remote-diagnostics.md)
+Addressed UART1 history, calibration pages, persisted SOC contents and full-width
+live energy reads are available in Light 1.5.4+ and Full 1.6.4+. The four
+buildable profiles advertise these reads through the EXT05 capability mask.
+Read fresh `info` for each addressed board.
+The identity decoder requires the 21-byte EXT05 format and rejects old formats
+and prefixes. The version bytes, eight-byte build ID, image flags and capability
+bits retain their field positions; the current capability mask is `0x000F`.
+Marker status remains the five-byte raw response to command `64/02`. The
+[wire contract](../../docs/firmware/remote-diagnostics.md)
 defines exact layouts, units, errors and limits.
 
 ```sh
-"$SEPLOS_PY" -I -B "$DEVICE/maintenance_client.py" info --address 7
-"$SEPLOS_PY" -I -B "$DEVICE/maintenance_client.py" history-oldest --address 7
-"$SEPLOS_PY" -I -B "$DEVICE/maintenance_client.py" history-next --address 7
-"$SEPLOS_PY" -I -B "$DEVICE/maintenance_client.py" calibration-active --address 7
-"$SEPLOS_PY" -I -B "$DEVICE/maintenance_client.py" calibration-primary --address 7
-"$SEPLOS_PY" -I -B "$DEVICE/maintenance_client.py" calibration-backup --address 7
-"$SEPLOS_PY" -I -B "$DEVICE/maintenance_client.py" checkpoint-energy --address 7
+"$SEPLOS_PY" -I -B "$DEVICE/maintenance_client.py" info --uart UART1 --address 7
+"$SEPLOS_PY" -I -B "$DEVICE/maintenance_client.py" history-oldest --uart UART1 --address 7
+"$SEPLOS_PY" -I -B "$DEVICE/maintenance_client.py" history-next --uart UART1 --address 7
+"$SEPLOS_PY" -I -B "$DEVICE/maintenance_client.py" calibration-active --uart UART1 --address 7
+"$SEPLOS_PY" -I -B "$DEVICE/maintenance_client.py" calibration-primary --uart UART1 --address 7
+"$SEPLOS_PY" -I -B "$DEVICE/maintenance_client.py" calibration-backup --uart UART1 --address 7
+"$SEPLOS_PY" -I -B "$DEVICE/maintenance_client.py" checkpoint-energy --uart UART1 --address 7
 ```
 
 These commands print one request offline. Add `--serial DEVICE` or

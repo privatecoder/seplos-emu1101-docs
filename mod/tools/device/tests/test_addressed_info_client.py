@@ -18,17 +18,17 @@ class AddressedInfoClient(unittest.TestCase):
   for address in (0,1,11,21):
    request=self.c.request('info',address=address)
    self.assertTrue(request.startswith(f'~20{address:02X}4664E00203'.encode()))
-   info=b'MNT\x03\x10\x06\x0d\x01\x05'+bytes(8)+b'\0'
+   info=b'EXT\x05\x10\x06\x0d\x01\x05\x04'+bytes(8)+b'\x3a\0\x0f'
    response=self.c.frame(0,info.hex(),address=address)
    self.assertEqual(self.c.parse_response(response,address=address),(0,info))
    with self.assertRaises(ValueError):self.c.parse_response(response,address=(address+1)%22)
  def test_positive_control_capability_is_decoded_without_changing_raw_flags(self):
-  for flags in (6,7,14,15,142):
-   raw=b'MNT\3\x10\x06\x0d\x01\x06'+bytes(8)+bytes([flags])
+  for flags in (0x3a,0xfe,0xff):
+   raw=b'EXT\5\x10\x06\x0d\x01\x06\x04'+bytes(8)+bytes([flags])+b'\0\x0f'
    parsed=self.c.parse_info(raw)
    self.assertEqual(parsed.get('positive_flags',False),bool(flags&8))
    self.assertEqual(parsed['image_flags'],flags)
-   self.assertEqual(parsed['hard_stop'],bool(flags&1))
+   self.assertIsNone(parsed['hard_stop']) if flags&128 else self.assertEqual(parsed['hard_stop'],bool(flags&1))
  def test_foreign_reply_ignored_for_addressed_request(self):
   sent=self.c.request('info',address=11);good=self.c.frame(0,'01',address=11);foreign=self.c.frame(0,'02',address=0)
   chunks=iter([sent+foreign+good]);raw,result=self.c.read_reply(lambda wait:next(chunks,b''),sent,0.2)

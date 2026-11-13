@@ -1,4 +1,4 @@
-"""Read-only storage diagnostics and intrinsic positive permissions."""
+"""Read-only storage diagnostics and standard 1=enabled permissions."""
 import copy
 from .machine import Machine,ascii_frame
 from .marker_uart0_tests import uart0_exchange
@@ -9,7 +9,7 @@ from unicorn.arm_const import (UC_ARM_REG_PC,UC_ARM_REG_SP,UC_ARM_REG_R4,
  UC_ARM_REG_R10,UC_ARM_REG_R11)
 
 REQUIRED=tuple('storage_diagnostics-'+name for name in (
- 'exact-five-OEM-hooks-no-startup-or-NVM-change','version-and-capability-contract',
+ 'exact-profile-OEM-hooks-no-startup-or-NVM-change','version-and-capability-contract',
  'all-addresses-R-C-free-read-only','all-record-classes-no-repair',
  'shape-and-CRC-are-independent','valid-differences-and-unused-padding',
  'reserved-bit5-no-lock-cache-access','foreign-FF-invalid-local-silent',
@@ -42,18 +42,22 @@ def validate_diagnostics(original,patched,facts,report):
    assert f[role] not in m.executed,role
  def hooks():
   expected={**facts['hooks'],**facts['marker_uart0']['hooks']}
-  equal(report['hooks'],expected);equal(len(expected),5);equal(report['ram_bytes'],0)
+  atomic=report['patch_version']=='1.5.5'
+  if atomic:expected.update(facts['scheduler_atomic']['hooks'])
+  equal(report['hooks'],expected);equal(len(expected),5+int(atomic));equal(report['ram_bytes'],0)
   assert not report.get('cutoff') and bool(report.get('positive_flags'))==positive and not report.get('checkpoint_before_reset')
   assert all(not name.startswith(('hook_cut_','hook_service_')) for name in report['entries'])
   allowed={a for site in expected.values() for a in range(site,site+4)}
+  if atomic:
+   a=facts['scheduler_atomic']['branch_site'];allowed.update(range(a,a+2))
   if report.get('hard_stop',{}).get('changed'):allowed.add(report['hard_stop']['offset'])
   assert all(a in allowed or x==y for a,(x,y) in enumerate(zip(original.app,patched.app)))
- check('exact-five-OEM-hooks-no-startup-or-NVM-change',hooks)
+ check('exact-profile-OEM-hooks-no-startup-or-NVM-change',hooks)
  def version():
   equal(report['image_flags']&0xfe,0x3a);equal((report['info_format'],report['info_bytes']),(5,21))
   for port in ('R','C'):
    rtn,data=exchange(board(),port,b'\3')
-   equal((rtn,data[:4],data[7:10],data[18]),(0,b'MNT\5',b'\1\5'+bytes([4]),report['image_flags']))
+   equal((rtn,data[:4],data[7:10],data[18]),(0,b'EXT\5',bytes(map(int,report['patch_version'].split('.'))),report['image_flags']))
  check('version-and-capability-contract',version)
  def all_addresses():
   for adr in range(22):

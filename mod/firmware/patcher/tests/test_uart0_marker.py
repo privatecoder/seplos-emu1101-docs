@@ -20,7 +20,7 @@ class MarkerUART0(unittest.TestCase):
   cls.profiles={}
   for version in ('1.5.4','1.6.4'):
    facts=copy.deepcopy(cls.base)
-   image,report=build(cls.original,facts,13,maint_version=version)
+   image,report=build(cls.original,facts,13,ext_version=version)
    cls.profiles[version]=(image,facts,report)
   cls.tx=next(i.target for i in reversed(Code(cls.original.app).body(cls.base['cutoff']['uart0_dispatch'])) if i.op=='bl')
  def board(self,v,a=0):
@@ -38,12 +38,12 @@ class MarkerUART0(unittest.TestCase):
   finally:m.callback=previous
   if not m.num(d['uart0_state']):return None
   return ascii_payload(m.read(d['uart0_state']+1,m.num(d['uart0_rx']-6,2)),a)
- def test_mnt04_versions_match_R_and_C(self):
+ def test_ext05_versions_match_R_and_C(self):
   for v in self.profiles:
    for a in (0,1,11,21):
     with self.subTest(version=v,address=a):
      m=self.board(v,a);c=ascii_payload(m.transact(ascii_frame(a,0x64,b'\3'),True),a);data=c[1]
-     self.assertEqual((c[0],len(data),data[:4],data[7:10]),(0,21,b'MNT\5',bytes(map(int,v.split('.')))))
+     self.assertEqual((c[0],len(data),data[:4],data[7:10]),(0,21,b'EXT\5',bytes(map(int,v.split('.')))))
      self.assertEqual(self.query(m,b'\3'),c);self.assertEqual(data[18],254 if v=='1.6.4' else 58)
  def test_status_all_addresses_without_permissions(self):
   for v in self.profiles:
@@ -89,7 +89,7 @@ class MarkerUART0(unittest.TestCase):
   source=next((ORIGINALS).glob('*16.06.13*ehex'))
   for v in self.profiles:
    with tempfile.TemporaryDirectory() as temp:
-    dest=Path(temp)/'build';cmd=[sys.executable,'-I',str(ROOT/'seplos_patch.py'),'patch',str(source),'--maint-version',v,'--base-revision','13','--out',str(dest)]
+    dest=Path(temp)/'build';cmd=[sys.executable,'-I',str(ROOT/'seplos_patch.py'),'patch',str(source),'--ext-version',v,'--base-revision','13','--out',str(dest)]
     result=subprocess.run(cmd,cwd='/private/tmp',capture_output=True,text=True,timeout=120)
     self.assertEqual(result.returncode,0,result.stdout+result.stderr)
     r=json.loads((dest/'report.json').read_text());self.assertEqual(r['build']['patch_version'],v)
@@ -99,7 +99,7 @@ class MarkerUART0(unittest.TestCase):
   from seplos.cli import run_worker,SCHEMA
   from seplos.marker_uart0_tests import REQUIRED
   source=next((ORIGINALS).glob('*16.06.13*ehex'))
-  base=dict(schema=SCHEMA,mode='patch',maint_version='1.5.4',positive_flags=True,status='passed',stage='complete',input_file_sha256=hashlib.sha256(source.read_bytes()).hexdigest(),suite='maint154-real-thumb-v1',suite_complete=True,
+  base=dict(schema=SCHEMA,mode='patch',ext_version='1.5.4',positive_flags=True,status='passed',stage='complete',input_file_sha256=hashlib.sha256(source.read_bytes()).hexdigest(),suite='ext154-real-thumb-v1',suite_complete=True,
    tests=[dict(name=x,passed=True) for x in [*REQUIRED,*[f'other-{i}' for i in range(60)]]],build=dict(patch_version='1.5.4',info_format=5,info_bytes=21,remote_capabilities=15,remote_diagnostics=True,uart0_marker=True,image_flags=58))
   for kind,error in [('format','remote info contract missing'),('version','worker version differs'),('test','mandatory UART0 marker suite incomplete')]:
    r=copy.deepcopy(base)
@@ -108,7 +108,7 @@ class MarkerUART0(unittest.TestCase):
    else:r['tests']=[x for x in r['tests'] if x['name']!=REQUIRED[0]]
    with tempfile.TemporaryDirectory() as temp:
     worker=Path(temp)/'worker.py';worker.write_text('from pathlib import Path\nimport json,sys\nr='+repr(r)+'\nPath(sys.argv[sys.argv.index("--out")+1],"report.json").write_text(json.dumps(r))\n')
-    result,artifacts=run_worker(source,'patch',worker=worker,maint_version='1.5.4')
+    result,artifacts=run_worker(source,'patch',worker=worker,ext_version='1.5.4')
     self.assertEqual(artifacts,{});self.assertIn(error,result['error'])
  def test_161_full_R_power_chain_FF_protection_and_marker_independence(self):
   for address in (0,1,11):

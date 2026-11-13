@@ -18,16 +18,16 @@ PUBLIC_METADATA = PROJECT_ROOT / 'mod' / 'firmware' / 'releases'
 def verify_existing(raw, metadata):
     from seplos.profiles import require_profile
     require_profile(metadata['patch_version'])
-    """Check exact EHEX/APP hashes and the embedded MNT identity independently."""
+    """Check exact EHEX/APP hashes and the embedded EXT identity independently."""
     image = Image.parse(raw.decode('ascii'))
     actual = {'ehex_sha256': hashlib.sha256(raw).hexdigest(),
               'app_sha256': image.sha, 'app_bytes': len(image.app)}
     for key in ('ehex_sha256', 'app_sha256', 'app_bytes'):
         if actual[key] != metadata[key]:
             raise ValueError(f'{key} mismatch for {metadata["name"]}')
-    if image.app.count(b'MNT') != 1:
+    if image.app.count(b'EXT') != 1:
         raise ValueError(f'info_hex mismatch for {metadata["name"]}')
-    offset = image.app.index(b'MNT')
+    offset = image.app.index(b'EXT')
     info_format = metadata['info_format']
     info_bytes = metadata['info_bytes']
     if info_format != 5 or info_bytes != 21:
@@ -35,17 +35,16 @@ def verify_existing(raw, metadata):
     # The APP template reserves two zero bytes; the handler fills the OEM
     # version from its read-only version source when it answers INFO=03.
     embedded = bytearray(image.app[offset:offset + info_bytes])
-    if embedded[:4] != b'MNT' + bytes([info_format]) or embedded[4:6] != bytes(2):
+    if embedded[:4] != b'EXT' + bytes([info_format]) or embedded[4:6] != bytes(2):
         raise ValueError('info_hex OEM version template mismatch')
     embedded[4:6] = bytes(fixture('oem-16.06.13-facts')['facts']['oracle']['base_version'])
     info = bytes(embedded)
     if 'info_hex' in metadata and bytes.fromhex(metadata['info_hex']) != info:
         raise ValueError(f'info_hex mismatch for {metadata["name"]}')
-    revision = info_format >= 4
     version = bytes(map(int, metadata['patch_version'].split('.')))
-    if len(version) != (3 if revision else 2) or version != info[7:10 if revision else 9]:
+    if len(version) != 3 or version != info[7:10]:
         raise ValueError(f'patch_version mismatch for {metadata["name"]}')
-    build_id = info[10:18] if revision else info[9:17]
+    build_id = info[10:18]
     if build_id.hex() != metadata['build_id']:
         raise ValueError(f'build_id mismatch for {metadata["name"]}')
     if info[18] != metadata['image_flags']:
@@ -87,8 +86,8 @@ def main(argv=None):
     profiles = [(path, json.loads(path.read_text())) for path in metadata_paths]
     if args.metadata_dir.resolve() == PUBLIC_METADATA.resolve() and len(profiles) != 2:
         parser.error('expected exactly two current public release metadata files')
-    from seplos.profiles import require_profile, SUPPORTED_VERSIONS
-    if args.metadata_dir.resolve() == PUBLIC_METADATA.resolve() and {m.get('patch_version') for _, m in profiles} != set(SUPPORTED_VERSIONS):
+    from seplos.profiles import require_profile, CURRENT_VERSIONS
+    if args.metadata_dir.resolve() == PUBLIC_METADATA.resolve() and {m.get('patch_version') for _, m in profiles} != set(CURRENT_VERSIONS):
         parser.error('expected one metadata file for each current profile')
     for _, metadata in profiles:
         require_profile(metadata['patch_version'])
@@ -108,7 +107,7 @@ def main(argv=None):
         from seplos.cli import publish, run_worker
         info = bytes.fromhex(row['existing']['info_hex'])
         report, artifacts = run_worker(args.source, 'patch', info[6],
-                                       maint_version=metadata['patch_version'])
+                                       ext_version=metadata['patch_version'])
         if report.get('status') != 'passed' or not report.get('suite_complete'):
             raise ValueError(f'mandatory rebuild suite failed: {report.get("error", report.get("status"))}')
         rebuilt = verify_existing(artifacts['firmware.ehex'], metadata)

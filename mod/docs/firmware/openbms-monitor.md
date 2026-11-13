@@ -2,21 +2,21 @@
 
 > **Port notation:** **UART0 = RS485-1/RS485-2 (shared pack bus)**; **UART1 = RS485 pair in the CAN socket**; **UART2 = local display/Bluetooth port**. UART1 carries RS485 traffic; the actual CAN interface uses separate pins in the same socket.
 
-Current firmware profiles are MAINT 1.5.4 and MAINT 1.6.4. Both provide addressed parameter and identity access, maintenance services, UART0 marker access, UART1 power/RTC and storage diagnostics, plus one-record history, active/stored calibration and persisted-capacity/live-energy snapshots. Only 1.6.4 adds persistent individual pack lock, verified SOC saving before planned reset and configurable recharge-waiting hard stop. The same cumulative image supports master and slaves; each board needs its own compatible firmware. A patched master does not supply patch features to older slaves.
+Current firmware profiles are EMU1101-EXT Light 1.5.5 and EMU1101-EXT Full 1.6.5. Addressed parameter/identity access, maintenance, UART0 marker access, UART1 power/RTC access control and storage diagnostics are available from Light 1.5.3 and Full 1.6.3. Shared history, calibration and persisted-capacity/live-energy reads start at Light 1.5.4 and Full 1.6.4. Persistent individual pack lock, verified SOC saving before planned reset and configurable recharge-waiting hard stop are available in Full 1.6.3 and later. The same cumulative image supports master and slaves; each board needs its own compatible firmware. A patched master does not supply patch features to older slaves.
 
 ## Ports, addressing and transactions
 
 | Label | Connection | Protocol and conditions |
 |---|---|---|
 | UART0 | UART0, RS485-1/2 pair | ASCII, 19200 8N1 on the current OEM base; firmware update port. Stop master polling before host access to either master or slaves. |
-| UART1 | UART1, RS485 pair in CAN socket | ASCII and binary, 9600 8N1. Addressed MAINT services work while UART0 polling continues. This is not CAN traffic. |
+| UART1 | UART1, RS485 pair in CAN socket | ASCII and binary, 9600 8N1. Addressed EMU1101-EXT services work while UART0 polling continues. This is not CAN traffic. |
 | UART2 | UART2, local display/BT | Binary, 9600 8N1; Group7.bit3 and a compatible format are required. Local board only; incoming address is not checked. |
 
 UART1 and UART2 are separate paths. UART1 requires neither a display nor LCD permission. A UART0 daisy-chain alone does not connect the UART1 sockets of all packs. See [ports and topologies](../../../analysis/hardware/ports-and-topologies.md).
 
-Use one coordinated requester, one outstanding transaction and one shared port/gateway lock for binary, ASCII and Modbus traffic. A transparent TCP–RS485 gateway carries the same bytes as a cable. Assemble TCP fragments under one total response deadline; the reference client uses three seconds. Skip an exact request echo without resending. Send each frame contiguously and collect the entire reply. UART1 needs a practical 200 ms quiet interval after the last received byte before another request. The nominal RX timeout is 104.17 ms; 100 ms can concatenate frames. MAINT protects a completed UART1 buffer and drops arriving bytes while occupied. It does not add pipelining, a second buffer or a worst-case main-loop latency guarantee. Gateway buffering can change the physical gap.
+Use one coordinated requester, one outstanding transaction and one shared port/gateway lock for binary, ASCII and Modbus traffic. A transparent TCP–RS485 gateway carries the same bytes as a cable. Assemble TCP fragments under one total response deadline; the reference client uses three seconds. Skip an exact request echo without resending. Send each frame contiguously and collect the entire reply. UART1 needs a practical 200 ms quiet interval after the last received byte before another request. The nominal RX timeout is 104.17 ms; 100 ms can concatenate frames. EMU1101-EXT protects a completed UART1 buffer and drops arriving bytes while occupied. It does not add pipelining, a second buffer or a worst-case main-loop latency guarantee. Gateway buffering can change the physical gap.
 
-Target the board's own address 0–21; ordinary DIP addresses are 0–15. For example, address 11 decimal is byte 0B hex. Keep these distinct from a Modbus slave ID. Current addressed MAINT queries ignore foreign/FF addresses. Existing UART0 OEM command broadcast behavior is not globally replaced by that rule. UART1 maintenance status/start/stop are master 0-only; UART0 marker read/clear is addressed per board.
+Target the board's own address 0–21; ordinary DIP addresses are 0–15. For example, address 11 decimal is byte 0B hex. Keep these distinct from a Modbus slave ID. Current addressed EMU1101-EXT queries ignore foreign/FF addresses. Existing UART0 OEM command broadcast behavior is not globally replaced by that rule. UART1 maintenance status/start/stop are master 0-only; UART0 marker read/clear is addressed per board.
 
 Identify every board independently using fresh A4 and 64/03. Compare the expected 30-byte BMS_SN before a write and after reconnect/target changes. Preserve raw SN bytes; trim trailing spaces/NUL only for display. Empty, placeholder or duplicate serials are not unique identities. Device name/51 is not a unique identity. Identity coordination is a host responsibility, not firmware authentication. Never use a write or reset as a capability probe.
 
@@ -99,54 +99,54 @@ All new controls occupy existing Group0, `function_switches[0]`, DATA offset 150
 | 1 | Existing sensor plausibility function | Preserve unless intentionally edited. |
 | 2 | 1 permits UART1 maintenance start | Protected: change through UART0/UART2 only. |
 | 3 | 1 permits UART1 on/off, reset and RTC setting in both current profiles | Protected: change through UART0/UART2 only. |
-| 4 | 1 enables extended off in 1.6.4; reserved in 1.5.4 | Ordinary writable bit only when capability 04 is present. |
-| 5 | 0 means individual lock active in 1.6.4; reserved in 1.5.4 | Read-only lock status; protected in 1.6.4. |
-| 6/7 | Combined hard-stop selection in 1.6.4; reserved in 1.5.4 | Preserve low six bits and edit the pair together. |
+| 4 | 1 enables extended off in Full 1.6.3 and later; reserved in Light | Ordinary writable bit; meaningful only when capability 04 is present. |
+| 5 | 0 means individual lock active in Full 1.6.3 and later; reserved in Light | Read-only lock status; protected in Full 1.6.3 and later. |
+| 6/7 | Combined hard-stop selection in Full 1.6.3 and later; reserved in Light | Preserve low six bits and edit the pair together. |
 
-UART1 A1 changing protected bits is rejected atomically with E3 before partial adoption. A denied write cannot unlock itself by setting bit 0 in its payload. Bits 0/2/3 are independent permissions; bit 2 does not start maintenance. Bit 3 does not authorize A1. Group0=FF permits UART1 A1, maintenance start and power/RTC in both current profiles. In 1.6.4 it also enables extended off, leaves the lock clear and inherits the image's hard-stop default. No parameter conversion occurs.
+UART1 A1 changing protected bits is rejected atomically with E3 before partial adoption. A denied write cannot unlock itself by setting bit 0 in its payload. Bits 0/2/3 are independent permissions; bit 2 does not start maintenance. Bit 3 does not authorize A1. Group0=FF permits UART1 A1, maintenance start and power/RTC in both current profiles. In Full 1.6.3 and later it also enables extended off, leaves the lock clear and inherits the image's hard-stop default. No parameter conversion occurs.
 
 For an allowed write: acquire the shared lock, verify A4 at the target address, read 47 fresh, check bit 0 and preserve protected bits. Ensure imported file/address belongs to the selected board. Send A1 once. Only a valid A1/LEN 0 reply is ACK. Read 47 fresh and compare all 158 written bytes. An ACK plus matching RAM data does not independently prove flash persistence. Definitive rejection gets no automatic retry; missing/bad ACK leaves the outcome unknown, so read separately before considering another action.
 
 An accepted A1 can reset learned full capacity and Qmax to P58 when they differ by at least 10 Ah, even if P58 was unchanged in a switch-only import. That branch also saves SOC block 6 and can change displayed SOC. Rejected UART1 A1 does not reach it. P59 is a stored boot fallback, not a live SOC setter; 49/3A and 49/3B remain UART0-only.
 
-UART0/UART2 adopt ordinary switches before native validation; UART0 also adopts the name. A rejected import can therefore change RAM without saving. In 1.6.4 protected bit 5 is restored even on these failures. Use complete valid blocks and verify actual outcomes. If UART1 writing and maintenance start are both denied on a polling master, UART1 cannot unlock them; UART0 needs manual bus/DIP release or a functioning local UART2 path.
+UART0/UART2 adopt ordinary switches before native validation; UART0 also adopts the name. A rejected import can therefore change RAM without saving. In Full 1.6.3 and later protected bit 5 is restored even on these failures. Use complete valid blocks and verify actual outcomes. If UART1 writing and maintenance start are both denied on a polling master, UART1 cannot unlock them; UART0 needs manual bus/DIP release or a functioning local UART2 path.
 
 ## Firmware identity: ASCII 64/03
 
-Use Seplos ASCII VER 20, CID1=46, CID2=64, INFO 03, request LENGTH `E002`. Validate the normal ASCII checksum and LENGTH check nibble, reply ADR, RTN00, exact decoded INFO length and recognized format. Current UART0/UART1 replies are MNT05, 21 decoded bytes, LENGTH `402A`, 60 ASCII frame bytes. The reply describes only the addressed board. Command 51 identifies the OEM product/base, not a patch build.
+Use Seplos ASCII VER 20, CID1=46, CID2=64, INFO 03, request LENGTH `E002`. Validate the normal ASCII checksum and LENGTH check nibble, reply ADR, RTN00, exact decoded INFO length and recognized format. Current UART0/UART1 replies are EXT05, 21 decoded bytes, LENGTH `402A`, 60 ASCII frame bytes. The reply describes only the addressed board. Command 51 identifies the OEM product/base, not a patch build.
 
-| INFO offset | Size | MNT05 value |
+| INFO offset | Size | EXT05 value |
 |---|---:|---|
-| 0–2 | 3 | ASCII MNT |
+| 0–2 | 3 | ASCII EXT |
 | 3 | 1 | Format 05 |
 | 4–6 | 3 | Binary OEM version, e.g. 10 06 0D = 16.06.13; FF third component means unknown |
-| 7–9 | 3 | Binary patch version: 01 05 04 or 01 06 04 |
+| 7–9 | 3 | Binary patch version: Light 01 05 04/05 or Full 01 06 04/05 |
 | 10–17 | 8 | Immutable concrete-image build ID |
 | 18 | 1 | Existing image flags |
 | 19–20 | 2 | New read-capability mask, unsigned BE, current 000F |
 
 | Image flag hex | Meaning |
 |---|---|
-| 01 | Static hard stop; with MNT04/MNT05 image flag 80, inherited build default instead |
+| 01 | Static hard stop; with EXT05 image flag 80, inherited build default instead |
 | 02 | UART1 power/RTC commands and Group0.bit3 permission |
 | 04 | Persistent pack lock, extended off and master CCL clamp |
-| 08 | Positive polarity for supported Group0.bits3/4 |
+| 08 | Standard permission semantics: 1 enables supported Group0.bits3/4; set in every versioned release |
 | 10 | Addressed UART0 marker status/clear and firmware info; no UART0 start |
 | 20 | Addressed UART0/UART1 storage diagnostics |
 | 40 | Verified SOC checkpoint before targeted planned reset |
 | 80 | Configurable hard stop; combine build default and fresh Group0 |
 
-Default 1.5.4 flags are 3A (3B with static hard stop); 1.6.4 flags are FE (FF with inherited hard default). Concrete build IDs are `80112d861b8329c4` (light) and `a8676b52bae281ff` (full); the [capability matrix](uart-write-capabilities.md) lists exact EHEX hashes. Flags are capabilities/image properties, not runtime permission, lock state, marker state or live MOSFET output. See [release metadata](../../firmware/releases/README.md).
+Default Light 1.5.5 flags are 3A (3B with static hard stop); Full 1.6.5 flags are FE (FF with inherited hard default). The [capability matrix](uart-write-capabilities.md) lists exact EHEX hashes. Flags are capabilities/image properties, not runtime permission, lock state, marker state or live MOSFET output. See [release metadata](../../firmware/releases/README.md).
 
-Historical MNT04 is exactly 19 bytes, LENGTH `8026`, with the same offsets 0–18 and no appended read capabilities. Older MNT03 is exactly eighteen bytes, LENGTH `A024`, two patch-version bytes at 7–8, build ID at 9–16 and flags at 17. MNT02 is seventeen bytes without image flags: report hard stop as unknown, not false. MNT01 has a different 22-byte layout and is rejected by the current client. Reject unknown formats/lengths; retain raw image flags. Reject unknown MNT05 read-capability bits rather than treating them as implemented reads. Patch version and INFO format are independent version fields. Revision FF displays as unknown; `--base-revision` is a caller declaration in the build report.
+The current client accepts only the ASCII EXT signature, format 05 and exactly 21 decoded bytes. It rejects other signatures, formats, lengths and unknown read-capability bits. Retain raw image flags. Patch version and INFO format are separate fields. Revision FF means unknown; `--base-revision` is a caller declaration in the build report.
 
-Earlier 1.5 MNT02 build `909a604e60e9225b` and first MNT03 build `262dc7f549956de9` answered only as master 0. Format 03 alone does not prove addressed identity. Other old 1.5 images lack power/RTC. Older inverse-polarity images use bit 3=0 for power permission; positive capability 08 is required before interpreting bit 3=1 as permitted. Extended off needs capability 04 in addition to polarity 08. A timeout, RTN04 unknown command or RTN05 unknown subcommand is not version info and does not prove that all older 47/A1/A2/A4 features are absent. Probe each board without a write.
+A timeout or RTN04/RTN05 is not firmware identity and does not establish which binary features are available. Probe each board without writing.
 
 ## Remote read discovery and snapshots
 
-MNT05 capability bits 0/1/2/3 identify UART1 history, calibration pages, persisted
+EXT05 capability bits 0/1/2/3 identify UART1 history, calibration pages, persisted
 SOC contents and full-width live energy respectively. Current value 000F grants
-all four. Require these explicit bits per board; older MNT03/MNT04, patch version
+all four. Require these explicit bits per board; a patch version
 text and existing image flag 20 do not imply support. New reads need no Group0
 permission, maintenance marker or master role. UART2 display behavior is unchanged.
 
@@ -180,11 +180,11 @@ Offer these controls only with a recognized format and capability 02. Current pr
 
 UART1 RTC set validates year 2000–2099, calendar date and time. For 2026-10-18 14:30:59 the bytes are `07 EA 0A 12 0E 1E 3B`. There is no timezone or NTP field. Use a consistent local-time convention and read 4D afterwards, allowing for a seconds tick. RTC I2C failure returns RTN08; denied/invalid data returns RTN05; the OEM parser can reject earlier with RTN02/03. UART1 45 supports type 4 and type 6/00, not heating type 3 or history-clear type 5.
 
-Master 0 on/off retains the OEM slave broadcast and is a bank action. Its ACK confirms master acceptance, not delivery to every slave. Check slaves independently. Slave-unicast on/off and reset are local. Send reset once, listen for a possible failure, then verify return of the same serial/build. A timeout is not proof of reset; never replay automatically. The persistent maintenance marker and parameters survive restart. Only 1.6.4 adds the [verified SOC checkpoint](storage-and-reset.md).
+Master 0 on/off retains the OEM slave broadcast and is a bank action. Its ACK confirms master acceptance, not delivery to every slave. Check slaves independently. Slave-unicast on/off and reset are local. Send reset once, listen for a possible failure, then verify return of the same serial/build. A timeout is not proof of reset; never replay automatically. The persistent maintenance marker and parameters survive restart. Full 1.6.3 and later provide the [verified SOC checkpoint](storage-and-reset.md).
 
-1.5.4 off is OEM soft off: discharge is inhibited, charging may remain possible and detected charging can clear off. Do not present it as complete power-path disconnection.
+Light 1.5.3 and later retain OEM soft off: discharge is inhibited, charging may remain possible and detected charging can clear off. Do not present it as complete power-path disconnection.
 
-## Individual pack lock in 1.6.4
+## Individual pack lock in Full 1.6.3 and later
 
 Capability 04 plus fresh Group0.bits4/5 identifies supported behavior. With bit 4=1, targeted 45-off records and verifies the individual latch in both parameter mirrors. Charge MOSFET, current limiter, discharge and precharge remain off; charge/port-voltage wakeup does not release it. Diagnostics remain reachable. Disabling bit 4, reset, power interruption, old-parameter imports and master FF-on do not release a stored lock. Only targeted 45-on verifies persistent clearing. On still obeys real protections and does not force the MOSFETs on.
 
@@ -194,9 +194,9 @@ Normal FF-off does not create individual slave latches; FF-on may start unlocked
 
 Host flow: lock transport, verify A4, read 64/03+47, check bit 3 permission; enable bit 4 through normal A1 if needed while preserving bits 2/3/5. Read back, send one targeted power command, require its proper result, then query bit 5 and MOS/pack state. Explain protection-caused off states after successful unlock. Present bit 5 as status only. Unlock deliberately before downgrading to firmware that lacks this state contract.
 
-## Configurable hard stop in 1.6.4
+## Configurable hard stop in Full 1.6.3 and later
 
-Require MNT04/MNT05 image flag 80 and read 64/03 plus fresh 47 to determine effective hard stop. Present one switch, preserve unrelated Group0 bits and distinguish runtime selection from the image default. Group5.Bit1 must enable recharge waiting. The [hard-stop contract](maint-full.md) defines exact bit-pair encoding, update expression and native recovery/priority limits. It is separate from persistent pack off.
+Require EXT05 image flag 80 and read 64/03 plus fresh 47 to determine effective hard stop. Present one switch, preserve unrelated Group0 bits and distinguish runtime selection from the image default. Group5.Bit1 must enable recharge waiting. The [hard-stop contract](ext-full.md) defines exact bit-pair encoding, update expression and native recovery/priority limits. It is separate from persistent pack off.
 
 ## Maintenance marker and polling
 
@@ -212,7 +212,7 @@ ASCII 64 INFO commands:
 
 Own-address UART0 maintenance-start requests return RTN05 without starting or writing; foreign/FF requests remain silent. UART0 clear is idempotent for an already erased FFFFFFFF marker and verifies readback after erasing a known active 00000000 marker. Unknown words are left unchanged.
 
-64/02 and successful start/clear return five decoded bytes, LENGTH `600A`: little-endian marker word at 0–3, effective slave count at 4. Marker FFFFFFFF means inactive, 00000000 active; any other value is unresolved and must not display as active success. Current clients reject old two-byte status replies. Unknown marker or recognized erase/readback failure returns RTN05 without INFO; the response alone does not identify the cause.
+64/02 and successful start/clear return five decoded bytes, LENGTH `600A`: little-endian marker word at 0–3, effective slave count at 4. Marker FFFFFFFF means inactive, 00000000 active; any other value is unresolved and must not display as active success. Current clients require the exact five-byte status layout. Unknown marker or recognized erase/readback failure returns RTN05 without INFO; the response alone does not identify the cause.
 
 The persistent marker is at 0x23000. Active maintenance forces the master's effective slave count to 0, stops its UART0 polling and makes its native host path reachable. Aggregation then uses the local pack, including current limits. Stop restores the physical DIP slave count. Start requires Group0.bit2=1, valid token/marker and Group7.bit5=0 (automatic address/slave detection disabled). Stop does not need start permission. UART0 read/clear also needs no UART1 permission. Neither marker clear path releases a pack lock.
 
@@ -222,4 +222,4 @@ Immediate ACK can show the new marker and the previous effective count. Confirm 
 
 UART1 is not a bootloader/update port. A physical UART0 connection remains necessary. With a polling master, start maintenance on UART1, confirm fresh status and UART0 silence, then update one isolated bootloader target using the [flash procedure](../tools/flashing.md). Bootloader frames have no pack address. For current full firmware, account for SOC-save delay before reset; validate RFB0100 completely before any write and accept only WFB write acknowledgements. No automatic reset/erase/program retry. The separate OpenBMS updater needs this host behavior; its implementation was not changed by the firmware releases.
 
-Current 1.5.4/1.6.4 passed 214/293 mandatory actual-Thumb groups with modeled peripherals and rebuilt byte-identically. The remote history model injects UART1 RX at the EEPROM transfer boundary; full concurrent UART0 polling, timer and protection execution has not been tested. It does not establish real flash timing, interrupt latency, electrical isolation, current sharing, slave broadcasts or a physical multi-pack bank. Historical isolated-master evidence applies only to the inverse-polarity 1.6 build `18daf61d8a93671d`; it is not a current-profile hardware result.
+The current Light 1.5.5/Full 1.6.5 builds pass 257/339 mandatory actual-Thumb groups with modeled peripherals. Current EXT05 Light 1.5.4/Full 1.6.4 reference images pass 251/333 groups. The remote history model injects UART1 RX at the EEPROM transfer boundary; deterministic native cases cover enabled timer/protection/CMP handlers and concurrent UART0 reception with deferred parsing, while a complete multi-pack UART0 polling system remains untested. It does not establish real flash timing, interrupt latency, electrical isolation, current sharing, slave broadcasts or a physical multi-pack bank. No current image was flashed or hardware-tested. Historical isolated-master results remain bound to their archived images and conditions and provide no current-profile hardware evidence.

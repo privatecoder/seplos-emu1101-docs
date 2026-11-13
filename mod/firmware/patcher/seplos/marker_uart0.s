@@ -13,9 +13,9 @@
     b \target
 .Lm0_short\@:
 .endm
-/* Revision1: use only existing R buffers/encoder and original IAP primitive.
- * R=UART0. C state/payload and display buffers are never borrowed.
- * The parser wrapper returns0 for handled64 so OEM dispatch skips its RTN04
+/* Use only existing UART0 buffers/encoder and the original IAP primitive.
+ * UART1 state/payload and display buffers are never borrowed.
+ * The parser wrapper returns 0 for handled 64 so OEM dispatch skips its RTN04
  * default and proceeds to its unchanged encoder/sender. STATE4 must remain.
  */
 .p2align 2
@@ -96,7 +96,7 @@ hook_uart0_marker_parser:
     m0_beq .Lm0_status
     cmp r0, #0x33
     m0_bne .Lm0_bad
-    /* Same immutable MNT05 bytes on R and C. */
+    /* Same immutable EXT05 bytes on UART0 and UART1. */
     adr r4, .Lm0_token
     ldr r0, =.Lm0_token-.Lpatch_info_template
     subs r4, r4, r0
@@ -117,7 +117,7 @@ hook_uart0_marker_parser:
     movs r0, #0x3c
     b .Lm0_success
 .Lm0_clear:
-    /* Exact00 C3 5A only; starting remains a C/master operation. */
+    /* Exact 00 C3 5A only; starting remains a UART1/master operation. */
     movs r5, #0
     adr r7, .Lm0_token
 .Lm0_token_loop:

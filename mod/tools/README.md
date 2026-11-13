@@ -1,5 +1,7 @@
 # Tools
 
+> **Port notation:** **UART0 = RS485-1/RS485-2 (shared pack bus)**; **UART1 = RS485 pair in the CAN socket**; **UART2 = local display/Bluetooth port**. UART1 carries RS485 traffic; the actual CAN interface uses separate pins in the same socket.
+
 Reusable offline analysis and device tooling. [Tool changes](CHANGELOG.md) records tooling and test-boundary updates; firmware release history stays in `mod/firmware/CHANGELOG.md`.
 
 - [Knowledge library](../docs/tools/knowledge-library.md): exact firmware identity, retained topic/evidence lookup, build outcomes and input/model freshness.
@@ -7,9 +9,8 @@ Reusable offline analysis and device tooling. [Tool changes](CHANGELOG.md) recor
 - [Device tools](device/README.md): explicit device commands, flash/recovery codecs, parameter/identity clients and offline mocked regressions.
 
 Source and input paths derive from [_paths.py](_paths.py), independently of the
-working directory. Vendor images remain in `vendor/firmware`; generated releases,
-historical fixtures, reports and captures remain under ignored `local/`.
-No binary links are needed inside `mod/`. Native research probes resolve the reviewed reports through [research-inputs.json](research-inputs.json); `_paths.research_input()` rejects missing or changed input bytes before emulation. This registry does not replace the mandatory patch tests.
+working directory. Vendor images remain in `vendor/firmware`.
+Current native probes resolve reviewed inputs through [research-inputs.json](research-inputs.json); `_paths.research_input()` rejects missing or changed bytes before emulation. Frozen SOC, UART ownership, address-chain and historical audit probes remain under ignored `local/history/ext-migration-20261113/pre-migration/mod/tools/firmware-analysis/`, together with their unchanged version-bound contracts. These research inputs do not replace mandatory patch tests.
 
 Use Python 3.11 or newer with `-I -B`, normally from `/private/tmp`.
 The established patcher environment location is `~/.local/share/seplos-oem-patcher/venv`;
