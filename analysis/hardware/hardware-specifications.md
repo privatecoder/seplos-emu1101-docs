@@ -41,10 +41,8 @@ H150 p.27: **1/8 RS485-B,2/7 RS485-A,4 CAN-H,5 CAN-L,3/6 GND**.
 RM4859600 baud; CAN500 kbit/s in this manual. The firmware's MUST100 kbit/s
 exception is not described here.
 
-H150 p.28 labels UART0 pins 4/5 internal communication. The separate
-Mason 230 Ah pack specification gives CAN-H/L in the opposite order; its table
-must not be applied to this board. Pinout evidence does not expand OEM command
-permissions.
+H150 p.28 labels UART0 pins 4/5 internal communication. Pinout evidence does
+not expand OEM command permissions.
 
 ### Optional dry contacts
 
@@ -164,24 +162,3 @@ The separate **ELPS48-ABG** controller on p.14 advertises a combined display, on
 The catalogue's other product pages describe different hardware. EHVS500 relay channels, its BMU passive-balancing current, and active-balancer features elsewhere must not be transferred to EMU1101. The general AFE/harness, certification, power-saving and current-limiting claims on p.6 do not establish revision-specific wiring instructions, certification coverage or the exact firmware state machine.
 
 The catalogue belongs under `vendor/docs/oem catalog/`: it is an original multi-product manufacturer source. The Seplos CAN specification belongs under `vendor/docs/protocol specs/`; its [firmware comparison](../protocols/can.md#manufacturer-can-specification-scope-and-differences) describes what applies to OEM .13.
-
-## Mason230 Ah specification: configuration and firmware boundaries
-
-The [Mason 280 Specification.pdf](<../../vendor/docs/specs/Mason%20280%20Specification.pdf>) has a **SEPLOS 51.2V 230AH** cover despite its filename. It contains 29 PDF pages; metadata gives 2023-03-13, not a printed document revision. SHA-256: `29c6ce1be61daca2a06a71e56573bb329f27e4ddb3ec4edbe5c6f8a59b4d9958`. All references here use actual PDF pages, starting at 1.
-
-Its BMS tables list cell high-voltage warning 3.50 V (p.7), pack OVP 57.6 V (p.8), and a cycle threshold of 20% plus BMS nominal-capacity setting 200 Ah (p.14). The pack specifications give 230 Ah (p.6), so the BMS table value must not be presented as the pack rating or a universal firmware default.
-
-Its limiter names map to Group6.Bit6 (“Active”, current≥10 A) and Bit7 (“Passive”, charge-overcurrent warning); P71 determines duration. The SOC, power and limiter implementation is defined in the [parameter reference](../firmware/configuration-parameters.md), [SOC reference](../firmware/soc-capacity-and-persistence.md), [power reference](../firmware/power-on-off.md) and [states](../firmware/states-and-triggers.md).
-
-| Specification statement | OEM 16.06.12/16.06.13 behavior |
-|---|---|
-| UVP keeps communication for one minute and shuts down. | Normal discharge inhibit comes first; UVP/empty without charging or pending activation asserts logical off after 60 s. Supply shutdown has additional conditions. |
-| Effective current ±1.0 A with 0.7 A recovery. | Pack charging detection is+0.60/+0.50 A and discharge−0.50/−0.40 A, doubled with ambient warnings. These differ from system-aggregate thresholds. |
-| Charger detection at port≥pack+0.5 V. | The immediate voltage path uses+1.00 V and its MOSFET condition; another path uses port≥pack−0.20 V with debounce. |
-| UVP release at charge current≥1 A. | Current-status Bit7 at 3.01 A takes the discharge-recovery path; otherwise P7/P17 recovery applies. |
-| OVP release requires recovery voltage and SOC<96%. | OVP hysteresis and recharge waiting are separate; discharging>10 A for about 10 s also invokes recovery. |
-| CAN socket 1/2/7/8 NC;4 CAN-L,5 CAN-H. | That table differs from the examined hardware and H150 pinout. Firmware alone does not establish physical pins. |
-| RS485 pins 4/5 internal communication (NC). | Automatic GPIO pulse addressing is a supported interpretation; exact physical mapping remains unproven. |
-| Connection compensation positions 9/13. | P83–P86 correct the selected cell measurement, corresponding to its preceding connector; this is not a different compensation algorithm. |
-
-The CAN table on PDF p.16 assigns pin4=CAN-L and pin5=CAN-H, opposite to H150. This is a documented variant discrepancy, not a replacement pinout for the examined hardware V16 board. The quoted settings and wiring apply only within this manufacturer document's scope; the code comparisons above are bounded to OEM 16.06.12/16.06.13.
