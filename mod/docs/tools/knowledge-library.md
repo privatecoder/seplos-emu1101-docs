@@ -2,8 +2,11 @@
 
 The library connects exact firmware bytes to retained disassembly, build reports,
 models, counterexamples and short topic notes. Use it before repeating an analysis.
-Ignored `local/` contains the evidence; [`knowledge.py`](../../tools/knowledge.py)
-and its tests are maintained source.
+The indexed evidence and generated indexes are not distributed. Queries that
+need them require a separately retained complete research archive;
+[`knowledge.py`](../../tools/knowledge.py) and its tests are maintained source.
+The [public build workflow](../firmware/build-and-validation.md) does not
+require that archive.
 
 ```sh
 PROJECT='/path/to/Seplos V2 10E BMS'
@@ -45,20 +48,20 @@ Transfer an address or RAM model only after its guards have been checked against
 that image. Cached findings never replace mandatory patcher tests or release
 verification.
 
-## Locations and bindings
+## Index contents and bindings
 
-| Location | Contents |
+| Index or artifact | Contents |
 |---|---|
-| `local/index/images.json` | Strict EHEX identities, current release metadata bindings and decoded artifact pointers. |
-| `local/index/topics.json` | Short topic summaries and source-bound decisions/counterexamples. |
-| `local/index/builds.json` | Nine retained canonical bundles and individual recorded run outcomes. |
-| `local/index/dependencies.json` | File/model SHA256/size bindings, logical research inputs and environment requirements. |
-| `local/index/paths.json` | Migration lookup from original locators to canonical retained files. |
-| `local/artifacts/firmware/<full-app-sha>/` | Exact decoded OEM application, ELF, disassembly and extraction binding. |
-| `local/builds/oem*/ext-VERSION/BUILD-ID/` | Complete build reports, image, resolved payload and saved source/reproduction data. |
-| `local/builds/runs/` | Supporting runs, including failures and corrective counterparts. |
-| `local/research/` | Short English topic notes with evidence and tool pointers. |
-| `local/history/` | Source-bound decisions, sessions, complete frozen snapshots and compatibility inputs. |
+| `images.json` | Strict EHEX identities, current release metadata bindings and decoded artifact pointers. |
+| `topics.json` | Short topic summaries and source-bound decisions/counterexamples. |
+| `builds.json` | Nine retained canonical bundles and individual recorded run outcomes. |
+| `dependencies.json` | File/model SHA256/size bindings, logical research inputs and environment requirements. |
+| `paths.json` | Migration lookup from original locators to canonical retained files. |
+| Decoded artifacts | Exact OEM application, ELF, disassembly and extraction binding, selected by full application SHA. |
+| Build bundles | Complete reports, image, resolved payload and saved source/reproduction data, selected by version and build ID. |
+| Supporting runs | Failures and corrective counterparts. |
+| Topic notes | Short English findings with evidence and tool pointers. |
+| Historical records | Source-bound decisions, sessions, complete frozen snapshots and compatibility inputs. |
 
 Build status comes from report fields, individual test results or explicit log
 markers. Deliberate `refused` results stay distinct from test failures. A failing test overrides a declared passing report. `final` and `green`
@@ -86,11 +89,11 @@ firmware, evidence, source snapshots or the relocation map. It scans explicit
 canonical roots and excludes the historical compatibility view; old inputs are
 not recursively counted again. Each generated file is replaced atomically, and
 shared generation tags reveal an interrupted multi-file update. Saved report/log
-outcomes also include `local/history/sessions/*/reports/`; migration copies and
+outcomes also include archived session reports; migration copies and
 frozen source trees are excluded from that scan.
 
-Keep conclusions in `local/research/<topic>/README.md` and source-bound decisions
-in `local/history/decisions.json`. Additional manually curated entries in
+Keep conclusions in topic notes and source-bound decisions in the archive's
+decision registry. Additional manually curated entries in
 `topics.json` belong in its `curated_topics` array, which refresh preserves.
 The research-input registry in `mod/tools/research-inputs.json` pins the inputs
 used by maintained probes; its expected digests are not rewritten by refresh.

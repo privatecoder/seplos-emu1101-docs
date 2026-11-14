@@ -6,7 +6,7 @@ UART1 uses the RS485 pair in the CAN socket at 9600 baud. Code addresses below r
 
 EMU1101-EXT Light 1.5.3 and later, and Full 1.6.3 and later, protect a completed receive buffer against overwriting. This is a release-baseline behavior of the [maintained payload](../../mod/firmware/patcher/seplos/payload.s), independent of the permission bits, which use 1=enabled in every versioned release. Two frames can still merge without a receive timeout in both OEM and EMU1101-EXT. Protecting the buffer can discard a new query while a completed frame occupies it.
 
-The archived 228-case receive study has exact image bindings and dependencies in `local/research/ext-consistency-audit-20261113/topic-analysis.md`. Its results characterize the named archived images; they do not count as validation of current releases. Current image checks are described in [firmware validation](../../mod/docs/firmware/validation-methods-and-limits.md).
+The archived 228-case receive study requires exact image bindings and dependencies that are not distributed. Its results characterize the named archived images; they do not count as validation of current releases. Current image checks are described in [firmware validation](../../mod/docs/firmware/validation-methods-and-limits.md).
 
 ## 1. What the firmware configures
 
@@ -117,4 +117,4 @@ was not established here.
 
 The archived final report (`UART1-Empfangspause-2026-10-21-final.json`) contains 228 passed cases. It executes actual SHA-bound Thumb routines for initialization, RX IRQ, parser, dispatcher and sender, modeling the configured FIFO threshold and timeout interrupt. Fixtures use local addresses 0 and 3, foreign synthetic response address 2, gaps of 0/100/105/120/150/200 ms, delayed main-loop evaluation, release after own transmission, both ownership directions, recovery, and mixed ASCII/binary traffic. This is neither cycle-accurate CPU/RX wire simulation nor a hardware measurement.
 
-The exact compared image identities, source location, dependency arrangement and historical build-report inputs are retained in `local/research/ext-consistency-audit-20261113/topic-analysis.md`. The archived probe and its private fixtures are absent from a fresh public checkout. Invoking one moved script does not reconstruct that workspace; it is not a maintained public tool. Current native checks are part of the [patcher validation workflow](../../mod/docs/firmware/build-and-validation.md).
+The exact compared image identities, source location, dependency arrangement and historical build-report inputs are retained in an unpublished research archive. The archived probe and its private fixtures are absent from a fresh public checkout. Invoking one moved script does not reconstruct that workspace; it is not a maintained public tool. Current native checks are part of the [patcher validation workflow](../../mod/docs/firmware/build-and-validation.md).

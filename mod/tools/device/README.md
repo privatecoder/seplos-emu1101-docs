@@ -60,8 +60,8 @@ Display changes save a fresh pre-write snapshot and guard against the OEM A1
 capacity side effect: a difference of at least 10 Ah between learned capacity
 and P58 aborts. A second parameter read detects intervening changes. ACK plus
 full readback confirms active state; the tool performs no extra reset to claim
-persistence and never retries an uncertain write. Backups default to ignored
-`local/devices/backups/parameters`; `--backup-dir` selects another directory.
+persistence and never retries an uncertain write. Use `--backup-dir` to select a private backup directory. Without it, the tool
+uses its project-relative private data area.
 
 The shell wrappers use `SEPLOS_TOOLS_PY`, or the existing
 `~/.local/share/seplos-firmware-tools/venv/bin/python` by default. That device
@@ -125,7 +125,7 @@ The current suite uses mocks and synthetic complete flash logs. It opens no seri
 
 ## Historical builders and laboratory work
 
-The complete frozen source tree, its five chained builders, fixed emulator, laboratory exercises and their tests remain under ignored `local/history/snapshots/mod-before-current-cleanup-2026-10-26/project/mod`. Their source inventory is checked before execution. They are not current release builders; their exact image/data prerequisites and limitations still apply. The [historical runner](../run_historical_tests.py) lists requirements without running a suite:
+The historical source tree, its five chained builders, fixed emulator, laboratory exercises and tests are not distributed. A separately retained complete archive is required. Their source inventory is checked before execution. They are not current release builders; their exact image/data prerequisites and limitations still apply. The [historical runner](../run_historical_tests.py) lists requirements without running a suite:
 
 ```sh
 "$SEPLOS_PY" -I -B "$PROJECT/mod/tools/run_historical_tests.py" --list

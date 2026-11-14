@@ -14,6 +14,6 @@ Use the [build and validation procedure](../firmware/build-and-validation.md) wi
 
 For new scenarios, state units and initial conditions, execute native routines in firmware order, and verify intended transitions and unaffected state. Keep image, profile, source and test hashes with results. Resolve new code/RAM contracts and create a separately bound profile before applying expectations to a new image. Never remove identity guards to admit an unknown image.
 
-Frozen research profiles remain under ignored `local/` and require their own source/dependency arrangement, exact inputs and reviewed reports. Their scope does not extend to current releases. The [historical test runner](../../tools/run_historical_tests.py) lists retained prerequisites and explicit suites.
+Historical research profiles are not distributed and require their complete source/dependency arrangement, exact inputs and reviewed reports. Their scope does not extend to current releases. The [historical test runner](../../tools/run_historical_tests.py) lists retained prerequisites and explicit suites.
 
 Synthetic counter/GPIO state establishes software decisions rather than electrical isolation or actual current. Modeled IAP/storage does not establish physical flash interruption behavior, ISR latency, bootloader behavior or multi-pack sharing. See [validation limits](../firmware/validation-methods-and-limits.md).

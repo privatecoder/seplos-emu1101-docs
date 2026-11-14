@@ -19,7 +19,7 @@ Firmware, protocol and hardware references, reproducible patches and analysis to
 
 | Directory | Content |
 |---|---|
-| [vendor/](vendor/) | Manufacturer firmware, documents and software; [privacy treatment](vendor/PRIVACY.md) identifies redacted PDF copies. |
+| [vendor/](vendor/) | Original manufacturer firmware, documents and software. |
 | [analysis/](analysis/README.md) | OEM firmware behavior, parameters, hardware, topologies, protocols and BatteryMonitor. |
 | [mod/](mod/README.md) | Patcher, release metadata, analysis programs, device helpers and EMU1101-EXT documentation. |
 | [references/](references/) | Community and other-vendor references. |
@@ -30,7 +30,7 @@ The current patch alternatives are [EMU1101-EXT Light 1.5.5](mod/docs/firmware/e
 
 **Experimental firmware:** Incorrect firmware, wiring or an interrupted update can render a BMS unusable and compromise battery protection. Use at your own risk. The project is provided "AS IS", without warranty, under the terms of the [license](LICENSE).
 
-The EMU1101-EXT release directory publishes metadata and checksums; prebuilt EMU1101-EXT firmware images are not included. Create patched images from compatible OEM inputs using the [build instructions](mod/docs/firmware/build-and-validation.md).
+The EMU1101-EXT release directory publishes metadata and checksums; prebuilt EMU1101-EXT firmware images are not included. Create patched images from the included compatible OEM inputs using the [build instructions](mod/docs/firmware/build-and-validation.md) and select a private output directory with `--out`. Building a supported profile includes its mandatory tests and does not require private research archives. The separate complete historical corpus check requires additional regression images that are not distributed.
 
 1. Check [ports, protocols and bus ownership](analysis/hardware/ports-and-topologies.md) for the intended inverter and monitor connections.
 2. Follow [build and validation](mod/docs/firmware/build-and-validation.md) to prepare the environment, select a profile and verify the image.
@@ -40,4 +40,4 @@ The EMU1101-EXT release directory publishes metadata and checksums; prebuilt EMU
 
 Project-authored code and documentation are licensed under the [MIT License](LICENSE). Manufacturer and other third-party material, including `vendor/`, `references/` and OEM portions of firmware images, is outside this grant and is not relicensed by this project.
 
-Original OEM firmware images remain unchanged. Vendor PDF copies have [unit identifiers redacted](vendor/PRIVACY.md). Code-derived findings, manufacturer specifications and hardware assumptions are distinguished in the references. Firmware status is not an electrical isolation measurement. The project is unofficial and is not affiliated with Seplos or SH Energy.
+Original vendor images remain unchanged. Code-derived findings, manufacturer specifications and hardware assumptions are distinguished in the references. Firmware status is not an electrical isolation measurement. The project is unofficial and is not affiliated with Seplos or SH Energy.

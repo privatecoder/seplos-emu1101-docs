@@ -7,11 +7,11 @@ Patcher regression tests read the JSON files in this directory through `corpus.f
 
 The two current metadata fixtures are OEM code facts; current-profile identities come from public release metadata. Historical profile hash fixtures remain in the preserved source snapshot.
 
-The registry records the original project-relative report names, complete source sizes and SHA-256 values, and selected fields. Those report files remain under ignored `local/`; their availability does not affect fixture loading. To change a fixture, verify its named OEM input and the relevant source-derived discovery/build behavior, review the selected data, update the fixture and registry hash together, and rerun the regressions and release verifier.
+The registry records the original project-relative report names, complete source sizes and SHA-256 values, and selected fields. The original reports are not distributed; their availability does not affect fixture loading. To change a fixture, verify its named OEM input and the relevant source-derived discovery/build behavior, review the selected data, update the fixture and registry hash together, and rerun the regressions and release verifier.
 
 ## Binary prerequisites
 
-[corpus.json](../../corpus.json) is the authoritative list of all 16 required binary inputs, with exact filenames, sizes and SHA-256 values. The seven OEM images remain under `vendor/firmware`; historical regression images remain under `local/fixtures/corpus`; the access-control regression image remains under `local/releases`.
+[corpus.json](../../corpus.json) is the authoritative list of all 16 required binary inputs, with exact filenames, sizes and SHA-256 values. Seven OEM images are included in `vendor/firmware`. The eight historical regression images and fixed access-control reference image are not distributed. The complete corpus check requires all 16 inputs in the layout declared by the registry; it cannot run from the public checkout alone.
 
 `corpus.corpus_groups()` checks every named input and rejects missing or changed files. Extra EHEX files do not extend the regression corpus. The normal test suite exercises the OEM images and the historical images as explicit compatibility/refusal inputs. Missing inputs are prerequisites to restore, never a reason to skip tests.
 

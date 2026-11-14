@@ -4,9 +4,9 @@
 
 Code addresses and native SOC behavior refer to OEM 16.06.13 unless a version boundary is stated. The arithmetic, capacity-learning rules and native block 6 persistence described below are OEM mechanisms. EMU1101-EXT release-specific persistence and access contracts are identified separately.
 
-Offline evidence includes 79 executable SOC counterexamples (`SOC-2026-10-21-final.json`) and 24 SOC-cutoff counterexamples (`SOC-Abschaltung-2026-10-21-final.json`), retained under ignored `local/`. The CPU executes actual routines; IAP block 6 acceptance/storage is modeled. These are neither physical NVM dumps nor complete bootloader/hardware tests. No serial ports were opened.
+Offline evidence includes 79 executable SOC counterexamples (`SOC-2026-10-21-final.json`) and 24 SOC-cutoff counterexamples (`SOC-Abschaltung-2026-10-21-final.json`), retained in an unpublished research archive. The CPU executes actual routines; IAP block 6 acceptance/storage is modeled. These are neither physical NVM dumps nor complete bootloader/hardware tests. No serial ports were opened.
 
-The exact historical comparison-image identities, the parameter-serializer exception at `0x08F8`, archived probe/profile sources and replay dependencies are retained in the ignored English topic note `local/research/ext-consistency-audit-20261113/topic-analysis.md`. Those evidence bindings do not validate current EMU1101-EXT images. Current mandatory checks and their limits are documented in [firmware validation](../../mod/docs/firmware/validation-methods-and-limits.md); archived probes are not public checkout tools.
+Historical comparison results require their exact image identities, the parameter-serializer exception at `0x08F8`, original probe/profile sources and replay dependencies. That research archive is not distributed. Those evidence bindings do not validate current EMU1101-EXT images. Current mandatory checks and their limits are documented in [firmware validation](../../mod/docs/firmware/validation-methods-and-limits.md); archived probes are not public checkout tools.
 
 ## 1. Formula and periodic updates
 
@@ -97,7 +97,7 @@ reset. EMU1101-EXT Light 1.5.3 and later, and Full 1.6.3 and later, provide `64/
 recalibration; P58/P59, `49` and automatic save triggers remain. EMU1101-EXT Light 1.5.4 and later, and Full 1.6.4 and later, additionally expose [64/06 persisted capacity and full-width live energy](../../mod/docs/firmware/remote-diagnostics.md) on UART0/UART1. The read does not save or repair either mirror and does not itself change SOC.
 
 
-The native CRC/mirror readers select a valid primary without comparing age; otherwise a valid backup repairs it. If neither CRC is valid, P59/P58 provide the fallback. Word-interruption evidence for native routines and specific archived custom images has exact bindings in `local/research/ext-consistency-audit-20261113/topic-analysis.md`; it does not establish current release validation. See [storage and reset behavior](../../mod/docs/firmware/storage-and-reset.md) for the current contract and checks. These checks do not identify the cause of any particular power failure.
+The native CRC/mirror readers select a valid primary without comparing age; otherwise a valid backup repairs it. If neither CRC is valid, P59/P58 provide the fallback. Word-interruption evidence for native routines and specific archived custom images depends on unpublished image and probe bindings; it does not establish current release validation. See [storage and reset behavior](../../mod/docs/firmware/storage-and-reset.md) for the current contract and checks. These checks do not identify the cause of any particular power failure.
 
 **Block6** is at flash address `0x2B000`, mirrored at `0x2C000`.
 It contains remaining capacity, learned full capacity, energy counters and cycles.

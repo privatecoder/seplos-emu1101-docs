@@ -9,8 +9,8 @@ All addresses below are application addresses for this exact OEM build.
 Code-derived facts are separated from nominal clock calculations and unmeasured
 hardware behavior. Register names use the pinned SWM181 reference manual V2.07
 and both Synwit SDK snapshots in the [MCU source inventory](../../vendor/docs/mcu-synwit-swm181/SOURCES.md).
-The retained REA/Ghidra and REA/Hopper evidence, source bindings and bounded
-offline replays are under `local/research/swm181-rea-20261112/`.
+The REA/Ghidra and REA/Hopper evidence, source bindings and bounded offline
+replays are retained in an unpublished research archive.
 
 ## 1. Reset path and RAM initialisation *(confirmed)*
 

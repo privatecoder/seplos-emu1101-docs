@@ -42,8 +42,8 @@
 - The offline knowledge CLI identifies exact applications/containers and indexes bound artifacts, builds, topic notes, historical counterexamples and dependencies. Queries never invoke firmware, LLVM or a serial port.
 - The intra-pack fixture verifier checks preserved 0x5A captures, checksums, decoded expectations and source hashes without hardware.
 
-- Research probes use SHA-256/size-bound canonical build inputs. The binary corpus now resides in `local/fixtures/corpus`; the frozen regression workspace is in `local/history/snapshots`.
-- Display-format backups default to `local/devices/backups/parameters`, independently of the working directory.
+- Research probes use SHA-256/size-bound canonical build inputs. Historical binary fixtures and frozen regression sources are not included in the public checkout.
+- Display-format backups use a project-relative private directory independently of the working directory; `--backup-dir` selects an explicit destination.
 
 - The maintenance client accepts canonical `--uart UART0` and `--uart UART1` selectors. Address gates, request frames and physical baud rates retain their existing behavior.
 - Capability Markdown displays UART0/UART1/UART2 while JSON output, extracted data and decoder identifiers retain their existing meanings.
@@ -57,7 +57,7 @@
 - Application verification checks reply address and checksum; write acknowledgement requires complete WFB. Valid blocks with byte sums at or above 65535 use modulo-65536 checksum arithmetic. Existing valid image streams and blocks remain unchanged.
 - Patcher regression metadata is stored in small, integrity-checked fixtures with provenance. The binary corpus is an explicit size/SHA-256 registry. Current tests do not consume disposable build reports.
 - `verify_releases.py` separates retained-image identity verification from an optional actual rebuild and mandatory native test run.
-- Frozen builders, laboratory exercises and their dependencies remain under ignored `local/`. `run_historical_tests.py` checks the frozen source inventory and runs only explicitly selected offline suites.
+- Historical builders, laboratory exercises and their dependencies require a separately retained archive. `run_historical_tests.py` checks its source inventory and runs only explicitly selected offline suites.
 - SOC fixture reuse, display troubleshooting, host framing ambiguity and gateway update limits are documented in the [tool guides](../docs/tools/README.md).
 
 This 2026-10-26 tool-only revision left firmware source and retained OEM/EMU1101-EXT images unchanged. Its tests used synthetic ports and emulated firmware without device access.

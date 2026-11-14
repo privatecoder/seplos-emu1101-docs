@@ -24,7 +24,7 @@ communication paths, not new end-to-end tests of every topology with current ima
 |---|---|---|---|
 | **UART0** | UART0, RS485-1/RS485-2, two access points to the same pack bus | 19200 baud, 8N1; Seplos ASCII, PC write commands and intra-pack 0x5A polling | The polling Seplos master does not answer host requests here. |
 | **UART1** | UART1, RS485 pair inside the CAN socket: 1/8=B, 2/7=A, 3/6=GND | 9600 baud, 8N1; individual-pack ASCII, Pylontech-style system ASCII and read-only Modbus RTU; EMU1101-EXT adds addressed commands | One coordinated requester per segment. Reaching all packs requires their UART1 wires to be connected separately. |
-| **CAN** | Other wires of that socket: 4=CAN-H, 5=CAN-L | Selected master CAN profile; 500 kbit/s except MUST at 100 kbit/s | Only address 0 transmits; almost all dynamic fields are aggregates, with some local/fixed exceptions. |
+| **CAN** | Other wires of that socket: 4=CAN-H, 5=CAN-L | Selected master CAN profile; 500 kbit/s except MUST at 100 kbit/s | Only address 0 transmits; almost all dynamic fields are aggregates, with some pack-local or fixed exceptions. |
 | **UART2** | UART2, local display/Bluetooth port | Binary 55…AA at 9600 baud; local display, parameters and CAN profile selection | No addressed slave proxy or established incoming power/reset command. |
 
 OEM .13 dispatchers: UART0 `0x1132`, UART1 ASCII `0x2AF2`, UART1 Modbus `0x45AC`, UART2 `0x8288`,
@@ -258,7 +258,7 @@ Today's UART1 Modbus register map must not be applied to it.
 
 ## 9. Evidence and remaining limits
 
-Original-image identities, initializer and dispatcher excerpts,175 protocol/address replays, single-pack aggregate counterexamples, manufacturer images and legacy-UART0 probe results are retained under the ignored `local/research/topologies/evidence/Anschluesse-Topologien-2026-10-26/` directory.
+The unpublished topology evidence archive retains exact image identities, initializer and dispatcher excerpts, 175 protocol/address replays, single-pack aggregate counterexamples, manufacturer-image bindings and legacy-UART0 probe results.
 No firmware image was changed. Remaining questions are actual inverter tests for
 1b/2b-inverter/2c, primary Pylontech payload comparison, physical UART1 wiring per board,
 exact internal-UART0 contact mapping and the 16.04.06 bootloader baud.

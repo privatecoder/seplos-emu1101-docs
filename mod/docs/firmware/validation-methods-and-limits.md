@@ -101,6 +101,6 @@ The [metadata fixture registry](../../firmware/patcher/tests/fixtures/registry.j
 
 ## Version-bound research tools and historical evidence
 
-Historical research probes and reports remain under ignored `local/`, with their exact image hashes, source inventories, dependency bindings and model limits. They do not establish a current-release audit or hardware result. The [historical test runner](../../tools/run_historical_tests.py) lists prerequisites and executes only explicitly selected suites; [analysis tool prerequisites](../../tools/firmware-analysis/README.md) describe retained inputs and fresh-output requirements.
+Historical research probes and reports are not distributed. Their evidence scope depends on exact image hashes, source inventories, dependency bindings and model limits. They do not establish a current-release audit or hardware result. The [historical test runner](../../tools/run_historical_tests.py) lists prerequisites and executes only explicitly selected suites; [analysis tool prerequisites](../../tools/firmware-analysis/README.md) describe retained inputs and fresh-output requirements.
 
 No emulator result establishes the cause of a particular historical communication failure, SOC change or display symptom without matching device evidence. Before actual updates, follow the separate [flash and application-verification procedure](../tools/flashing.md).

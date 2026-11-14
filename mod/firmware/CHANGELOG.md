@@ -4,7 +4,7 @@
 
 EMU1101-EXT (EMU1101 Extended Firmware). Custom firmware for Seplos BMS 2.0 (EMU1101, hardware V16).
 
-Versioned Light releases start at 1.5.3; versioned Full releases start at 1.6.3. Earlier builds use versionless development identifiers. Development builds have unique dated identifiers without semantic versions. These identifiers track functional development and evidence; they do not assert a new binary identity for archived images. Exact archived inputs, raw identity responses, hashes and original reports remain under ignored `local/`. Current EXT05 identities and checksums are bound by the [release metadata](releases/README.md). The published patcher supports only Light 1.5.4, Light 1.5.5, Full 1.6.4 and Full 1.6.5.
+Versioned Light releases start at 1.5.3; versioned Full releases start at 1.6.3. Earlier builds use versionless development identifiers. Development builds have unique dated identifiers without semantic versions. These identifiers track functional development and evidence; they do not assert a new binary identity for archived images. Current EXT05 identities and checksums are bound by the [release metadata](releases/README.md). The published patcher supports only Light 1.5.4, Light 1.5.5, Full 1.6.4 and Full 1.6.5.
 
 ## Versioned functional-contract baselines, 2026-11-13
 
@@ -70,7 +70,7 @@ Versioned Light releases start at 1.5.3; versioned Full releases start at 1.6.3.
 
 - Replace the earlier inverse UART1 power/RTC gate with Group0.bit3=1 permitting access and 0 denying it. This development step precedes the first versioned Light baseline; it is not a change between versioned releases.
 - One condition byte and identity metadata change; the five OEM hook sites, hook bytes and persistent RAM allocation remain unchanged. UART0 behavior, unrestricted UART1 RTC reads and A1 protection of bit3 remain unchanged. Stored parameter bytes are not converted.
-- Image flag08 records the 1=enabled semantics used throughout the subsequent versioned releases. Exact original image identities and source evidence remain under `local/`.
+- Image flag08 records the 1=enabled semantics used throughout the subsequent versioned releases.
 
 ## EMU1101-EXT Full 1.6.3: first versioned Full release, 2026-10-24
 

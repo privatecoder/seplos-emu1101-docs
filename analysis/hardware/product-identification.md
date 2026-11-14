@@ -52,13 +52,11 @@ its number does not specify the configured cell count.
 
 Three independent labels support the hardware interpretation:
 
-1. Board-photo evidence retained privately carries `EMU1101_PCBA-V16` and
-   `SH ENERGY TECH` in the silkscreen. The original photograph is not published
-   because it contains unit identifiers.
+1. The [retained board photograph](<../../vendor/images/PCB front and back.jpg>)
+   carries `EMU1101_PCBA-V16` and `SH ENERGY TECH` in the silkscreen.
 2. The [SH Energy catalogue, PDF p.11](<../../vendor/docs/oem catalog/SH Energy BMS-Catalog.pdf#page=11>)
-   identifies EMU1101 and shows the same silkscreen plus product-variant sticker
-   `1101-48100-10E-V16`. These markings remain visible in the privacy-redacted
-   copy; unit serials and QR labels are removed.
+   identifies EMU1101 and shows the same silkscreen plus sticker
+   `1101-48100-10E-V16`. These markings are image content.
 3. [TÜV SÜD report 085-282360233-000, PDF p.13](https://www.comp-gmbh.com/wp-content/uploads/2023/05/trf.pdf#page=13)
    identifies the BMS as `EMU1101 PCBA-V16`, explicitly separates hardware
    version `V16` from software version `16.04`, and lists the product variant

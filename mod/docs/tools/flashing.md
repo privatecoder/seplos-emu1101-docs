@@ -10,7 +10,7 @@ Use a prepared device interpreter such as `SEPLOS_TOOLS_PY="$HOME/.local/share/s
 
 ## Before a write
 
-1. Identify the physical board, DIP role/address and wiring. Obtain fresh serial numbers and parameters while the application is reachable. Save the complete baseline under `local/`; the bootloader cannot back them up.
+1. Identify the physical board, DIP role/address and wiring. Obtain fresh serial numbers and parameters while the application is reachable. Save the complete baseline in a private backup directory; the bootloader cannot back it up.
 2. Compare the selected image's complete EHEX SHA256, build ID, flags and size with its report. Use fresh logs/output paths. A generic patcher report is not interchangeable with a fixed historical regression manifest.
 3. Stop a polling master's UART0 traffic before host access to any board. If supported and permitted, start master 0 maintenance on UART1, confirm marker 0/effective slaves 0 with fresh 64/02, then confirm physical UART0 silence. If permissions or the initial OEM master prevent this, use the established manual bus/DIP release procedure.
 4. Ensure exactly one bootloader target. Bootloader frames contain no pack address. The single-pack helpers require an isolated target. The [sequential batch controller](batch-flashing.md) adds all-target backups, paused-bus checks, one addressed application reset at a time and exact post-verification for a conditionally supported shared-bus procedure; it does not add bootloader addressing or a physical uniqueness guarantee.

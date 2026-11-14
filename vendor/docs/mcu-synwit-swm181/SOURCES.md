@@ -72,6 +72,6 @@ than treated as interchangeable register specifications:
   diagram and the SDK distinguish internal 0 from external 1.
 
 The source comparison, selected original SDK members and rendered watchdog
-figure are retained under `local/research/swm181-source-review-20261112/`.
+figure are retained in an unpublished research archive.
 These discrepancies are not evidence that any particular board has a hardware
 fault or that a software workaround is required.

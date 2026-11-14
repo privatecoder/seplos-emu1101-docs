@@ -82,7 +82,7 @@ Pause the external requester yourself. No Seplos maintenance command can stop it
 
 ## Backups and verification
 
-A fresh directory is created under `local/devices/flash-logs/batch-TIMESTAMP-ID/`. `--out NEW_DIRECTORY` selects another new location; existing directories are rejected before opening a device.
+Use `--out NEW_DIRECTORY` to select a private destination for backups and logs. Without it, the tool creates a timestamped directory in its project-relative private data area. Existing output directories are rejected before opening a device.
 
 - `report.json`: selected image, phases, current/failed address, confirmed predecessors and maintenance-start attempt/confirmation state. Updates are atomic. A failed start acknowledgement or confirmation does not imply an unchanged marker.
 - `bus.log`: serial TX/RX and maintenance/transfer state. No pending input is silently flushed by the batch transport.

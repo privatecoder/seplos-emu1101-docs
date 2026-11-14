@@ -4,7 +4,7 @@
 
 EMU1101-EXT (EMU1101 Extended Firmware) is custom firmware for Seplos BMS 2.0 (EMU1101, hardware V16). The 1.5.x branch is Light; the 1.6.x branch is Full. Both profiles use the standard permission rule: 1 enables access and 0 denies it. The patcher requires Python3.11+, `unicorn==2.1.4` and LLVM's `llvm-mc`, `llvm-objcopy`, `llvm-objdump`, `llvm-nm`. Keep the venv outside the colon-containing project path at `~/.local/share/seplos-oem-patcher/venv`.
 
-[Setup, builds and validation](../../docs/firmware/build-and-validation.md) gives complete commands, supported source contracts and output rules. Current profile choices are `--ext-version 1.5.5` (Light) and `--ext-version 1.6.5` (Full); 1.5.4 (Light) and 1.6.4 (Full) remain explicit reference builders. Select either profile explicitly; there is no default profile. Group0.bit3=1 permits UART1 power/RTC; 0 denies it. Firmware inputs live under project-relative `vendor/firmware`; historical fixtures live under `local/fixtures`. Output directories must be new.
+[Setup, builds and validation](../../docs/firmware/build-and-validation.md) gives complete commands, supported source contracts and output rules. Current profile choices are `--ext-version 1.5.5` (Light) and `--ext-version 1.6.5` (Full); 1.5.4 (Light) and 1.6.4 (Full) remain explicit reference builders. Select either profile explicitly; there is no default profile. Group0.bit3=1 permits UART1 power/RTC; 0 denies it. OEM inputs are included under `vendor/firmware`. Output directories are chosen with `--out` and must be new.
 
 ```sh
 export SEPLOS_PROJECT='/absolute/path/to/Seplos V2 10E BMS'
@@ -23,7 +23,7 @@ Full 1.6.3+ provides persistent individual lock/gate behavior through `cutoff.py
 
 ## Test data and release verification
 
-The maintained test suite uses two small, SHA-256-checked [metadata fixtures](tests/fixtures/README.md) extracted from preserved evidence. It never loads `local/builds/oem16.06.13` reports. [corpus.json](corpus.json) names the exact 16 binary prerequisites with size and SHA-256; originals and historical EHEX references stay in `vendor/` and ignored `local/`. Missing or changed inputs are errors. Additional files do not silently extend the corpus.
+The maintained test suite uses two small, SHA-256-checked [metadata fixtures](tests/fixtures/README.md) extracted from preserved evidence. Historical build reports are not required for fixture loading. [corpus.json](corpus.json) names the exact 16 binary prerequisites with size and SHA-256. Seven OEM images are included in `vendor/firmware`; nine historical regression images are not distributed. Building a supported profile does not require those historical images, but the complete corpus check does. Missing or changed corpus inputs are errors. Additional files do not silently extend the corpus.
 
 [verify_releases.py](verify_releases.py) checks the two current public release JSONs against their actual local images. Add `--rebuild` to invoke the bounded patcher worker and mandatory native tests and compare the complete regenerated EHEX. Metadata-only verification is separate from native execution. `--metadata-dir` can select reviewed metadata for any of the four supported versions; retired versions are refused. No report path in metadata is followed. Both operations require a fresh `--out` directory. The [build guide](../../docs/firmware/build-and-validation.md#release-identity-checks) gives commands.
 

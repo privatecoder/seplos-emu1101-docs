@@ -74,10 +74,10 @@ requested. [Detailed limit order](../protocols/can.md#3-limits-and-data-source-m
 
 ## Evidence and remaining limits
 
-The retained local evidence bundle is `local/research/ghidra-oem-20261111/`:
-manifest with complete EHEX/application hashes, per-image coverage, 65 selected
+The retained evidence bundle contains a manifest with complete EHEX/application
+hashes, per-image coverage, 65 selected
 function exports with source-bound instructions and C, and verification data.
-The bundle is a local analysis cache, not a required patch input or a replacement
+The bundle is an unpublished analysis cache, not a required patch input or a replacement
 for the mandatory patcher tests. OEM images remain unchanged.
 
 Complete import and successful C generation do not establish exhaustive
@@ -120,8 +120,7 @@ configuration stores present in the instructions. Neither pseudocode text
 alone establishes these contracts. Manual/SDK disagreements in watchdog reset
 timing, reset-cause bits and UART register summaries remain explicit.
 
-Evidence is retained under `local/research/swm181-rea-20261112/`: complete REA
-bundles with Evidence IDs, original-byte bindings, wrapper construction inputs,
+The unpublished evidence archive contains complete REA bundles with Evidence IDs, original-byte bindings, wrapper construction inputs,
 replay source/results and the finding ledger. The 65 selected exports in the
 seven-image review were also rebound to their original applications: 5,497
 instruction records and all recorded C-export hashes match. This is a fresh

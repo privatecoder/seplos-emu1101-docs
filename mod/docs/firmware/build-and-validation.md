@@ -29,17 +29,17 @@ For a fresh patcher environment, `sh "$SEPLOS_PATCHER/setup_venv.sh"` installs t
 Output directories must be new and their parent must exist. Inputs are never overwritten. Use separate fresh directories for each invocation.
 
 ```sh
-mkdir -p "$SEPLOS_PROJECT/local/builds/runs"
+SEPLOS_OUTPUT_ROOT="$(mktemp -d /private/tmp/seplos-ext-builds.XXXXXX)"
 SEPLOS_INPUT="$SEPLOS_PROJECT/vendor/firmware/CAN1101[V16.06.13_PN01_250607].ehex"
 "$SEPLOS_PYTHON" -I "$SEPLOS_PATCHER/seplos_patch.py" analyze "$SEPLOS_INPUT" \
   --ext-version 1.5.5 --base-revision 13 \
-  --out "$SEPLOS_PROJECT/local/builds/runs/ext155-analysis-new"
+  --out "$SEPLOS_OUTPUT_ROOT/ext155-analysis-new"
 "$SEPLOS_PYTHON" -I "$SEPLOS_PATCHER/seplos_patch.py" patch "$SEPLOS_INPUT" \
   --ext-version 1.5.5 --base-revision 13 \
-  --out "$SEPLOS_PROJECT/local/builds/runs/ext155-build-new"
+  --out "$SEPLOS_OUTPUT_ROOT/ext155-build-new"
 "$SEPLOS_PYTHON" -I "$SEPLOS_PATCHER/seplos_patch.py" patch "$SEPLOS_INPUT" \
   --ext-version 1.6.5 --base-revision 13 \
-  --out "$SEPLOS_PROJECT/local/builds/runs/ext165-build-new"
+  --out "$SEPLOS_OUTPUT_ROOT/ext165-build-new"
 ```
 
 Current profiles are Light 1.5.5 and Full 1.6.5; explicit Light 1.5.4 / Full 1.6.4 reference builders remain available. `--ext-version` is required. Group0.bit3=1 permits UART1 power/RTC; 0 denies it. This rule applies throughout both versioned branches. `--hard-stop preserve` is default. Light releases from 1.5.3 use an immutable static hard-stop image option. Full releases from 1.6.3 provide runtime Group0 selection; `--hard-stop enable` selects only the inherited image default, and explicit Group0 selection still wins. Existing OEM-SP80 inputs retain their default. There is no operation to disable a previously static-hard-stop-patched input.
@@ -63,6 +63,11 @@ Existing SP80 inputs are recognized and their image default is preserved. The st
 
 ## Regression and corpus checks
 
+The complete repository regression suite and corpus matrix require the nine
+historical regression images listed in the registry; these images are not
+distributed. The mandatory native tests run by each `patch` invocation above
+are independent of those additional inputs.
+
 ```sh
 "$SEPLOS_PYTHON" -I -m unittest discover -s "$SEPLOS_PATCHER/tests"
 "$SEPLOS_PYTHON" -I "$SEPLOS_PATCHER/run_tests.py" \
@@ -75,7 +80,7 @@ Existing SP80 inputs are recognized and their image default is preserved. The st
   --out /private/tmp/seplos-corpus165-new
 ```
 
-The SHA-256/size registry in [corpus.json](../../firmware/patcher/corpus.json) names seven OEM inputs under `vendor/firmware `, eight historical fixtures under `local/fixtures` and one fixed ACCESS reference image under `local/releases`. It excludes newly generated outputs and rejects missing or changed inputs. The two immutable [test metadata fixtures](../../firmware/patcher/tests/fixtures/README.md) replace implicit historical build-report dependencies; the current suite never opens `local/builds/oem16.06.13` reports. For each selected profile, the 16-input/32-run matrix exercises preserved and enabled hard-stop settings; intentional refusals are expected outcomes. Confirm exact accepted options with `--help` for the installed revision.
+The SHA-256/size registry in [corpus.json](../../firmware/patcher/corpus.json) names seven OEM inputs included under `vendor/firmware` and nine historical regression images that are not distributed. Building any supported profile and running its mandatory tests uses the selected OEM input; it does not require the historical corpus. The complete corpus commands above require all 16 registry inputs and cannot run from the public checkout alone. The registry excludes newly generated outputs and rejects missing or changed inputs. The two immutable [test metadata fixtures](../../firmware/patcher/tests/fixtures/README.md) remove the test suite's dependency on historical build reports. For each selected profile, the 16-input/32-run matrix exercises preserved and enabled hard-stop settings; intentional refusals are expected outcomes. Confirm exact accepted options with `--help` for the installed revision.
 
 The retained OEM corpus currently produces these results with either hard-stop option:
 
@@ -91,7 +96,7 @@ The current release reference is OEM 16.06.13. Both profiles additionally requir
 
 Current EXT05 Light 1.5.4/Full 1.6.4 references pass strengthened 251/333-group suites; their new identities are bound by the reference metadata. Current fixed Light 1.5.5/Full 1.6.5 releases pass 257/339 groups. Additional mandatory groups cover native hardware initialization, deterministic interrupt coexistence, UART timing and full-profile signed fast-current/Off boundaries. The full profile includes all 256×256 Group0/Event6 combinations. Native tests cover serialization, validation, loading, CRC, UART ownership, addresses/modeled packs, malformed frames, IAP failures, permission/persistence, capacity effects, ABI and native hard-stop/GPIO paths. Remote read tests cover own/foreign addresses, calibration/SOC shape and CRC, signed active values, full-width live energy, history empty/oldest/next/wrap, read-failure cursor rollback, no mirror repair/writes and UART1 RX injection at the EEPROM transfer boundary. The fixed profiles add one guarded scheduler hook each (six/22 total) and a guarded continuation branch; persistent RAM remains zero/four bytes. Deterministic preemption cases execute enabled timer/protection/CMP handlers and concurrent addressed UART0 reception during diagnostic/history work, followed by native deferred parsing and encoding through a modeled TX boundary. Full multi-pack polling and physical timing remain untested. The OEM A8 negative control deliberately reproduces inherited behavior under synthetic call states. Fixed profiles additionally require preservation across all 13 instruction boundaries under both masks, complete byte/ABI cases and native slow-tick controls; passing them does not establish exhaustive race freedom. Peripheral models do not establish physical flash timing, electrical behavior, real interrupt latency, brownouts, bootloader failures or multi-board bus behavior. [Validation methods and limits](validation-methods-and-limits.md) distinguishes current release verification from historical image-bound probes.
 
-Historical sources, shared code probes and retained input images remain available for research, but do not extend the current output profiles. The current pre-change patcher source snapshot is retained under ignored `local/history/snapshots/patcher-before-current-profiles-2026-10-28/project`.
+Historical sources and research inputs are not distributed and do not extend the supported output profiles.
 
 Publish only reviewed scalar identifiers/checksums in [release metadata](../../firmware/releases/README.md). Before device work compare the chosen image and report, back up parameters and both SNs, and use the [flash procedure](../tools/flashing.md).
 
@@ -111,6 +116,6 @@ To rebuild those profiles through the real worker, including mandatory native te
   --out /private/tmp/seplos-current-rebuilds-new
 ```
 
-Both require the pinned OEM source and actual release images. `--images DIR` selects their directory; `--metadata-dir DIR` explicitly selects another reviewed metadata set. A metadata field referring to a build report is never followed. Current EXT05 is 21 bytes with appended capability mask 000F; [remote diagnostics](remote-diagnostics.md) defines its offsets and read contracts. The [capability matrix](uart-write-capabilities.md) lists EHEX hashes and each release JSON also supplies the application hash. The embedded EXT template reserves two OEM-family bytes for runtime; verification checks the template and reconstructs those bytes from pinned OEM facts. Outputs refuse existing directories.
+Both require the pinned OEM source and actual release images. Prebuilt custom images are not distributed; provide the matching generated images in a directory selected with `--images DIR`. `--metadata-dir DIR` explicitly selects another reviewed metadata set, including the 1.5.4/1.6.4 references. A metadata field referring to a build report is never followed. Current EXT05 is 21 bytes with appended capability mask 000F; [remote diagnostics](remote-diagnostics.md) defines its offsets and read contracts. The [capability matrix](uart-write-capabilities.md) lists EHEX hashes and each release JSON also supplies the application hash. The embedded EXT template reserves two OEM-family bytes for runtime; verification checks the template and reconstructs those bytes from pinned OEM facts. Outputs refuse existing directories.
 
-The complete historical builders, tests and laboratory arrangement are retained under ignored `local/history/snapshots/mod-before-current-cleanup-2026-10-26/project`. Use the [historical runner](../../tools/run_historical_tests.py) with `--list` or an explicit `--suite`; it checks the source inventory before running version-bound tests. This workspace is separate from the current fixture/test dependency boundary. Keep the fixture registry and complete source inventory with retained validation reports: a top-level entry-point fingerprint alone does not inventory nested fixture files.
+The historical builders, tests and laboratory dependencies are not included in the public checkout. Use the [historical runner](../../tools/run_historical_tests.py) with `--list` or an explicit `--suite`; it checks the source inventory before running version-bound tests. This workspace is separate from the current fixture/test dependency boundary. Keep the fixture registry and complete source inventory with retained validation reports: a top-level entry-point fingerprint alone does not inventory nested fixture files.
