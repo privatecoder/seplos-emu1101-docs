@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-  Annotated copy of "config/parameter-export-example.xml" (fictitious example of a BatteryMonitor parameter export, module 1101-SPxx).
+  Annotated copy of "parameter-export-example.xml" (fictitious example of a BatteryMonitor parameter export, module 1101-SPxx).
   Status: verified in the code of 06.12/06.13. FOR READING ONLY - do not import into BatteryMonitor (whether comments interfere with the import is unverified).
-  Explanation: docs/configuration-parameters.md, derivations: docs/states-and-triggers.md.
+  Explanation: ../../firmware/configuration-parameters.md, derivations: ../../firmware/states-and-triggers.md.
   Pn = parameter number in the order of the file (0-86). The BMS reads/writes by position, not by name.
   Warning = does not open a MOSFET by itself, but can have control effects (CCL 10 A total if all packs have a charge warning; the charge over-current warning can activate the current limiter); protection = MOSFET opens.
   BitGroup1-5 mask alarm events 2-6: bit = 0 disables reporting and reaction. BitGroup0 is not a mask: only bit 1 is used (sensor plausibility check).
