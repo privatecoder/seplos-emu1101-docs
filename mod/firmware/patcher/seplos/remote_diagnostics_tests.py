@@ -104,7 +104,7 @@ def validate_remote(original,patched,facts,build):
  def contracts():
   equal((build['info_format'],build['info_bytes']),(5,21))
   for port in ('R','C'):
-   m=board();rtn,data=query(m,port,b'\3');equal((rtn,len(data),data[:4],data[19:]),(0,21,b'EXT\5',b'\0\x0f'))
+   m=board();rtn,data=query(m,port,b'\3');equal((rtn,len(data),data[:4],data[19:]),(0,21,b'EXT\5',build['remote_capabilities'].to_bytes(2,'big')))
    equal(query(m,port,b'\4'),(0,bytes([1,1,1,1,1,1,1,255,255,0]) if build['patch_version'].startswith('1.5') else bytes([1,1,1,1,1,1,1,0,0,6])))
  check('EXT05-capabilities-and-old-64-04',contracts)
  def addresses():
@@ -284,7 +284,7 @@ def validate_remote(original,patched,facts,build):
    equal(len(result[1]),0 if fail else 97);equal(m.history_reads,[(0,94,1)]);equal(query(m)[0],0);no_write(m)
  check('history-IRQ-coexistence',coexist)
  def boundaries():
-  expected=(5 if build['patch_version'].startswith('1.5') else 21)+int(bool(build.get('scheduler_atomic')));equal(len(build['hooks']),expected)
+  expected=(5 if build['patch_version'].startswith('1.5') else 21)+int(bool(build.get('scheduler_atomic')))+2*int(bool(build.get('polling')))+int(bool(build.get('ccl_ramp')));equal(len(build['hooks']),expected)
   equal(build['ram_bytes'],0 if build['patch_version'].startswith('1.5') else 4)
   allowed={a for site in build['hooks'].values() for a in range(site,site+4)}
   if build.get('scheduler_atomic'):

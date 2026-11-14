@@ -1,6 +1,6 @@
 {
   "schema": "seplos-write-access-revision6",
-  "date": "2026-11-12",
+  "date": "2026-11-14",
   "base": "OEM16.06.13",
   "base_image": {
     "version": "16.06.13",
@@ -12,8 +12,8 @@
     "value",
     "command",
     "OEM16.06.13",
-    "EMU1101-EXT Light 1.5.5",
-    "EMU1101-EXT Full 1.6.5"
+    "EMU1101-EXT Light 1.5.6",
+    "EMU1101-EXT Full 1.6.7"
   ],
   "ports": {
     "R": "RS485-1/2, UART0.19200",
@@ -21,13 +21,13 @@
     "D": "Display, UART2,9600"
   },
   "profiles": {
-    "1.5.5": {
+    "1.5.6": {
       "manifest": "mod/firmware/releases/ext-light.json",
       "power_rtc_enabled_bit3": 1,
       "extended_off_enabled_bit4": null,
       "lock_status_bit5": null
     },
-    "1.6.5": {
+    "1.6.7": {
       "manifest": "mod/firmware/releases/ext-full.json",
       "power_rtc_enabled_bit3": 1,
       "extended_off_enabled_bit4": 1,
@@ -195,6 +195,13 @@
       "—",
       "—",
       "R, C[W], D; write together"
+    ],
+    [
+      "CCL decrease step, 1–20 A per online pack/update",
+      "ASCII 64/08 value",
+      "—",
+      "—",
+      "R, C[W]"
     ]
   ],
   "selected_read_commands": [
@@ -288,6 +295,13 @@
       "—",
       "64/03 image flag 0: fixed in image",
       "64/03 flag 80/bit 0 +47 Group0.Bits6/7"
+    ],
+    [
+      "CCL decrease configuration and bounds",
+      "ASCII 64/07",
+      "—",
+      "—",
+      "R, C"
     ]
   ],
   "group0": [
@@ -302,14 +316,14 @@
       "Group0.Bit1",
       "1 = enable temperature sensor plausibility check",
       "1 = enable temperature sensor plausibility check",
-      "same as 1.5.5",
+      "same as 1.5.6",
       "R, C[W], D"
     ],
     [
       "Group0.Bit2",
       "Reserved, no OEM function",
       "1 = allow maintenance start over C",
-      "same as 1.5.5",
+      "same as 1.5.6",
       "R/D only; a change through C-A1 returns E3 and rejects the entire block."
     ],
     [
@@ -331,7 +345,7 @@
       "Reserved, no OEM function",
       "Reserved, no function",
       "**0 = individual pack lock active**, 1 = clear",
-      "1.5.5: writable through R/C[W]/D. 1.6.5: status only; change only through addressed 45 on/off over R/C[P]."
+      "1.5.6: writable through R/C[W]/D. 1.6.7: status only; change only through addressed 45 on/off over R/C[P]."
     ],
     [
       "Group0.Bit6",
@@ -1174,7 +1188,7 @@
       "group": 0,
       "bit": 4,
       "mask": 16,
-      "name": "1.6.5: extended off enabled at 1; 1.5.5 reserved",
+      "name": "1.6.7: extended off enabled at 1; 1.5.6 reserved",
       "C_A1_1_6_3": "W",
       "read_only_1_6_3": false,
       "C_A1_1_5_3": "W"
@@ -1183,7 +1197,7 @@
       "group": 0,
       "bit": 5,
       "mask": 32,
-      "name": "1.6.5: individual pack lock active at 0, status; 1.5.5 reserved",
+      "name": "1.6.7: individual pack lock active at 0, status; 1.5.6 reserved",
       "C_A1_1_6_3": "E3",
       "read_only_1_6_3": true,
       "C_A1_1_5_3": "W"
@@ -1192,7 +1206,7 @@
       "group": 0,
       "bit": 6,
       "mask": 64,
-      "name": "1.6.5: hard-stop selection when bit 7=0; Original/1.5.5 reserved",
+      "name": "1.6.7: hard-stop selection when bit 7=0; Original/1.5.6 reserved",
       "C_A1_1_6_3": "W",
       "read_only_1_6_3": false,
       "C_A1_1_5_3": "W"
@@ -1201,7 +1215,7 @@
       "group": 0,
       "bit": 7,
       "mask": 128,
-      "name": "1.6.5: 0 explicit choice, 1 build default; Original/1.5.5 reserved",
+      "name": "1.6.7: 0 explicit choice, 1 build default; Original/1.5.6 reserved",
       "C_A1_1_6_3": "W",
       "read_only_1_6_3": false,
       "C_A1_1_5_3": "W"

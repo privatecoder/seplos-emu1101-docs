@@ -42,12 +42,12 @@ def validate_configurable(original,patched,facts,report):
   n=Machine(patched,facts);n.put(d['nv_primary'],m.read(d['nv_primary'],8192));n.defaults(m.num(r['address']));return n
  def no_flash(m):equal(m.saves,[]);equal(m.nv_ops,[]);equal(m.flash_ops,[])
  def surface():
-  assert report['patch_version'] in ('1.6.4','1.6.5');equal(report['image_flags'],0xfe|int(default))
+  assert report['patch_version'] in ('1.6.4','1.6.5','1.6.6','1.6.7');equal(report['image_flags'],0xfe|int(default))
   assert report['configurable_hard_stop'] and report['hard_stop']['enabled'] is None
   equal(report['hard_stop']['default_enabled'],default);equal(report['ram_bytes'],4)
-  equal(len(report['hooks']),21+int(bool(report.get('scheduler_atomic'))));equal(report['hooks']['hook_configurable_hard_stop'],h['site'])
+  equal(len(report['hooks']),21+int(bool(report.get('scheduler_atomic')))+2*int(bool(report.get('polling')))+int(bool(report.get('ccl_ramp'))));equal(report['hooks']['hook_configurable_hard_stop'],h['site'])
   equal(h['site'],base['offset']);equal(h['parameter_mask'],0xc0)
-  assert len(set(report['hooks'].values()))==21+int(bool(report.get('scheduler_atomic')))
+  assert len(set(report['hooks'].values()))==21+int(bool(report.get('scheduler_atomic')))+2*int(bool(report.get('polling')))+int(bool(report.get('ccl_ramp')))
  check('capability-and-profile-hook-surface',surface)
  def FF():
   m=board();equal(m.num(r['group0']),255)

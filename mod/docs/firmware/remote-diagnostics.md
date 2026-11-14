@@ -15,10 +15,10 @@ ASCII 64 with INFO 03 returns 21 decoded bytes, LENGTH `402A`, 60 total ASCII fr
 | 0–2 | 3 | ASCII `EXT` |
 | 3 | 1 | Format 05 |
 | 4–6 | 3 | Binary OEM major/minor/revision; revision FF means unknown |
-| 7–9 | 3 | Light 01 05 04/05 or Full 01 06 04/05 |
+| 7–9 | 3 | Binary EXT major/minor/patch, for example01 06 07 |
 | 10–17 | 8 | Concrete-image build ID |
 | 18 | 1 | Existing image flags; default 3A light / FE full |
-| 19–20 | 2 | Capability mask, unsigned big endian; current value 000F |
+| 19–20 | 2 | Capability mask, unsigned big endian; Light 000F; Full 1.6.7+001F |
 
 | Mask bit | Capability |
 |---|---|
@@ -26,8 +26,9 @@ ASCII 64 with INFO 03 returns 21 decoded bytes, LENGTH `402A`, 60 total ASCII fr
 | 1 / 0002 | Active/stored calibration 64/05 pages |
 | 2 / 0004 | Persisted SOC/capacity contents in 64/06 |
 | 3 / 0008 | Full-width live energy in 64/06 |
+| 4 / 0010 | Full 1.6.7+: [configurable CCL decrease](configurable-ccl-ramp.md), 64/07 read and 64/08 write |
 
-Offer a read only when its explicit capability is present. Version text, a previous 64/04 flag or an ACK does not establish these capabilities. The reference client rejects unknown formats, wrong lengths and unknown capability bits. Image flags remain distinct from runtime permissions and the appended read-capability mask.
+Offer a read only when its explicit capability is present. Version text, a previous 64/04 flag or an ACK does not establish these capabilities. The reference client rejects unknown formats, wrong lengths and unknown capability bits. Image flags remain distinct from runtime permissions and the appended capability mask.
 
 ## History: ASCII 4B on UART1
 
@@ -46,7 +47,7 @@ The [OEM history layout](../../../analysis/protocols/seplos-ascii.md#56-cid2-0x4
 
 UART0 and UART1 share the OEM cursor. Do not interleave independent readers. UART1 restores its saved cursor after a reported EEPROM read failure so a subsequent next request retries the same logical entry. A missing response remains ambiguous: a completed request can already have advanced the cursor. Host retry policy must account for that. Concurrent writes can move ring contents/count; no full-ring atomic snapshot is promised.
 
-At 9600 8N1 the 212-byte response takes 220.83 ms on the wire; the 22-byte request adds 22.92 ms. A practical 200 ms quiet allowance gives 443.75 ms before EEPROM, scheduler and gateway latency. About 0.5 s per record and 4 min for 500 are planning estimates, not measured hardware guarantees. The model injects UART1 RX at the EEPROM transfer boundary. Deterministic native cases cover enabled timer/protection/CMP handlers and concurrent UART0 reception with deferred parsing; a complete multi-pack UART0 polling system remains untested. Physical timing, real I2C fault duration, scheduler latency and traffic saturation remain unmeasured. Keep protection and UART0 polling active during UART1 reads.
+At 9600 8N1 the 212-byte response takes 220.83 ms on the wire; the 22-byte request adds 22.92 ms. A practical 200 ms quiet allowance gives 443.75 ms before EEPROM, scheduler and gateway latency. About 0.5 s per record and 4 min for 500 are planning estimates, not measured hardware guarantees. The model injects UART1 RX at the EEPROM transfer boundary. Deterministic native cases cover enabled timer/protection/CMP handlers and concurrent UART0 reception with deferred parsing; physical multi-pack UART0 polling remains untested. Physical timing, real I2C fault duration, scheduler latency and traffic saturation remain unmeasured. Keep protection and UART0 polling active during UART1 reads.
 
 ## Calibration: ASCII 64/05
 
@@ -126,4 +127,4 @@ Q and Qmax are reconstructed from stored capacities; they are not independent st
 
 The [device tools](../../tools/device/README.md#read-only-remote-diagnostics) list offline commands. `maintenance_client.py` sends only with an explicit serial/TCP transport and performs one exchange per new read. New decoders return JSON-compatible dictionaries; raw stored data remains hexadecimal with separate strict classification and native CRC acceptance.
 
-Mandatory native validation covers emitted code, own/foreign addresses, both diagnostic ports, malformed requests, record shapes/CRC, failures, ABI, no repair/write side effects, history cursor rollback and UART1 RX injection at the EEPROM transfer boundary. Deterministic native cases cover enabled timer/protection/CMP handlers and concurrent UART0 reception with deferred parsing; a complete multi-pack UART0 polling system remains untested; physical timing remains unmeasured. Offline host tests cover explicit capability discovery, endian/signed fields, unsigned energy beyond 65000 and one-request behavior. Current 1.5.5/1.6.5 builds pass 257/339 mandatory native groups, including atomic scheduler cleanup tests. Current EXT05 Light 1.5.4/Full 1.6.4 references pass 251/333 groups. [Release metadata](../../firmware/releases/README.md) binds their exact EHEX/application hashes. `hardware_tested` remains false; no current profile was flashed or tested on hardware. See [validation limits](validation-methods-and-limits.md).
+Mandatory native validation covers emitted code, own/foreign addresses, both diagnostic ports, malformed requests, record shapes/CRC, failures, ABI, no repair/write side effects, history cursor rollback and UART1 RX injection at the EEPROM transfer boundary. Deterministic native cases cover enabled timer/protection/CMP handlers and concurrent UART0 reception with deferred parsing; physical multi-pack UART0 polling remains untested; physical timing remains unmeasured. Offline host tests cover explicit capability discovery, endian/signed fields, unsigned energy beyond 65000 and one-request behavior. Current Light 1.5.6/Full 1.6.7 builds additionally test early UART0 polling; the release metadata records exact mandatory native group counts. Atomic scheduler cleanup remains included. Current EXT05 Light 1.5.4/Full 1.6.4 references pass 251/333 groups. [Release metadata](../../firmware/releases/README.md) binds their exact EHEX/application hashes. `hardware_tested` remains false; no current profile was flashed or tested on hardware. See [validation limits](validation-methods-and-limits.md).

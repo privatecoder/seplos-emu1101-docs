@@ -17,7 +17,7 @@ def report_fixture(version):
  from seplos.uart_timing_tests import REQUIRED as TIMING
  from seplos.interrupt_tests import REQUIRED as INTERRUPTS,FULL_REQUIRED
  from seplos.cutoff_tests import FAST_REQUIRED
- light=version.startswith('1.5.');atomic=version in ('1.5.5','1.6.5')
+ light=version.startswith('1.5.');atomic=version in ('1.5.5','1.6.5','1.5.6','1.6.6','1.6.7')
  hooks={**{f'hook_{i}':i*4 for i in range(4)},'marker':16}
  facts=dict(hooks={k:v for k,v in hooks.items() if k!='marker'},marker_uart0=dict(hooks=dict(marker=16)))
  if not light:
@@ -25,6 +25,9 @@ def report_fixture(version):
   facts['configurable_hardstop']=dict(site=80)
  if atomic:
   hooks['hook_scheduler_atomic']=84;facts['scheduler_atomic']=dict(hooks={'hook_scheduler_atomic':84})
+ if version in ('1.5.6','1.6.6','1.6.7'):
+  hooks.update(hook_poll_start=88,hook_poll_evaluate=92)
+  facts['polling']=dict(hooks=dict(hook_poll_start=88,hook_poll_evaluate=92))
  built=dict(patch_version=version,info_format=5,info_bytes=21,remote_capabilities=15,
   remote_diagnostics=True,uart0_marker=True,image_flags=58 if light else 254,
   positive_flags=True,extended_diagnostics=True,ram_bytes=0 if light else 4,hooks=hooks)
@@ -37,6 +40,14 @@ def report_fixture(version):
   from seplos.scheduler_atomic_tests import REQUIRED as ATOMIC
   groups.append(('scheduler atomic',ATOMIC))
   built['scheduler_atomic']=dict(enabled=True)
+ if version in ('1.5.6','1.6.6','1.6.7'):
+  from seplos.polling_tests import REQUIRED as POLLING
+  groups.append(('UART0 polling',POLLING))
+  built['polling']=dict(enabled=True)
+ if version=='1.6.7':
+  from seplos.ccl_ramp_tests import REQUIRED as CCL
+  groups.append(('CCL ramp',CCL));built['ccl_ramp']=dict(enabled=True)
+  built['remote_capabilities']=31;hooks['hook_ccl_decrease']=96
  names=(*MARKER,*(LIGHT if light else (*SERVICE,*HARDSTOP,*POSITIVE)),*REMOTE,
         *(n for _,group in groups for n in group),*[f'cutoff-{i}' for i in range(30)],
         *[f'other-{i}' for i in range(60)])
@@ -50,7 +61,7 @@ def report_fixture(version):
 
 class HardwarePublication(unittest.TestCase):
  def test_each_missing_group_is_refused_for_each_profile(self):
-  for version in ('1.5.4','1.6.4','1.5.5','1.6.5'):
+  for version in ('1.5.4','1.6.4','1.5.5','1.6.5','1.5.6','1.6.6','1.6.7'):
    source,base,groups=report_fixture(version)
    for label,group in groups:
     for missing in group:

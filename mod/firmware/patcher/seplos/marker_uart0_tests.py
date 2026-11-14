@@ -95,7 +95,7 @@ def validate_uart0_marker(original,patched,facts,report):
     equal(m.flash_ops,[]);equal(m.read(0x23000,4),bytes(4))
  check('foreign-and-FF-silent',foreign)
  def tokens():
-  for payload in (b'\7' if report.get('extended_diagnostics') else b'\4',b'\1\xc3\x5a',b'\0\xc3\0',b'\0\0\x5a'):
+  for payload in (b'\11' if report.get('ccl_ramp') else b'\7' if report.get('extended_diagnostics') else b'\4',b'\1\xc3\x5a',b'\0\xc3\0',b'\0\0\x5a'):
    m=board();m.put(0x23000,bytes(4));equal(query(m,payload),(5,b''));equal(m.flash_ops,[])
  check('malformed-token-and-start-not-added',tokens)
  def nonhex():

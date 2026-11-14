@@ -7,62 +7,68 @@ Custom firmware for Seplos BMS 2.0 (EMU1101, hardware V16).
 Function availability starts at **Light 1.5.3+** and **Full 1.6.3+**. Both
 branches use Group0.bit3=1 to permit UART1 power/RTC and 0 to deny it.
 Differences within the versioned releases add remote reads in `.4` and atomic
-scheduler cleanup in `.5`; the Full baseline already includes persistent lock,
+scheduler cleanup in `.5`, early master polling in `.6`, and configurable downward CCL in Full `.7`; the Full baseline already includes persistent lock,
 verified reset checkpointing and configurable hard stop.
 
-The patcher builds Light 1.5.4/1.5.5 and Full 1.6.4/1.6.5. The
+The patcher builds Light 1.5.4/1.5.5/1.5.6 and Full 1.6.4/1.6.5/1.6.6/1.6.7. The
 [input manifest](ext-version-comparison-inputs.json) and
-[release metadata](../../firmware/releases/README.md) bind those four exact
+[release metadata](../../firmware/releases/README.md) bind those seven exact
 EXT05 images. Tables compare the versioned contracts, using the published soft
 static/inherited hard-stop defaults. “Own” means the local address 0–21,
 including slaves; ordinary DIP addresses are 0–15. “Master” means address 0.
 Requests are valid complete frames, and `64/05` denotes command 64 with INFO 05.
 
 `Group0` is writable configuration/status. Immutable image flags in `64/03`
-and the EXT05 read-capability mask are separate fields; equal bit numbers do
+and the EXT05 capability mask are separate fields; equal bit numbers do
 not imply equal meanings.
 
 ## Full: available from 1.6.3
 
-| Same feature/request/state | Full 1.6.3 | Full 1.6.4 | Full 1.6.5 |
-|---|---|---|---|
-| UART1 power/RTC permission, Group0.bit3 | 1 allows, 0 denies | Same | Same |
-| Extended off, bit4; lock status, bit5 | 1 enables; 0 means locked | Same | Same |
-| Targeted off can persist an individual lock | Yes | Same | Same |
-| Group0.bits6/7 select hard stop | Yes | Same | Same |
-| UART0 identity/status/clear, own address | Supported | Same | Same |
-| UART1 status/start/clear | Master only | Same | Same |
-| Both ports `64/04`, own address | 10 bytes, lock/cache fields | Same | Same |
-| Targeted `45/06` saves and verifies SOC before reset | Yes | Same | Same |
-| `64/03` identity layout | 19-byte layout | **EXT05 / 21 bytes** | Same layout |
-| Both ports `64/05`, own address | Absent | **Calibration pages** | Same |
-| Both ports `64/06`, own address | Absent | **68-byte SOC/energy read** | Same |
-| UART1 `4B`, own address | RTN04 | **History read** | Same |
-| Read-capability mask in `64/03` | Not present | **`000F`** | Same |
-| Reproduced scheduler wake-enable loss prevented | No | No | **Yes** |
+| Same feature/request/state | Full 1.6.3 | Full 1.6.4 | Full 1.6.5 | Full 1.6.6 | Full 1.6.7 |
+|---|---|---|---|---|---|
+| UART1 power/RTC permission, Group0.bit3 | 1 allows, 0 denies | Same | Same | Same | Same |
+| Extended off, bit4; lock status, bit5 | 1 enables; 0 means locked | Same | Same | Same | Same |
+| Targeted off can persist an individual lock | Yes | Same | Same | Same | Same |
+| Group0.bits6/7 select hard stop | Yes | Same | Same | Same | Same |
+| UART0 identity/status/clear, own address | Supported | Same | Same | Same | Same |
+| UART1 status/start/clear | Master only | Same | Same | Same | Same |
+| Both ports `64/04`, own address | 10 bytes, lock/cache fields | Same | Same | Same | Same |
+| Targeted `45/06` saves and verifies SOC before reset | Yes | Same | Same | Same | Same |
+| `64/03` identity layout | 19-byte layout | **EXT05 / 21 bytes** | Same layout | Same | Same |
+| Both ports `64/05`, own address | Absent | **Calibration pages** | Same | Same | Same |
+| Both ports `64/06`, own address | Absent | **68-byte SOC/energy read** | Same | Same | Same |
+| UART1 `4B`, own address | RTN04 | **History read** | Same | Same | Same |
+| Capability mask in `64/03` | Not present | **`000F`** | Same | Same | **`001F`** |
+| Reproduced scheduler wake-enable loss prevented | No | No | **Yes** | Same | Same |
+| Validated early poll completion | No | No | No | **Yes** | Same |
+| Downward CCL step, A per online pack/update | 1 | 1 | 1 | 1 | **1–20, default 1** |
+| Separate EXT read/set, `64/07` / `64/08` | Absent | Absent | Absent | Absent | **Present; effective on master** |
 
 ## Light: available from 1.5.3
 
-| Same feature/request/state | Light 1.5.3 | Light 1.5.4 | Light 1.5.5 |
-|---|---|---|---|
-| UART1 power/RTC permission, Group0.bit3 | 1 allows, 0 denies | Same | Same |
-| Bits4/5 provide extended off / persistent lock | No; reserved | Same | Same |
-| Bits6/7 configure hard stop | No; static image choice | Same | Same |
-| Targeted off | OEM soft off | Same | Same |
-| Targeted reset checkpoint | None | Same | Same |
-| UART0 identity/status/clear, own address | Supported | Same | Same |
-| UART1 status/start/clear | Master only | Same | Same |
-| Both ports `64/04`, own address | 10 bytes | Same | Same |
-| Diagnostic lock/cache bytes 7–9 | `FF FF 00`: unavailable | Same | Same |
-| `64/03` identity layout | 19-byte layout | **EXT05 / 21 bytes** | Same layout |
-| Both ports `64/05`, own address | Absent | **Calibration pages** | Same |
-| Both ports `64/06`, own address | Absent | **68-byte SOC/energy read** | Same |
-| UART1 `4B`, own address | RTN04 | **History read** | Same |
-| Read-capability mask | Not present | **`000F`** | Same |
-| Reproduced scheduler wake-enable loss prevented | No | No | **Yes** |
+| Same feature/request/state | Light 1.5.3 | Light 1.5.4 | Light 1.5.5 | Light 1.5.6 |
+|---|---|---|---|---|
+| UART1 power/RTC permission, Group0.bit3 | 1 allows, 0 denies | Same | Same | Same |
+| Bits4/5 provide extended off / persistent lock | No; reserved | Same | Same | Same |
+| Bits6/7 configure hard stop | No; static image choice | Same | Same | Same |
+| Targeted off | OEM soft off | Same | Same | Same |
+| Targeted reset checkpoint | None | Same | Same | Same |
+| UART0 identity/status/clear, own address | Supported | Same | Same | Same |
+| UART1 status/start/clear | Master only | Same | Same | Same |
+| Both ports `64/04`, own address | 10 bytes | Same | Same | Same |
+| Diagnostic lock/cache bytes 7–9 | `FF FF 00`: unavailable | Same | Same | Same |
+| `64/03` identity layout | 19-byte layout | **EXT05 / 21 bytes** | Same layout | Same |
+| Both ports `64/05`, own address | Absent | **Calibration pages** | Same | Same |
+| Both ports `64/06`, own address | Absent | **68-byte SOC/energy read** | Same | Same |
+| UART1 `4B`, own address | RTN04 | **History read** | Same | Same |
+| Read-capability mask | Not present | **`000F`** | Same | Same |
+| Reproduced scheduler wake-enable loss prevented | No | No | **Yes** | Same |
+| Validated early poll completion | No | No | No | **Yes** |
+| Downward / upward CCL step, A per online pack/update | 1 / 1 | Same | Same | Same |
+| Separate EXT CCL configuration | Absent | Absent | Absent | Absent |
 
 The `.3` identity layouts identify the release baselines in this comparison.
-The four buildable profiles use EXT05; current clients accept only that layout.
+The seven buildable profiles use EXT05; current clients accept only that layout.
 Light diagnostic bytes `FF FF 00` mean unavailable lock/cache capability,
 not confirmed unlocked. A Light `64/06` read does not imply a reset checkpoint.
 
@@ -139,8 +145,8 @@ token and Group7.bit5=0. Clearing the marker needs no write/start/power permissi
 
 EXT05 has 21 decoded INFO bytes, LENGTH `402A`, and 60 total ASCII frame bytes.
 Version bytes are at 7–9, build ID at 10–17, image flags at 18 and the big-endian
-read-capability mask at 19–20. Mask `000F` denotes UART1 history, calibration
-pages, persisted SOC contents and full-width energy.
+capability mask at 19–20. Mask `000F` denotes UART1 history, calibration
+pages, persisted SOC contents and full-width energy. Full 1.6.7 adds `0010` for CCL configuration, giving `001F`.
 
 All versioned profiles preserve OEM `42` energy encoding: below raw 65000 the
 value is emitted normally; at 65000 or above the u16 field emits fallback 6500.
@@ -162,7 +168,7 @@ defines the code path and native counterexample.
 
 ## Evidence and limits
 
-The input manifest binds the four buildable EXT images. Their mandatory native
+The input manifest binds the seven buildable EXT images. Their mandatory native
 tests verify identity, permissions, remote reads, reset paths and scheduler
 behavior. Exact `.3` baseline identities and source-bound directed comparisons
 remain in local evidence. [Release history](../../firmware/CHANGELOG.md)
@@ -170,6 +176,44 @@ records the release baselines and development steps separately.
 
 UART, RTC, flash and EEPROM boundaries are modeled. Directed RAM values, empty
 rings and fault injection are synthetic. The tests do not establish physical
-timing, complete multi-pack execution or hardware validation. See the
+timing, physical multi-pack execution or hardware validation. See the
 [current access matrix](uart-write-capabilities.md) and
 [validation limits](validation-methods-and-limits.md).
+
+## Early polling from Light 1.5.6 / Full 1.6.6
+
+Both branches retain their .5 behavior and add validated early completion of
+master UART0 polls. A matching valid response releases the next sequential
+request before the nominal 150 ms timeout; invalid or missing responses retain
+the original deadline. The aggregate remains gated by the one-second slow pass,
+so faster polling can increase aggregate/CCL update frequency without changing
+the per-update CCL step. No new command, permission bit or NVM migration is
+introduced. See [early polling](early-polling.md) and [release metadata](../../firmware/releases/README.md).
+
+## Configurable downward CCL from Full 1.6.7
+
+Full 1.6.7 retains the Full 1.6.6 polling and safety behavior. A separate stored value selects 1–20 A downward per online pack per update; upward remains 1 A. Default 1 reproduces the ordinary prior ramp. The same OEM flags and parameters therefore retain their meaning, but an explicitly changed new setting alters the rate of ordinary CCL reduction. Native target saturation and immediate overrides remain unchanged.
+
+New addressed services are 64/07 read and 64/08 set, with UART1 writes gated by Group0.bit0. EXT05 remains 21 bytes and gains capability 0010 (Full mask 001F). Light remains 000F with the fixed ramp. The field is absent from OEM 47/A1 and XML exports. [Complete contract](configurable-ccl-ramp.md).
+
+
+## Polling and CCL matrix through Full 1.6.7
+
+These are ordinary-ramp examples with twelve continuously online packs, a fixed 10 A target, initial CCL 1560 A and no direct zero/heating/Full override. The timing model is based on OEM .13; older OEM inputs and unversioned development images are not assigned these seconds estimates without source-specific evidence. `P` is the aggregate-update interval, not the CAN send interval.
+
+| Master firmware | Downward factor d | Bank step per update | Updates until ≤840 A / exactly 10 A | Calculated seconds at stated P |
+|---|---:|---:|---:|---|
+| OEM 16.06.13 | 1 | 12 A | 60 / 130 | ≈120 / 260 at nominal P=2 s |
+| Light 1.5.3, 1.5.4, 1.5.5 | 1 | 12 A | 60 / 130 | Same fixed-window model |
+| Full 1.6.3, 1.6.4, 1.6.5 | 1 | 12 A | 60 / 130 | Same when Full override is inactive |
+| Light 1.5.6 / Full 1.6.6 | 1 | 12 A | 60 / 130 | ≈60 / 130 if P=1 s; ≈120 / 260 if P=2 s |
+| Full 1.6.7, default | 1 | 12 A | 60 / 130 | Same as `.6` |
+| Full 1.6.7 | 2 | 24 A | 30 / 65 | ≈30 / 65 if P=1 s; ≈60 / 130 if P=2 s |
+| Full 1.6.7 | 3 | 36 A | 20 / 44 | ≈20 / 44 if P=1 s; ≈40 / 88 if P=2 s |
+| Full 1.6.7 | 5 | 60 A | 12 / 26 | ≈12 / 26 if P=1 s; ≈24 / 52 if P=2 s |
+| Full 1.6.7 | 10 | 120 A | 6 / 13 | ≈6 / 13 if P=1 s; ≈12 / 26 if P=2 s |
+| Full 1.6.7 | 20 | 240 A | 3 / 7 | ≈3 / 7 if P=1 s; ≈6 / 14 if P=2 s |
+
+The P=1 s case requires the entire poll round to complete before the next slow pass; it is not guaranteed by `.6`/`.7`. These budgets count `K × P`; warning-to-first-update delay and electrical inverter response are not established. Upward steps remain N × 1 A per update in every row. The Full 1.6.7 factor is a **separate persistent EXT setting on the addressed BMS**, effective in the master role, outside the 87-value OEM block and its replication/export workflow.
+
+[Timing derivation, more starting values, pack counts and operational effects](early-polling.md#calculated-timing-across-firmware-versions) · [OpenBMS setting workflow](openbms-monitor.md#full-167-ccl-configuration)

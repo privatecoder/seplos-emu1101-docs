@@ -6,6 +6,8 @@ The reference is **unmodified OEM firmware**, specifically
 16.06.13; all addresses below refer to that image. Counterexamples execute real
 Cortex-M0 code with synthetic RAM/GPIO inputs. They are not electrical measurements.
 
+> **Charge MOSFET off does not necessarily mean zero charge current:** the parallel limiter can remain active. See [charge warnings, bank CCL and local current limiting](states-and-triggers.md#charge-warnings-bank-ccl-and-local-current-limiting) for the distinct warning, limiting and protection paths.
+
 ## Three different states
 
 | Layer | Meaning |

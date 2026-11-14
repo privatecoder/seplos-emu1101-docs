@@ -33,7 +33,7 @@
       "version": "1.5.5",
       "variant": "Light",
       "filename": "EMU1101-EXT_Light_1.5.5.ehex",
-      "metadata": "mod/firmware/releases/ext-light.json",
+      "metadata": "mod/firmware/releases/references/ext-light-1.5.5.json",
       "build_id": "082cb731c006aac5",
       "app_sha256": "a6bd1f959b4fd7baaf84ed2c65207a54f6225203c86e0257953e4d486c42d8fd",
       "ehex_sha256": "20ee87a808314781479821a107dbad350e165db6a63c88241bec444e02556911",
@@ -46,7 +46,7 @@
       "version": "1.6.5",
       "variant": "Full",
       "filename": "EMU1101-EXT_Full_1.6.5.ehex",
-      "metadata": "mod/firmware/releases/ext-full.json",
+      "metadata": "mod/firmware/releases/references/ext-full-1.6.5.json",
       "build_id": "13464fc91a6e6a20",
       "app_sha256": "20e26bf8a0a0cd9d9b21c9018fc2c5b4e2325cf510f0c01b48c72da1c684265d",
       "ehex_sha256": "fae20016130c950ee12e9a90ad0aa0e042b41eda3e46aef1f95469378d800b2f",
@@ -54,6 +54,46 @@
       "tests": 339,
       "app_bytes": 59260,
       "identity_only_change_verified": true
+    },
+    {
+      "version": "1.5.6",
+      "variant": "Light",
+      "filename": "EMU1101-EXT_Light_1.5.6.ehex",
+      "metadata": "mod/firmware/releases/ext-light.json",
+      "build_id": "fe7cba82f861f337",
+      "app_sha256": "20fe53a245ef7cb19ab8087aa28a168d6d0830e8198052ec8aad1c40f7f8ab62",
+      "ehex_sha256": "2535115af7ca492930fe5bb6ae926bb2696f5cab6d7f36801142924272fd8f5e",
+      "info_hex": "4558540510060D010506FE7CBA82F861F3373A000F",
+      "tests": 269,
+      "app_bytes": 57760,
+      "early_uart0_poll_completion": true
+    },
+    {
+      "version": "1.6.6",
+      "variant": "Full",
+      "filename": "EMU1101-EXT_Full_1.6.6.ehex",
+      "metadata": "mod/firmware/releases/references/ext-full-1.6.6.json",
+      "build_id": "2508b93f45c29f31",
+      "app_sha256": "f97f3ade59e483ac7483a44f16b9a8a3d634dbdc9543bbdb0c1e89d31e739cb0",
+      "ehex_sha256": "63568f2b87f1df5a7851c15a244505f2ded13bdbeee681e30e3a442661dbd3a2",
+      "info_hex": "4558540510060D0106062508B93F45C29F31FE000F",
+      "tests": 351,
+      "app_bytes": 59692,
+      "early_uart0_poll_completion": true
+    },
+    {
+      "version": "1.6.7",
+      "variant": "Full",
+      "filename": "EMU1101-EXT_Full_1.6.7.ehex",
+      "metadata": "mod/firmware/releases/ext-full.json",
+      "build_id": "f445666c205184a8",
+      "app_sha256": "a81d8b12ea97717a241fdaf929ba9d131bb89715b0eddb33940e279b0bbd4b4c",
+      "ehex_sha256": "24665349103b44362c6dffd31d21e52cb67ef09e0dd2788a8cc6ba2a31b4255a",
+      "info_hex": "4558540510060D010607F445666C205184A8FE001F",
+      "tests": 360,
+      "app_bytes": 60084,
+      "early_uart0_poll_completion": true,
+      "configurable_ccl_decrease": true
     }
   ]
 }

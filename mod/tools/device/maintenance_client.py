@@ -8,7 +8,7 @@ Examples (nothing is sent without --serial or --tcp):
   python3 -I maintenance_client.py stop --uart UART1 --tcp 192.0.2.1:8899
 
 EMU1101-EXT (EMU1101 Extended Firmware): custom firmware for Seplos BMS 2.0
-(EMU1101, hardware V16). Current profiles are Light 1.5.5 and Full 1.6.5;
+(EMU1101, hardware V16). Current profiles are Light 1.5.6 and Full 1.6.7;
 Light 1.5.4 and Full 1.6.4 are reference builders. Every versioned release uses
 1=enabled and 0=denied permission semantics. Only the 21-byte EXT05 identity is
 accepted. Marker command 64/02
@@ -40,9 +40,9 @@ import time
 
 INFO = {"status": "02", "info": "03", "diagnostics": "04", "start": "01C35A", "stop": "00C35A",
         "calibration-active": "0500", "calibration-primary": "0501",
-        "calibration-backup": "0502", "checkpoint-energy": "06"}
+        "calibration-backup": "0502", "checkpoint-energy": "06", "ccl-ramp": "07", "set-ccl-ramp": "08"}
 HISTORY = {"history-oldest": "0000", "history-next": "0001"}
-READ_ACTIONS = frozenset(("info", "diagnostics", *HISTORY,
+READ_ACTIONS = frozenset(("ccl-ramp", "info", "diagnostics", *HISTORY,
                           "calibration-active", "calibration-primary", "calibration-backup", "checkpoint-energy"))
 
 
@@ -69,16 +69,21 @@ def normalize_uart(value):
     return aliases[value]
 
 
-def request(action, address=0, uart="UART1"):
+def request(action, address=0, uart="UART1", *, step=None):
     valid_address(address)
+    if action == "set-ccl-ramp":
+        if type(step) is not int or not 1 <= step <= 20:
+            raise ValueError("CCL decrease step must be an integer from 1 to 20 A")
+    elif step is not None:
+        raise ValueError("--step is only valid with set-ccl-ramp")
     uart = normalize_uart(uart)
     if uart == "UART0" and action == "start":
         raise ValueError("Maintenance start is only available over UART1")
-    if uart == "UART1" and address and action not in READ_ACTIONS:
+    if uart == "UART1" and address and action not in READ_ACTIONS and action != "set-ccl-ramp":
         raise ValueError("Only addressed read commands are available for nonzero pack addresses")
     if action in HISTORY:
         return frame(0x4B, HISTORY[action], address)
-    return frame(0x64, INFO[action], address)
+    return frame(0x64, INFO[action] + ("%02X" % step if action == "set-ccl-ramp" else ""), address)
 
 
 def parse_response(raw, address=0):
@@ -104,7 +109,7 @@ def parse_info(info):
         raise ValueError("unknown EMU1101-EXT info format or length; expected EXT05")
     flags = info[18]
     caps = int.from_bytes(info[19:21], "big")
-    if caps & ~0x000f:
+    if caps & ~0x001f:
         raise ValueError("unknown EMU1101-EXT capability bits")
     result = {
         "base_version": ("%d.%02d.?" % (info[4], info[5])) if info[6] == 255 else "%d.%02d.%02d" % (info[4], info[5], info[6]),
@@ -116,12 +121,20 @@ def parse_info(info):
         "checkpoint_before_reset": bool(flags & 64), "configurable_hard_stop": bool(flags & 128),
         "capabilities": caps, "uart1_history": bool(caps & 1),
         "calibration_pages": bool(caps & 2), "persisted_soc_contents": bool(caps & 4),
-        "full_width_energy": bool(caps & 8),
+        "full_width_energy": bool(caps & 8), "configurable_ccl_decrease": bool(caps & 16),
     }
     if flags & 128:
         result["hard_stop_default"] = bool(flags & 1)
         result["hard_stop"] = None  # Current state requires 47/Group0.
     return result
+
+
+def parse_ccl_ramp(info):
+    """Full1.6.7 64/07 or64/08 response; steps are per update, not A/s."""
+    if len(info) != 5 or info[0] != 1 or not 1 <= info[1] <= 20 or info[2:] != bytes([1,1,20]):
+        raise ValueError("unknown CCL ramp format, range or fixed upward step")
+    return dict(format=1, decrease_A_per_online_pack_per_update=info[1],
+                increase_A_per_online_pack_per_update=1, minimum=1, maximum=20)
 
 
 def hard_stop_state(group0, image_flags, info_format=5):
@@ -382,6 +395,7 @@ def main():
                            help="RS485 Ethernet gateway; configure its baudrate for the selected UART")
     parser.add_argument("--uart", type=normalize_uart, choices=("UART0", "UART1"), default="UART1", help="UART0=RS485-1/2 at19200; UART1=CAN-socket RS485 at9600")
     parser.add_argument("--address", type=int, default=0, help="Target pack0..21; on UART1 nonzero with addressed read commands")
+    parser.add_argument("--step", type=int, help="set-ccl-ramp: 1..20 A decrease per online pack per aggregate update")
     parser.add_argument("--no-wait", action="store_true", help="show the immediate ACK without waiting for the DIP update")
     parser.add_argument("--expected-slaves", type=int, metavar="N", help="expected physical slave count after stop (0..15); default: any positive count")
     args = parser.parse_args()
@@ -389,7 +403,7 @@ def main():
         if args.action != "stop" or not 0 <= args.expected_slaves <= 15:
             parser.error("--expected-slaves requires stop and a value from 0 to 15")
     try:
-        sent = request(args.action, args.address, uart=args.uart)
+        sent = request(args.action, args.address, uart=args.uart, step=args.step)
     except ValueError as error:
         parser.error(str(error))
     print("TX", sent.decode("ascii").rstrip("\r"))
@@ -401,13 +415,18 @@ def main():
     exchange = (lambda packet, timeout=3: exchange_serial(args.serial, packet, timeout, baud=19200) if args.uart=="UART0" else exchange_serial(args.serial, packet, timeout)) if args.serial else (
         lambda packet, timeout=3: exchange_tcp(args.tcp, packet, timeout))
     try:
+        if args.action == "set-ccl-ramp":
+            _, (identity_rtn, identity) = exchange(request("info", args.address, uart=args.uart))
+            if identity_rtn or not parse_info(identity)["configurable_ccl_decrease"]:
+                raise ValueError("target does not advertise configurable CCL decrease")
         raw, (rtn, info) = exchange(sent)
     except (OSError, ValueError) as error:
         raise SystemExit("Connection or response failed: %s" % error) from error
     print("RX", raw.decode("ascii", "replace").rstrip("\r"))
     if rtn:
         raise SystemExit("BMS returned RTN %02X" % rtn)
-    decoder = (parse_history if args.action in HISTORY else
+    decoder = (parse_ccl_ramp if args.action in ("ccl-ramp", "set-ccl-ramp") else
+               parse_history if args.action in HISTORY else
                parse_calibration if args.action.startswith("calibration-") else
                parse_checkpoint_energy if args.action == "checkpoint-energy" else
                parse_diagnostics if args.action == "diagnostics" else None)
@@ -427,6 +446,7 @@ def main():
         hard_stop=("configurable (default=%s; state requires Group0)" % ("on" if details["hard_stop_default"] else "off")) if details["configurable_hard_stop"] else ("on" if details["hard_stop"] else "off")
         print("info-format=%d image-flags=0x%02X hard-stop=%s positive-flags=%s" % (details["info_format"], details["image_flags"], hard_stop, "yes" if details["positive_flags"] else "no"))
         print("diagnostics=%s checkpoint-before-reset=%s" % ("yes" if details["extended_diagnostics"] else "no", "yes" if details["checkpoint_before_reset"] else "no"))
+        print("configurable-ccl-decrease=%s" % details["configurable_ccl_decrease"])
         print("capabilities=0x%04X history=%s calibration=%s persisted-soc=%s full-width-energy=%s" % (
             details["capabilities"], details["uart1_history"], details["calibration_pages"],
             details["persisted_soc_contents"], details["full_width_energy"]))

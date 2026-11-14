@@ -4,13 +4,45 @@
 
 EMU1101-EXT (EMU1101 Extended Firmware). Custom firmware for Seplos BMS 2.0 (EMU1101, hardware V16).
 
-Versioned Light releases start at 1.5.3; versioned Full releases start at 1.6.3. Earlier builds use versionless development identifiers. Development builds have unique dated identifiers without semantic versions. These identifiers track functional development and evidence; they do not assert a new binary identity for archived images. Current EXT05 identities and checksums are bound by the [release metadata](releases/README.md). The published patcher supports only Light 1.5.4, Light 1.5.5, Full 1.6.4 and Full 1.6.5.
+Versioned Light releases start at 1.5.3; versioned Full releases start at 1.6.3. Earlier builds use versionless development identifiers. Development builds have unique dated identifiers without semantic versions. These identifiers track functional development and evidence; they do not assert a new binary identity for archived images. Current EXT05 identities and checksums are bound by the [release metadata](releases/README.md). The published patcher supports Light 1.5.4/1.5.5/1.5.6 and Full 1.6.4/1.6.5/1.6.6/1.6.7.
+
+## Public release documentation audit, 2026-11-14
+
+- Align overview, topology, protocol and tool references with current Light 1.5.6 / Full 1.6.7 and the seven supported builders. Correct Full early-polling availability to 1.6.6, Full 1.6.7 mandatory groups to 360 and the capability catalogue to 24 action rows.
+- Distinguish modeled eleven-slave polling tests from untested physical multi-pack operation. Firmware images, hashes, parameter defaults and protocol bytes are unchanged.
+- Final validation passes 165 patcher regressions, 128 device-tool tests, 22 analysis-tool tests and 32 independent timing-table checks. Current release identities and changed documentation links are verified. These checks use offline models; no hardware access or flashing.
+
+## CCL timing and master configuration integration, 2026-11-14
+
+- Document fixed-window OEM .13 / Light .3–.5 / Full .3–.5 timing, early completion from Light .6 / Full .6, and Full .7 downward factors 1/2/3/5/10/20. Separate exact update counts from conditional one-/two-second scenario budgets and warning-to-first-update latency.
+- Add several starting-current and pack-count examples, threshold-versus-final-target timing, unchanged upward recovery, direct overrides and the effect of still-high targets or missing slaves. These are calculated scenarios, not measured inverter behavior or recommended installation limits.
+- Extend both release comparison tables through current Light 1.5.6 / Full 1.6.7 and link the [timing derivation](../docs/firmware/early-polling.md#calculated-timing-across-firmware-versions).
+- Specify a separate master-effective EXT numeric setting for OpenBMS Monitor and any Home Assistant configuration entity: capability discovery, integer validation, permissions, explicit save/readback, and exclusion from OEM 87-value blocks, XML, bulk pack replication and startup/reconnect write replay.
+- Documentation and matrix updates only; firmware payloads, release hashes and defaults are unchanged.
+
+## EMU1101-EXT Full 1.6.7: configurable downward CCL step, 2026-11-14
+
+- Add a persistent 1–20 A downward step per online pack per aggregate update, default 1. Upward steps remain 1 A. Preserve exact target saturation, existing immediate-zero/heating behavior, Full Off clamps and the completed-round/slow-pass aggregation gate.
+- Add addressed UART0/UART1 read 64/07 and set 64/08. UART1 writes require the existing Group0.bit0 permission. Capability 0010 changes Full's EXT05 mask to 001F; identity length remains 21 bytes and image flags remain FE for the default-soft build.
+- Store the field in the three unused tail bytes of the existing 176-byte mirrored parameter record. Validate marker/range/complement and mirror agreement; fallback 1 for legacy, invalid or mismatching records. Verify both writes before success and restore the prior active setting on failure. No OEM parameter/switch is repurposed, and no additional RAM is allocated.
+- Retain scheduler atomicity and early UART0 polling. Add one guarded native hook (25 total) and mandatory arithmetic, transport, permission, persistence, failure and power-cut tests. Parent publication independently rebuilds the candidate from guarded OEM roles. Light 1.5.6 and prior Full builders retain their bytes.
+- [Protocol and limits](../docs/firmware/configurable-ccl-ramp.md). Offline validation only; no hardware access or flashing. The default remains 1; larger factors have no claimed physical Deye validation.
+
+## EMU1101-EXT Light 1.5.6 / Full 1.6.6: early UART0 poll completion, 2026-11-14
+
+- The master consumes a complete, validated response from the requested slave before the native 30-tick deadline. Requests remain sequential; the next request starts in the main loop. Reset the timer for each request, retain invalid/missing-response expiry and failure/offline accounting, and preserve broadcasts, turnaround and address-chain discovery.
+- Validate the exact 82-byte response without modifying the buffer before invoking the native parser/decoder. Temporarily exclude UART0 while owning that buffer; short flag updates preserve incoming PRIMASK. Other enabled IRQs remain available. Expiry retains OEM main-loop service semantics rather than adding a physical arrival timestamp.
+- Preserve slow-pass round-complete aggregation, the ordinary CCL step and Full's separate override. Faster polling does not make a warning-driven charge-current decrease immediate. [Polling contract and limits](../docs/firmware/early-polling.md).
+- Add two guarded hooks per profile (eight Light / 24 Full), no additional persistent RAM, and twelve mandatory polling groups. OEM .13 builds pass 269/351 mandatory groups. EXT05 remains 21 bytes with unchanged image flags, capability mask `000F`, permissions and parameter layout. No migration is needed.
+- Both 16-input/32-run .6 corpus matrices match the reviewed source policy: eight builds, 56 expected refusals and 3,532 grouped native checks. Independent rebuilds reproduce both complete current images byte-identically. The parent publication check independently assembles and binds the polling appendix and hook targets; redirected hooks or altered polling code are refused.
+- Final patcher regression: 163 tests, zero failures/errors. Analysis and device-tool regressions pass 22/125 tests; device tests use mocks.
+- The .6 source guard admits only the reviewed OEM .13 polling contracts and refuses older unmatched contracts. Light/Full .4 and .5 remain reproducible byte-identically with their existing source support. [Release metadata](releases/README.md) binds current image hashes and sizes. No hardware access or flashing.
 
 ## Versioned functional-contract baselines, 2026-11-13
 
 - Light 1.5.3 and Full 1.6.3 are the first versioned baselines. Their standard permission semantics use 1=enabled and 0=denied; the permission reversal belongs only to development entries.
 - Functional descriptions and comparisons begin at those baselines. Shared history/calibration/persisted-capacity/live-energy reads are available from Light 1.5.4+ / Full 1.6.4+; atomic scheduler cleanup is available from Light 1.5.5+ / Full 1.6.5+.
-- Group0.bit4 is an ordinary writable reserved bit in Light; extended-off meaning requires Full capability04. The integration contract distinguishes writability from capability.
+- Group0.bit4 is an ordinary writable reserved bit in Light; extended-off meaning requires Full capability 04. The integration contract distinguishes writability from capability.
 - Exact four-profile EXT05 release identities and firmware execution paths remain unchanged. Development history, original image bindings and historical tool details remain separately preserved.
 
 ## development-build-2026-11-13-01: EXT identity and profile API
@@ -61,15 +93,15 @@ Versioned Light releases start at 1.5.3; versioned Full releases start at 1.6.3.
 ## EMU1101-EXT Light 1.5.3: first versioned Light release, 2026-10-24
 
 - Establish the cumulative Light baseline: addressed UART1 parameter/serial access, maintenance services, UART0 marker status/clear and firmware identity, UART1 power/RTC access control, and ten-byte UART0/UART1 64/04 storage diagnostics.
-- Group0.bit3=1 permits UART1 power/RTC; 0 denies it. This is the standard rule for every versioned Light and Full release. UART0 remains independent, UART1-4D remains unrestricted and UART1-A1 protects bit3.
+- Group0.bit3=1 permits UART1 power/RTC; 0 denies it. This is the standard rule for every versioned Light and Full release. UART0 remains independent, UART1-4D remains unrestricted and UART1-A1 protects bit 3.
 - Five guarded OEM hook sites and zero additional persistent RAM. Bits4/5 remain reserved. There is no persistent pack lock, Full CCL clamp or SOC checkpoint before reset. Storage diagnostic reads require no permission.
-- The identity layout has 19 bytes/LENGTH 8026, image flags 3A or 3B with static hard stop. Flag08 records the standard permission semantics and is set in every versioned release; lock capability04 is absent. Current clients require EXT05.
+- The identity layout has 19 bytes/LENGTH 8026, image flags 3A or 3B with static hard stop. Flag08 records the standard permission semantics and is set in every versioned release; lock capability 04 is absent. Current clients require EXT05.
 - Passed 194 mandatory groups, 105 patcher tests and 60 tool tests. Corpus: 28 passes, 20 expected refusals, 8,489 grouped checks. Publisher suite selection is bound to the requested profile. Validation was offline; no flashing or hardware test.
 
 ## development-build-2026-10-24-03: Light permission semantics
 
 - Replace the earlier inverse UART1 power/RTC gate with Group0.bit3=1 permitting access and 0 denying it. This development step precedes the first versioned Light baseline; it is not a change between versioned releases.
-- One condition byte and identity metadata change; the five OEM hook sites, hook bytes and persistent RAM allocation remain unchanged. UART0 behavior, unrestricted UART1 RTC reads and A1 protection of bit3 remain unchanged. Stored parameter bytes are not converted.
+- One condition byte and identity metadata change; the five OEM hook sites, hook bytes and persistent RAM allocation remain unchanged. UART0 behavior, unrestricted UART1 RTC reads and A1 protection of bit 3 remain unchanged. Stored parameter bytes are not converted.
 - Image flag08 records the 1=enabled semantics used throughout the subsequent versioned releases.
 
 ## EMU1101-EXT Full 1.6.3: first versioned Full release, 2026-10-24

@@ -2,7 +2,9 @@
 
 > **Port notation:** **UART0 = RS485-1/RS485-2 (shared pack bus)**; **UART1 = RS485 pair in the CAN socket**; **UART2 = local display/Bluetooth port**. UART1 carries RS485 traffic; the actual CAN interface uses separate pins in the same socket.
 
-Current firmware profiles are EMU1101-EXT Light 1.5.5 and EMU1101-EXT Full 1.6.5. Addressed parameter/identity access, maintenance, UART0 marker access, UART1 power/RTC access control and storage diagnostics are available from Light 1.5.3 and Full 1.6.3. Shared history, calibration and persisted-capacity/live-energy reads start at Light 1.5.4 and Full 1.6.4. Persistent individual pack lock, verified SOC saving before planned reset and configurable recharge-waiting hard stop are available in Full 1.6.3 and later. The same cumulative image supports master and slaves; each board needs its own compatible firmware. A patched master does not supply patch features to older slaves.
+Current firmware profiles are EMU1101-EXT Light 1.5.6 and EMU1101-EXT Full 1.6.7. Addressed parameter/identity access, maintenance, UART0 marker access, UART1 power/RTC access control and storage diagnostics are available from Light 1.5.3 and Full 1.6.3. Shared history, calibration and persisted-capacity/live-energy reads start at Light 1.5.4 and Full 1.6.4. Persistent individual pack lock, verified SOC saving before planned reset and configurable recharge-waiting hard stop are available in Full 1.6.3 and later. The same cumulative image supports master and slaves; each board needs its own compatible firmware. A patched master does not supply patch features to older slaves.
+
+Light 1.5.6+ / Full 1.6.6+ add [early UART0 poll completion](early-polling.md). The change is active on the master; slave replies keep their existing format. The polling feature itself changes no command, parameter, permission or CAN payload layout. Full 1.6.7 additionally exposes a separate configurable downward CCL step, described below. Identify the polling feature from the firmware version and exact release identity, not from a new capability bit. Faster collection does not remove the ordinary CCL ramp.
 
 ## Ports, addressing and transactions
 
@@ -91,11 +93,11 @@ Bad CRC, malformed/truncated frames and foreign addresses are discarded silently
 
 ## Stored permissions and A1 workflow
 
-All new controls occupy existing Group0, `function_switches[0]`, DATA offset 150. There are no new Modbus registers or P87+ fields.
+Permissions occupy existing Group0, `function_switches[0]`, DATA offset 150. The Full 1.6.7 CCL step is a separate numeric EXT setting. There are no new Modbus registers or P87+ fields.
 
 | Group0 bit | Current meaning | UART1 editing |
 |---|---|---|
-| 0 | 1 permits UART1 A1 | May clear itself; old active value authorizes the write. Re-enable through UART0/UART2. |
+| 0 | 1 permits UART1 A1 and Full 1.6.7 CCL-setting writes | May clear itself; old active value authorizes the write. Re-enable through UART0/UART2. |
 | 1 | Existing sensor plausibility function | Preserve unless intentionally edited. |
 | 2 | 1 permits UART1 maintenance start | Protected: change through UART0/UART2 only. |
 | 3 | 1 permits UART1 on/off, reset and RTC setting in both current profiles | Protected: change through UART0/UART2 only. |
@@ -120,10 +122,10 @@ Use Seplos ASCII VER 20, CID1=46, CID2=64, INFO 03, request LENGTH `E002`. Valid
 | 0–2 | 3 | ASCII EXT |
 | 3 | 1 | Format 05 |
 | 4–6 | 3 | Binary OEM version, e.g. 10 06 0D = 16.06.13; FF third component means unknown |
-| 7–9 | 3 | Binary patch version: Light 01 05 04/05 or Full 01 06 04/05 |
+| 7–9 | 3 | Binary patch version: current Light 01 05 06 or Full 01 06 07 |
 | 10–17 | 8 | Immutable concrete-image build ID |
 | 18 | 1 | Existing image flags |
-| 19–20 | 2 | New read-capability mask, unsigned BE, current 000F |
+| 19–20 | 2 | Capability mask, unsigned BE: current Light 000F, Full 001F |
 
 | Image flag hex | Meaning |
 |---|---|
@@ -136,17 +138,17 @@ Use Seplos ASCII VER 20, CID1=46, CID2=64, INFO 03, request LENGTH `E002`. Valid
 | 40 | Verified SOC checkpoint before targeted planned reset |
 | 80 | Configurable hard stop; combine build default and fresh Group0 |
 
-Default Light 1.5.5 flags are 3A (3B with static hard stop); Full 1.6.5 flags are FE (FF with inherited hard default). The [capability matrix](uart-write-capabilities.md) lists exact EHEX hashes. Flags are capabilities/image properties, not runtime permission, lock state, marker state or live MOSFET output. See [release metadata](../../firmware/releases/README.md).
+Default Light 1.5.6 flags are 3A (3B with static hard stop); Full 1.6.7 flags are FE (FF with inherited hard default). The [capability matrix](uart-write-capabilities.md) lists exact EHEX hashes. Flags are capabilities/image properties, not runtime permission, lock state, marker state or live MOSFET output. See [release metadata](../../firmware/releases/README.md).
 
-The current client accepts only the ASCII EXT signature, format 05 and exactly 21 decoded bytes. It rejects other signatures, formats, lengths and unknown read-capability bits. Retain raw image flags. Patch version and INFO format are separate fields. Revision FF means unknown; `--base-revision` is a caller declaration in the build report.
+The current client accepts only the ASCII EXT signature, format 05 and exactly 21 decoded bytes. It rejects other signatures, formats, lengths and unknown capability bits. Retain raw image flags. Patch version and INFO format are separate fields. Revision FF means unknown; `--base-revision` is a caller declaration in the build report.
 
 A timeout or RTN04/RTN05 is not firmware identity and does not establish which binary features are available. Probe each board without writing.
 
 ## Remote read discovery and snapshots
 
 EXT05 capability bits 0/1/2/3 identify UART1 history, calibration pages, persisted
-SOC contents and full-width live energy respectively. Current value 000F grants
-all four. Require these explicit bits per board; a patch version
+SOC contents and full-width live energy respectively. Both current masks, 000F and 001F, grant
+all four; bit 4 (0010) separately identifies the configurable CCL step. Require these explicit bits per board; a patch version
 text and existing image flag 20 do not imply support. New reads need no Group0
 permission, maintenance marker or master role. UART2 display behavior is unchanged.
 
@@ -222,4 +224,46 @@ Immediate ACK can show the new marker and the previous effective count. Confirm 
 
 UART1 is not a bootloader/update port. A physical UART0 connection remains necessary. With a polling master, start maintenance on UART1, confirm fresh status and UART0 silence, then update one isolated bootloader target using the [flash procedure](../tools/flashing.md). Bootloader frames have no pack address. For current full firmware, account for SOC-save delay before reset; validate RFB0100 completely before any write and accept only WFB write acknowledgements. No automatic reset/erase/program retry. The separate OpenBMS updater needs this host behavior; its implementation was not changed by the firmware releases.
 
-The current Light 1.5.5/Full 1.6.5 builds pass 257/339 mandatory actual-Thumb groups with modeled peripherals. Current EXT05 Light 1.5.4/Full 1.6.4 reference images pass 251/333 groups. The remote history model injects UART1 RX at the EEPROM transfer boundary; deterministic native cases cover enabled timer/protection/CMP handlers and concurrent UART0 reception with deferred parsing, while a complete multi-pack UART0 polling system remains untested. It does not establish real flash timing, interrupt latency, electrical isolation, current sharing, slave broadcasts or a physical multi-pack bank. No current image was flashed or hardware-tested. Historical isolated-master results remain bound to their archived images and conditions and provide no current-profile hardware evidence.
+The current Light 1.5.6/Full 1.6.7 builds pass their mandatory actual-Thumb groups with modeled peripherals; exact counts are bound by the release metadata. Current EXT05 Light 1.5.4/Full 1.6.4 reference images pass 251/333 groups. The remote history model injects UART1 RX at the EEPROM transfer boundary; deterministic native cases cover enabled timer/protection/CMP handlers and concurrent UART0 reception with deferred parsing, while physical multi-pack UART0 polling remains untested. It does not establish real flash timing, interrupt latency, electrical isolation, current sharing, slave broadcasts or a physical multi-pack bank. No current image was flashed or hardware-tested. Historical isolated-master results remain bound to their archived images and conditions and provide no current-profile hardware evidence.
+
+## Full 1.6.7 CCL configuration
+
+Discover EXT05 capability 0010 before exposing [CCL decrease configuration](configurable-ccl-ramp.md). Read 64/07; write 64/08 followed by a single binary integer 1–20. The five-byte response is `[1, effective_down, 1, 1, 20]`. UART1 writes require Group0.bit0. Default 1 reproduces the ordinary OEM ramp; higher values change only descent. This is A per online pack per aggregate update, not A/s or per-pack measured current. Existing 87-parameter exports do not contain this separate field.
+
+### Master-only application workflow
+
+The firmware permits addressed access at own addresses 0–21, but only the master uses the value for bank CCL calculation. The normal monitor control should target the identified master (native address 0), not every pack or whichever device is selected first. Re-read identity, role, permission and setting after reconnect or master changes. A slave's stored value is dormant until it becomes master; no replication is required.
+
+| Application element | Contract |
+|---|---|
+| Label / group | **EXT — CCL decrease step (master)**, separate from OEM parameters and Function switches |
+| Numeric value | Integer 1–20 inclusive; increment 1; reference default 1 |
+| Unit / help | A per online pack per aggregate update; upward factor fixed at 1; not A/s or an individual pack current limit |
+| Discovery | Fresh `64/03`, EXT05/21 bytes, supported capability bit `0x0010`; current Full mask `0x001F`, current Light `0x000F` |
+| Read | Addressed ASCII CID2 `64`, one decoded INFO byte `07`; no write permission required |
+| Save | Same CID2, exactly two decoded INFO bytes `08 vv`; use existing UART1 Group0.bit0 authorization |
+| Success | RTN `00`, exact five-byte format `[01, value, 01, 01, 14]` in hex; match requested value on set, then fresh `64/07` readback |
+| Failure | RTN `05` invalid argument, `04` write denied, `08` persistence failure; malformed/foreign/unanswered frames never count as success |
+| Missing/unsupported | Hide or explicitly disable the control; show unavailable on read failure, never substitute default 1 as a device value |
+| Bulk/import/export | Exclude from OEM `47`/`A1`, 87-value XML, parameter-copy-to-slaves, “apply all,” and automatic replication |
+| Persistence | BMS-owned storage; no periodic writes or automatic write on application/add-on startup, reconnect, role change or configuration restore |
+
+These are decoded bytes inside the existing Seplos ASCII frame. For example, setting decimal 10 uses INFO hex `080A`, not `0810`, a decimal text string, a binary `55…AA` command or an A1 block. Validate address, complete frame, checksum, RTN and exact response shape. The five-byte success INFO has LENGTH `600A` and 28 total ASCII frame bytes. Writes use the existing coordinated transport lock and quiet-time rules; do not start a second polling client. A missing response leaves the result unknown: read back separately, never automatically retry the write. A successful readback confirms the setting, not measured inverter compliance or power-loss atomicity.
+
+Keep a separate typed EXT settings model/API from the OEM parameter array and its bulk operations. Reject fractional, negative, zero, over-limit, Boolean, missing and malformed values before sending; the firmware also validates its byte payload. Require fresh Group0.bit0 for UART1 writes and handle a subsequent firmware denial without changing that permission automatically. Capability bits and Group0 bits are separate fields. The default 1 is a documented reset choice, not a value to impose when communication fails.
+
+### Home Assistant and add-on integration
+
+If the application or companion add-on exposes BMS configuration in Home Assistant, add a master-scoped configuration Number entity with min 1, max 20 and step 1, backed by the same EXT API. Its name/help must carry the full per-online-pack/per-update meaning; do not give it an A/s unit or a measured-current device class. If the entity platform cannot express the compound unit, leave the unit unset and explain it in the name/help/attributes instead of labelling it merely amperes. Keep the fixed upward step read-only in descriptive metadata, not a second writable control.
+
+Tie entity identity and availability to the actual BMS/device and role, not a volatile array index. Do not leave a stale writable entity targeting an old master. Reads may remain available while write permission is off; disable or reject writes explicitly. Publish only confirmed read values, including after a write; avoid optimistic success. Do not send writes from a retained MQTT command or replay a stored configuration during add-on startup. If the add-on only packages the monitor, update the bundled version/schema/docs as needed rather than adding a competing hardware connection.
+
+### Required integration checks
+
+- Capability discovery distinguishes Full 1.6.7/`0010` from Light, older Full and unsupported/invalid identities; a version string alone is insufficient.
+- Valid values 1/10/20 produce exact INFO `0801`/`080A`/`0814`; invalid values and wrong reply shapes are rejected. Firmware error replies and ambiguous timeouts do not display success.
+- Master selection, role changes, read-only permission and fresh readback work without slave writes. UART0 access still requires shared-bus coordination; prefer the existing UART1 route.
+- Existing 87-value reads/writes, OEM XML import/export and pack replication are byte-for-byte unaffected. No bulk path, reboot or reconnect silently writes this EXT setting.
+- Any Home Assistant entity has the same bounds, availability, non-optimistic confirmation and single-transport behavior. Unsupported devices do not get a writable entity.
+
+[Timing calculations and operational effects](early-polling.md#calculated-timing-across-firmware-versions) are conditional scenarios, not deadlines. The UI should not promise that choosing 10 guarantees a thirteen-second reaction; it takes thirteen ordinary updates for the specific 1560 → 10 A, twelve-online-pack example.

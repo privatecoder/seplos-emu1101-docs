@@ -13,7 +13,8 @@ def build(image,facts,base_revision=255,hard_stop=False,*,ext_version):
  require_profile(ext_version)
  positive_flags=True
  is_cutoff=ext_version.startswith('1.6.');service=is_cutoff;configurable=is_cutoff
- atomic=ext_version in ('1.5.5','1.6.5')
+ atomic=ext_version in ('1.5.5','1.6.5','1.5.6','1.6.6','1.6.7')
+ polling=ext_version in ('1.5.6','1.6.6','1.6.7')
  if type(base_revision) is not int or not 0<=base_revision<=255:raise ValueError('invalid base revision')
  if image.sha!=facts['original_app_sha256']:raise ValueError('analysis/input digest mismatch')
  from .hardstop import locate,apply
@@ -66,6 +67,16 @@ def build(image,facts,base_revision=255,hard_stop=False,*,ext_version):
   from .scheduler_atomic import discover_scheduler_atomic,source_atomic
   scheduler=discover_scheduler_atomic(image,facts)
   hooks.update(scheduler['hooks']);evidence.extend(scheduler['evidence'])
+ if polling:
+  from .polling import discover_polling,source_polling
+  poll=discover_polling(image,facts)
+  constants.update({'POLL_'+k.upper():v for k,v in poll.items() if type(v) is int})
+  hooks.update(poll['hooks']);evidence.extend(poll['evidence'])
+ if ext_version=='1.6.7':
+  from .ccl_ramp import discover_ccl_ramp,source_ccl_ramp
+  ramp=discover_ccl_ramp(image,facts)
+  constants.update({'CCL_'+k.upper():v for k,v in ramp.items() if type(v) is int})
+  hooks.update(ramp['hooks']);evidence.extend(ramp['evidence'])
  if len(set(hooks.values()))!=len(hooks):raise ValueError('duplicate OEM hook site')
  payload=Path(__file__).with_name('payload.s').read_text()
  if is_cutoff:payload=source16(payload)
@@ -75,6 +86,8 @@ def build(image,facts,base_revision=255,hard_stop=False,*,ext_version):
  if configurable:payload=source_configurable(payload)
  payload=source_remote(payload)
  if atomic:payload=source_atomic(payload)
+ if ext_version=='1.6.7':payload=source_ccl_ramp(payload)
+ if polling:payload=source_polling(payload)
  source='\n'.join(f'.equ {k}, 0x{v:x}' for k,v in sorted(constants.items()))+'\n'+payload
  with tempfile.TemporaryDirectory(prefix='seplos-build-') as d:
   d=Path(d);asm=d/'payload.s';obj=d/'payload.o';raw=d/'payload.bin'
@@ -115,7 +128,7 @@ def build(image,facts,base_revision=255,hard_stop=False,*,ext_version):
  if type(image).parse(result.render())!=result:raise ValueError('output container failed roundtrip')
  report={'hard_stop':hard_stop_detail,'info_format':5,'info_bytes':21,'addressed_info':True,'power_rtc':True,'image_flags':flags,'patch_version':ext_version,'append_at':start,'appendix_bytes':len(appendix),'app_sha256':result.sha,'build_id':build_id.hex(),'base_revision':base_revision,'base_revision_source':'unknown' if base_revision==255 else 'explicit caller declaration (not code-proven)','entries':{k:start+v for k,v in symbols.items()},'build_id_offset':offset,'disassembly':dis,'resolved_assembly':source}
  report['positive_flags']=positive_flags
- report.update(uart0_marker=True,hooks=hooks,remote_diagnostics=True,remote_capabilities=15)
+ report.update(uart0_marker=True,hooks=hooks,remote_diagnostics=True,remote_capabilities=31 if ext_version=='1.6.7' else 15)
  if is_cutoff:
   report.update(cutoff=True,ram_bytes=4)
   cutoff['entries']={k:v for k,v in report['entries'].items() if k.startswith('hook_cut_')}
@@ -125,14 +138,17 @@ def build(image,facts,base_revision=255,hard_stop=False,*,ext_version):
   servicing['entries']={k:v for k,v in report['entries'].items() if k.startswith('hook_service_')}
  if ext_version.startswith('1.5.'):
   report.update(storage_diagnostics=True,extended_diagnostics=True,checkpoint_before_reset=False,ram_bytes=0)
-  expected={**facts['hooks'],**marker['hooks'],**(scheduler['hooks'] if atomic else {})}
-  if len(hooks)!=5+int(atomic) or hooks!=expected:raise ValueError('storage diagnostics changed OEM hook set')
+  expected={**facts['hooks'],**marker['hooks'],**(scheduler['hooks'] if atomic else {}),**(poll['hooks'] if polling else {})}
+  if len(hooks)!=5+int(atomic)+2*int(polling) or hooks!=expected:raise ValueError('storage diagnostics changed OEM hook set')
  if ext_version.startswith('1.5.'):report['positive_power']=True
  if configurable:
   report.update(configurable_hard_stop=True,hard_stop_default=bool(constants['HS_DEFAULT']))
   report['hard_stop']={**hard_stop_detail,'enabled':None,'configurable':True,'default_enabled':bool(constants['HS_DEFAULT']),'runtime_from_parameter':True}
   dynamic['entries']={k:v for k,v in report['entries'].items() if k=='hook_configurable_hard_stop'}
-  if len(hooks)!=21+int(atomic):raise ValueError('EMU1101-EXT full guarded OEM hook count')
+  if len(hooks)!=21+int(atomic)+2*int(polling)+int(ext_version=='1.6.7'):raise ValueError('EMU1101-EXT full guarded OEM hook count')
  remote['entries']={k:v for k,v in report['entries'].items() if k.startswith('hook_remote_')}
  if atomic:report['scheduler_atomic']={**scheduler,'enabled':True}
+ if polling:report['polling']={**poll,'enabled':True}
+ if ext_version=='1.6.7':
+  report['ccl_ramp']={**ramp,'enabled':True}
  return result,report

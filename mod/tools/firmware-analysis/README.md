@@ -3,8 +3,8 @@
 > **Port notation:** **UART0 = RS485-1/RS485-2 (shared pack bus)**; **UART1 = RS485 pair in the CAN socket**; **UART2 = local display/Bluetooth port**. UART1 carries RS485 traffic; the actual CAN interface uses separate pins in the same socket.
 
 The [capability renderer](write_access.py) compares the exact OEM 16.06.13,
-EMU1101-EXT Light 1.5.5 and Full 1.6.5 images, covering 87 parameters, 64 switch
-positions and 23 action rows. Function availability starts at Light 1.5.3+ /
+EMU1101-EXT Light 1.5.6 and Full 1.6.7 images, covering 87 parameters, 64 switch
+positions and 24 action rows. Function availability starts at Light 1.5.3+ /
 Full 1.6.3+, with shared remote reads from `.4+` and atomic cleanup from `.5+`.
 Public release JSONs supply the current identities.
 

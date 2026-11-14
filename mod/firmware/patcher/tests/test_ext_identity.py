@@ -18,15 +18,15 @@ from seplos.profiles import SUPPORTED_VERSIONS
 
 
 class ExtendedIdentity(unittest.TestCase):
-    def test_all_four_profiles_require_the_ext_cli_option(self):
-        self.assertEqual(SUPPORTED_VERSIONS, ('1.5.4', '1.6.4', '1.5.5', '1.6.5'))
+    def test_all_supported_profiles_require_the_ext_cli_option(self):
+        self.assertEqual(SUPPORTED_VERSIONS, ('1.5.4', '1.6.4', '1.5.5', '1.6.5', '1.6.6', '1.5.6', '1.6.7'))
         result = subprocess.run([sys.executable, '-I', '-B', str(ROOT/'seplos_patch.py'),
                                  'patch', '--help'], cwd='/private/tmp', capture_output=True, text=True)
         self.assertEqual(result.returncode, 0, result.stderr)
-        self.assertIn('--ext-version {1.5.4,1.6.4,1.5.5,1.6.5}', result.stdout)
+        self.assertIn('--ext-version {1.5.4,1.6.4,1.5.5,1.6.5,1.6.6,1.5.6,1.6.7}', result.stdout)
         self.assertNotIn('--maint-version', result.stdout)
         self.assertIn('Light 1.5.x; Full 1.6.x', result.stdout)
-        self.assertIn('Full 1.6.4/1.6.5', result.stdout)
+        self.assertIn('Full 1.6.4/1.6.5/1.6.6', ' '.join(result.stdout.split()))
         self.assertIn('1=enabled and 0=denied permissions', ' '.join(result.stdout.split()))
 
     def test_python_apis_expose_only_ext_version(self):
@@ -59,14 +59,14 @@ class ExtendedIdentity(unittest.TestCase):
         for version in SUPPORTED_VERSIONS:
             for signature in (b'EXT', b'MNT'):
                 with self.subTest(version=version, signature=signature):
-                    template = signature + b'\x05\0\0\x0d' + bytes(map(int, version.split('.'))) + bytes.fromhex('0123456789abcdef') + bytes([0x3a if version.startswith('1.5.') else 0xfe]) + b'\0\x0f'
+                    template = signature + b'\x05\0\0\x0d' + bytes(map(int, version.split('.'))) + bytes.fromhex('0123456789abcdef') + bytes([0x3a if version.startswith('1.5.') else 0xfe]) + (31 if version=='1.6.7' else 15).to_bytes(2,'big')
                     image = original.with_app(original.app + template + b'\0'*3)
                     raw = image.render().encode('ascii')
                     info = template[:4] + base_version + template[6:]
                     metadata = dict(name='synthetic.ehex', patch_version=version, info_format=5,
                                     info_bytes=21, ehex_sha256=hashlib.sha256(raw).hexdigest(),
                                     app_sha256=image.sha, app_bytes=len(image.app), info_hex=info.hex(),
-                                    build_id='0123456789abcdef', image_flags=template[18], remote_capabilities=15)
+                                    build_id='0123456789abcdef', image_flags=template[18], remote_capabilities=31 if version=='1.6.7' else 15)
                     if signature == b'EXT':
                         self.assertEqual(verifier.verify_existing(raw, metadata)['info_hex'], info.hex())
                     else:

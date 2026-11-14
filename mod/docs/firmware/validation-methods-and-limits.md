@@ -6,14 +6,16 @@ The patcher validates firmware offline. It analyzes the original input, builds t
 
 ## Current releases and evidence scope
 
-The current profiles are **EMU1101-EXT Light 1.5.5** and **EMU1101-EXT Full 1.6.5**, based on OEM **16.06.13** for the published releases. The [release metadata](../../firmware/releases/README.md) binds each exact image to its EHEX/application hashes, build ID, flags and test count. Both actual current images passed their mandatory native suites and rebuilt byte-identically. Both profiles have **not been flashed or hardware-tested**; `hardware_tested` remains false.
+The current profiles are **EMU1101-EXT Light 1.5.6** and **EMU1101-EXT Full 1.6.7**, based on OEM **16.06.13** for the published releases. The [release metadata](../../firmware/releases/README.md) binds each exact image to its EHEX/application hashes, build ID, flags and test count. Both actual current images passed their mandatory native suites and rebuilt byte-identically. Both profiles have **not been flashed or hardware-tested**; `hardware_tested` remains false.
 
-The current releases pass **257 mandatory execution groups for Light 1.5.5** and
-**339 for Full 1.6.5**. The full profile includes all 65,536 function-switch/Event6
+The current releases pass the mandatory execution groups recorded in their
+[release metadata](../../firmware/releases/README.md), including early UART0 polling. The full profile includes all 65,536 function-switch/Event6
 combinations. Six atomic scheduler groups exercise every controlled instruction
 boundary, exact mask restoration, all-byte semantics/ABI, slow ticks and an OEM
 negative control. The EXT05 Light 1.5.4/Full 1.6.4 references pass
 251/333-group suites, with exact identities bound by the reference metadata. Execution-group counts differ from Python unit tests.
+
+The final public-source regression passes 165 patcher tests, 128 device-tool tests and 22 analysis-tool tests. Separate timing-table simulation passes 32 arithmetic checks; it validates the published calculations, not physical timing.
 
 Only `patch` success with the mandatory suite permits publication of `firmware.ehex`. `analyze` establishes structural/probe compatibility without running the entire patched-image suite. Hash/EXT verification of a retained image is another separate check and is not a fresh native test result.
 
@@ -21,13 +23,15 @@ Only `patch` success with the mandatory suite permits publication of `firmware.e
 
 | Area | Software evidence | Limit |
 |---|---|---|
-| Input and discovery | Complete EHEX validation; understood code/RAM/MMIO contracts; native call/shape/probe checks. Unknown contracts and already EMU1101-EXT-patched bases are refused; the examined static-hard-stop variants remain supported. | Similar names, strings or board photos alone do not establish compatibility. |
+| Input and discovery | Complete EHEX validation; understood code/RAM/MMIO contracts; native call/shape/probe checks. Unknown contracts and already EMU1101-EXT-patched bases are refused; the examined OEM .13 static-hard-stop variant remains supported by the current profiles; older profiles retain their documented source support. | Similar names, strings or board photos alone do not establish compatibility. |
 | Protocol and permissions | Addressed requests, exact frame layouts, parameter validation, protected switches, rejected/broadcast/foreign requests and modeled UART ownership. | No measured gateway latency, physical bus arbitration or multi-board collision rate. |
 | Persistence and reset | Actual CRC, serializer/readers/writers where covered; modeled IAP failures and word-boundary interruptions; copy classification and planned-reset verification. | No brownout waveform, partially programmed bits within a word, flash timing or endurance proof. A valid primary is not a versioned transaction journal. |
 | Power and charge paths | Native control flow, lock priorities, configurable charge-inhibit masks, modeled GPIO writes and recovery conditions. | A software GPIO state is not a measurement of MOSFET conduction, body-diode current or electrical isolation. |
 | Hook ABI and memory | Native execution checks, retained registers/stack, guarded hook contracts and modeled boundary cases. | Observed stack depth is not a universal bound for every interrupt nesting or system state. |
-| Remote diagnostic reads | Native history cursor/EEPROM mode/stride, UART1 RX injection, active/stored calibration and saved-SOC shape/CRC, full-width energy, no repair/write side effects and unchanged hook/RAM bounds. Deterministic cases also execute enabled timer/protection/CMP handlers and concurrent addressed UART0 reception with deferred native parsing/encoding. | Modeled UART0 TX boundary; no complete multi-pack polling system, physical timing, real I2C timeout, whole-ring atomic snapshot, physical calibration accuracy or future boot-SOC guarantee. |
+| Remote diagnostic reads | Native history cursor/EEPROM mode/stride, UART1 RX injection, active/stored calibration and saved-SOC shape/CRC, full-width energy, no repair/write side effects and unchanged hook/RAM bounds. Deterministic cases also execute enabled timer/protection/CMP handlers and concurrent addressed UART0 reception with deferred native parsing/encoding. | Modeled UART0 TX boundary; no physical multi-pack polling system, measured timing, real I2C timeout, whole-ring atomic snapshot, physical calibration accuracy or future boot-SOC guarantee. |
 | Hardware initialization | Native clock selection/readback, UART dividers and configuration, IRQ routes/priorities, timer loads, watchdog modes/feed guard and CAN selector bit timing. | Synthetic MMIO readback; no oscillator accuracy, electrical pin, physical watchdog deadline or full boot proof. |
+| Early UART0 polling | Complete native valid/invalid frame paths, FIFO/silence, per-request reset, expiry ordering, broadcasts, address chain, eleven-slave rounds and native aggregate/CCL gates. IRQ interleavings check NVIC/PRIMASK preservation and bounded global masking. | Synthetic arrival schedules and no modeled CPU execution time; no measured bus latency, stack high-water or electrical turnaround. A delayed same-address response has no sequence identifier. |
+| Configurable CCL decrease, Full 1.6.7 | All factors 1–20, boundary targets/counts, exact saturation, unchanged ascent and immediate overrides; addressed validation/permissions, mirrored trailer persistence, failed writes and power-cut recovery. The parent independently re-discovers the source and rebuilds the complete candidate. | Per-update arithmetic is not a time guarantee or an individual pack regulator. No measured inverter response, flash endurance or atomic transaction across both mirrors. |
 | Fast charge handover | Full-profile signed current boundaries −1001/−1/0/999/1000/1001, individual state/interlock gates and persistent Off through native control paths, including intermediate GPIO writes. | Synthetic sensor inputs and modeled persistence; no current calibration or electrical isolation proof. |
 | Host helpers | Synthetic transport/port tests, strict frame and image validation, no replay after uncertain writes, explicit target selection. | Fake-port success is not a hardware update or a guarantee about a particular gateway. |
 

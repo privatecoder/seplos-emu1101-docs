@@ -9,7 +9,7 @@ import hashlib
 
 class RemoteProfiles(unittest.TestCase):
  def test_current_and_reference_profiles_are_explicit(self):
-  self.assertEqual(SUPPORTED_VERSIONS,('1.5.4','1.6.4','1.5.5','1.6.5'))
+  self.assertEqual(SUPPORTED_VERSIONS,('1.5.4','1.6.4','1.5.5','1.6.5','1.6.6','1.5.6','1.6.7'))
  def test_previous_outputs_are_rejected_before_build(self):
   for version in ('1.5.3','1.6.3'):
    with self.subTest(version=version),self.assertRaises(ValueError):require_profile(version)

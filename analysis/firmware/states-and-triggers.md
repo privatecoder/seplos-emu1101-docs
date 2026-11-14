@@ -6,6 +6,8 @@ Which conditions must be met, for how long and under which prerequisites, for th
 
 Confidence: *(confirmed)* = read directly in the code, *(probable)* = interpreted, *open* = not traced.
 
+> **Charge-control distinction:** [Charge warnings, bank CCL and local current limiting](#charge-warnings-bank-ccl-and-local-current-limiting) explains when 10 A means a bank-wide CAN request, when it means a local hardware limit, and when charging is inhibited.
+
 ---
 
 ## Basics
@@ -82,7 +84,7 @@ Details: [CAN aggregate limits](../protocols/can.md#3-limits-and-data-source-mas
 | **DVL** | P12 | 46.4 V |
 | **DCL** | \|P52\|, above 20 A minus 10 A, × packs able to discharge **without a discharge-related warning** (cell/pack undervoltage P2/P12, discharge temperature P28/P30, ambient P38/P40, MOS P46, discharge OC P52, SOC P78); if all packs warn, DCL = 0 (no 10 A floor as with the CCL) (`0x96CE`, `0x98A8`/`0x99B0`) | (105 − 10) × 4 = 380 A |
 | **CCL** normal | BitGroup7 bit 7 = 0: P50 / 2; bit 7 = 1: P50 − 10 A (above 20 A); × packs able to charge **without a charge-related warning** | 100 / 2 × 4 = 200 A |
-| **CCL** on warning | every pack able to charge that has a charge-related warning (cell/pack high voltage alarm, charge temperature, ambient/MOS temperature, charge OC warning) drops out of the sum; only when none is left → **10.0 A total** (`0x96CE`, `0x98D4`) | −50 A per warning pack; all warning: 10 A total, i.e. 2.5 A per pack |
+| **CCL** on warning | every pack able to charge that has a charge-related warning (cell/pack high voltage alarm, charge temperature, ambient/MOS temperature, charge OC warning) drops out of the sum; only when none is left → **10.0 A total** (`0x96CE`, `0x98D4`) | −50 A per warning pack; all warning: 10 A total; 2.5 A per pack only with equal sharing |
 | **CCL** = 0 | no pack may charge (MOSFET off or Intermittent recharge on all packs) unless a heating request sets the heating minimum, or highest cell > P4 + 30 mV | – |
 | **CCL** heating | BitGroup3 bit 6 on, highest cell temperature < 25 °C, lowest ≤ P36 → at least packs × 10 A | off in the example configuration |
 | Ramp | Normal CCL adjustment is limited to packs × 1.0 A per cycle; the highest-cell >P4+30 mV zero branch and the no-chargeable-pack zero branch (subject to the heating minimum) bypass it | ± 4 A per cycle |
@@ -112,6 +114,27 @@ CVL is fixed by P14. High-voltage warnings can reduce the system CCL; they do no
 Reaching 100% does not require OVP. The [SOC voltage rules](soc-capacity-and-persistence.md#2-automatic-corrections-without-ovp) require their voltage, minimum-cell, current-status and strict duration conditions. The firmware has no configurable tail-current setting, absorption stage or float-voltage stage. Inverter-side charge-voltage limits can prevent OVP if configured below the applicable protection thresholds; actual behavior depends on the inverter's implementation.
 
 Manufacturer thresholds, pinout variants and documentation inconsistencies are listed under [hardware specifications](../hardware/hardware-specifications.md). The [configuration reference](configuration-parameters.md) labels all illustrative values separately from factory defaults.
+
+## Charge warnings, bank CCL and local current limiting
+
+**A high-voltage warning does not impose a local 10 A pack-current limit.** The bank-wide CAN request, the individual pack's hardware current limiter and charge protection are separate mechanisms. The distinctions below come from OEM 16.06.12/16.06.13; EMU1101-EXT Full 1.6.3–1.6.7 retains these warning/limiter triggers. Full 1.6.7 can change the bank CCL descent step, not those local triggers; see [versioned timing examples](../../mod/docs/firmware/early-polling.md#calculated-timing-across-firmware-versions). Its configurable recharge hard stop is a [separate charge-inhibit policy](intermittent-recharge-soft-vs-hard-stop.md).
+
+| Condition | Bank-level effect | Local pack effect |
+|---|---|---|
+| Cell or pack high-voltage warning (P0/P10) | Removes the warning pack's contribution to normal CCL; if all remaining charge-capable packs warn, the fallback target is **10 A for the whole bank** | Does **not** directly activate the hardware current limiter or open the charge MOSFET |
+| Charge overcurrent warning (P50), with BitGroup6.bit7 enabled | Also participates in the warning-based CCL calculation | After P66/2 seconds, selects the hardware limiter for P71 minutes, or until 5 seconds without charging |
+| Active current limiting (BitGroup6.bit6) | Does not define a separate CAN CCL formula | Selects the limiter when charging is detected, with an immediate 5 ms path at ≥10 A; does not require a high-voltage warning |
+| Cell/pack overvoltage protection (P4/P14), when enabled | Can remove charge capability from the aggregate | Inhibits charging through both the normal charge path and the limiter, subject to the documented [native recovery priority](power-on-off.md#charge-permission-and-output-masks) |
+
+The bank calculation is at `0x96CE`/`0x98A8`; local limiter selection and output decisions are at `0x69BA`, `0x6AB8`, `0x6FFA` and `0x70F4` (OEM .13). Ordinary CCL changes, including the warning fallback, pass through the [aggregate ramp](../protocols/can.md#3-limits-and-data-source-master-aggregation-confirmed). A warning is therefore neither proof of an immediate 10 A CAN request nor proof of a local 10 A limit. Actual bank current also depends on inverter response. A pack excluded from the normal CCL sum can still conduct charge current; arithmetic exclusion does not disconnect it or independently regulate its share.
+
+**Manufacturer evidence:** the [48150-1101-10E specification](<../../vendor/docs/specs/Seplos BMS 48150-1101-10E (EN).pdf>), §3.21, p.9 and parameter table p.15, specifies nominal **10 A local current limiting** in active/passive modes. Passive mode is triggered by **charge overcurrent**, not cell high voltage. The [SH Energy catalogue](../hardware/hardware-specifications.md#sh-energy-catalogue-emu1101-product-family), pp.8/11, corroborates an integrated 10 A limiter for the EMU1101 family. These are manufacturer ratings, not measurements of every fitted board. P71 configures duration; no adjustable physical limiter-current parameter is established by the firmware analysis.
+
+When limiting is selected, the firmware switches **off the normal charge MOSFET and on the parallel limiter path**. It does not implement a continuously adjustable current setpoint on the normal charge MOSFET. A charge-MOSFET-off indication alone therefore does not prove that charge current has stopped. Conversely, a high-voltage warning alone does not prove that the limiter path is active. BitGroup6.bits6/7 select the local limiter modes; BitGroup7.bit7 selects the CAN CCL formula. These switches are not interchangeable, and neither is an active cell-balancer control.
+
+### Pack current versus cell balancing current
+
+For an external active balancer, the instantaneous net current into a particular cell is the pack current minus current extracted from that cell, or plus current delivered to it. **If a pack actually carries 10 A and its balancer is extracting 4 A from its highest cell at that moment, that cell receives approximately 6 A.** This does not follow merely from a warning or from a 10 A bank CCL. Time-shared balancers also do not continuously extract their rated current from every high cell. The actual pack current, selected balancing cell and transfer phase determine the result. BMS charge-path inhibition does not itself interrupt an independent balancer connected to the cell taps.
 
 ## Current limiter ("Current Limiter")
 

@@ -9,7 +9,7 @@ from seplos.build import build
 class AtomicProfiles(unittest.TestCase):
  def test_new_profiles_are_explicit_and_references_remain_available(self):
   from seplos.profiles import SUPPORTED_VERSIONS
-  self.assertEqual(set(SUPPORTED_VERSIONS),{'1.5.4','1.6.4','1.5.5','1.6.5'})
+  self.assertEqual(set(SUPPORTED_VERSIONS),{'1.5.4','1.6.4','1.5.5','1.6.5','1.5.6','1.6.6','1.6.7'})
  def test_both_fixed_profiles_have_guarded_cleanup_and_distinct_identity(self):
   original=Image.read(ORIGINALS/'CAN1101[V16.06.13_PN01_250607].ehex')
   for version,count,ram in (('1.5.5',6,0),('1.6.5',22,4)):

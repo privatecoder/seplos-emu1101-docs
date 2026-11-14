@@ -10,7 +10,7 @@ The [Seplos MODBUS-ASCII Protocol V2.0 specification](<../../vendor/docs/protoco
 
 Confidence: **confirmed** = directly from the code · **probable** = inferred from data flow · **assumption**. Without a tag, *confirmed* applies.
 
-This page describes the **original firmware**. [UART write capabilities](../../mod/docs/firmware/uart-write-capabilities.md) compares its writable values with EMU1101-EXT Light 1.5.5 and EMU1101-EXT Full 1.6.5; their UART1 extensions are separate from the OEM command set.
+This page describes the **original firmware**. [UART write capabilities](../../mod/docs/firmware/uart-write-capabilities.md) compares its writable values with EMU1101-EXT Light 1.5.6 and EMU1101-EXT Full 1.6.7; their UART1 extensions are separate from the OEM command set.
 
 > Despite its name, this is **not Modbus**. It is an ASCII protocol according to YD/T1363.3, which Pylontech also uses. A real Modbus RTU slave exists in addition, see [modbus-rtu.md](modbus-rtu.md).
 

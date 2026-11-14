@@ -10,6 +10,8 @@ Confidence: **confirmed** = directly from the code · **probable** · **assumpti
 
 ---
 
+> **Bank limit versus pack limit:** [Charge warnings, bank CCL and local current limiting](../firmware/states-and-triggers.md#charge-warnings-bank-ccl-and-local-current-limiting). The warning fallback is 10 A for the bank; it is not a command to limit each warning pack to 10 A. Local hardware limiting has separate triggers and switches.
+
 ## Manufacturer CAN specification: scope and differences
 
 [Seplos BMS CAN Protocoll V1.0.pdf](<../../vendor/docs/protocol%20specs/Seplos%20BMS%20CAN%20Protocoll%20V1.0.pdf>) is the original **SEPLOS CANBUS Protocol V1.0**, copyright 2020. It has six PDF pages including the cover; printed pages 1–5 correspond to PDF pages 2–6. File metadata gives 2020-06-13. SHA-256: `264cdf6e2348c121ffd04b9af287f55b038702862c36a3b333d06a1fe8ddb0a6`.
@@ -52,7 +54,7 @@ Use this PDF as protocol provenance and the code-derived tables below as the OEM
 | CCL | parameter 50 (assumed charge OC warning 80 A) / 2 | **40.0 A** |
 | DCL | \|parameter 52\| (assumed magnitude 90 A) − 10 A | **80.0 A** |
 
-In addition, the CCL is set to 10 A total on warnings and to 0 A when a cell is > parameter 4 (cell OVP) + 30 mV (details in section 3).
+When all remaining charge-capable packs warn, the CCL fallback target is 10 A total, subject to the ordinary ramp and heating override. A cell > parameter 4 (cell OVP) + 30 mV forces CCL to 0 A immediately (details in section 3). Neither condition alone establishes a local hardware-limiter state.
 
 ---
 
@@ -111,7 +113,7 @@ For a capture this means: once per second, a packet of 4–16 frames arrives, sp
 
 ## 3. Limits and data source (master aggregation) *(confirmed)*
 
-Function `0x99BA` runs before each CAN cycle, but only calls `0x94D2` (sums/extremes), `0x96CE` (counts/flags) and `0x98A8` (limits) once a polling round over all slaves is complete (`0x20000000` bit 2, `0x99C0`; without slaves, `0x12E2` sets the bit every second). In between, CAN resends the last computed values. At 150 ms per slave, the system values with 11 slaves are therefore refreshed about every 2 s, not every second. *(confirmed)* The source is the 30-byte pack records `0x20000524 + 30·i` (see [intra-pack.md](intra-pack.md)). The structures `0x2000164C` (system values), `0x20001634` (extremes) and `0x2000161E` (OR of the alarm events of all packs) are described in [modbus-rtu.md, section 2](modbus-rtu.md#2-data-source-system-aggregate-0x2000164c).
+Function `0x99BA` runs before each CAN cycle, but only calls `0x94D2` (sums/extremes), `0x96CE` (counts/flags) and `0x98A8` (limits) once a polling round over all slaves is complete (`0x20000000` bit 2, `0x99C0`; without slaves, `0x12E2` sets the bit every second). In between, CAN resends the last computed values. Polls are sequential with a nominal 150 ms window per slave, including when a response arrives early. With 11 slaves, the approximately 1.65 s round is consumed at the next one-second slow pass, normally producing approximately 2 s between aggregate updates. This is a scheduler-derived steady-state estimate, not measured physical latency; see [sequential polling and aggregate timing](intra-pack.md#sequential-polling-and-aggregate-timing). Light 1.5.6+ / Full 1.6.6+ add [validated early poll completion](../../mod/docs/firmware/early-polling.md), which may shorten the round while preserving the slow-pass aggregate gate and ordinary CCL arithmetic. The source is the 30-byte pack records `0x20000524 + 30·i`. The structures `0x2000164C` (system values), `0x20001634` (extremes) and `0x2000161E` (OR of the alarm events of all packs) are described in [modbus-rtu.md, section 2](modbus-rtu.md#2-data-source-system-aggregate-0x2000164c).
 
 | Limit | Calculation |
 |---|---|
@@ -130,6 +132,27 @@ Function `0x99BA` runs before each CAN cycle, but only calls `0x94D2` (sums/extr
 4. **Heating:** function switch `0x2B` bit 6, highest cell temp. < 25 °C and lowest ≤ parameter 36 (off > parameter 37) → **at least pack count × 10.0 A**. This also applies if step 1 took effect. (06.11: 5 A per pack)
 5. Highest cell > **parameter 4 (cell OVP) + 30 mV** → **0, immediately**.
 6. **Ordinary ramp:** at most (packs online × 1.0 A) per aggregate update, upward or downward. Steps 1 and 5 first write 0 directly to the stored CCL; step 4 writes a raised heating minimum directly. Those overrides therefore take effect immediately and are not delayed by the ordinary ramp (`0x98F8–0x98FC`, `0x9940–0x994C`, `0x9956–0x995A`, ramp `0x995C–0x9986`).
+
+The ramp step loads the **online** count at `0x2000164D`, multiplies it by
+10 raw units, and applies it in either direction. CCL units are 0.1 A: the
+immediate 10 therefore means **1 A per online pack**, not 10 A. Configured slave
+count determines polling duration; online count determines the step; warning-free
+charge eligibility determines the ordinary target. These are distinct counts.
+For a constant online count `N` and lower target `T`, absent overrides,
+`CCL(k) = max(T, CCL(0) - k*N)` in amperes, where `k` counts completed aggregate
+updates, not individual slave responses or CAN transmissions.
+
+EMU1101-EXT Full 1.6.3–1.6.6 retain this OEM ramp; Full 1.6.7 retains it at default 1. The Full-specific wrapper can
+lower CCL directly when an online record has logical Off set and no charge
+path; an ordinary charge warning alone does not meet that condition. The
+[Full behavior](../../mod/docs/firmware/ext-full.md) must therefore be considered
+before treating a ramp-only descent as the response to every stop condition.
+An immediate override here means **within that aggregate calculation**, not
+instantaneous receipt of a changed slave state or instantaneous inverter action.
+
+Full 1.6.7 adds a separate [persistent EXT downward factor](../../mod/docs/firmware/configurable-ccl-ramp.md) `d=1..20`, default 1. The generalized ordinary descent is `max(T, CCL(0) - k*N*d)`; the upward step remains `N*1 A`. The factor is not an OEM P-index or Function switch. Only the master's value affects bank CCL; normal OEM parameter replication must exclude it.
+
+[Calculated timing by firmware version](../../mod/docs/firmware/early-polling.md#calculated-timing-across-firmware-versions) distinguishes update counts from elapsed seconds. For twelve online packs, 1560 → 10 A takes 130 updates at d=1 or 13 at d=10. At nominal 2 s/update these are about 260/26 s; at a conditional 1 s/update, about 130/13 s. The `.6` polling improvement may shorten the interval; `.7` additionally changes the downward step when explicitly configured. These examples exclude initial detection/snapshot/polling delay, direct overrides and physical inverter response. Repeated CAN frames do not advance the ramp.
 
 There is **no continuous SOC-dependent current-limit curve**. Low-SOC warning (event 6 bit 2, P78) can nevertheless exclude a pack from the discharge-capable count and reduce DCL (`0x96CE`; aggregate `+0x04`). SOC also controls force-charge requests and the 98 % reporting cap. Temperature warnings likewise affect eligibility rather than applying a continuous derating curve.
 

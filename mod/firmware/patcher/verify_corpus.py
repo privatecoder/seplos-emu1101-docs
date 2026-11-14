@@ -8,6 +8,17 @@ from seplos.profiles import SUPPORTED_VERSIONS
 from corpus import PROJECT_ROOT, corpus_groups
 
 
+def expected_outcome(group,name,version):
+ """Explicit expectations for the pinned corpus; never enroll source contracts."""
+ already=group not in ('Original Firmware','Hard-Stop')
+ small='16.04.06' in name
+ old_gate=version.startswith('1.6') and any(v in name for v in ('16.06.03','16.06.04','16.06.05'))
+ polling_gate=version in ('1.5.6','1.6.6','1.6.7') and any(v in name for v in ('16.06.03','16.06.04','16.06.05','16.06.11','16.06.12'))
+ expected='refused' if already or small or old_gate or polling_gate else 'passed'
+ reason='UART1 buffers too small' if small else 'unsupported EMU1101-EXT 1.6 gate ABI' if old_gate and not already else 'polling start role' if polling_gate and not already else None
+ return expected,reason
+
+
 def main():
  p=argparse.ArgumentParser();p.add_argument('--firmware-root',type=Path,default=PROJECT_ROOT);p.add_argument('--out',type=Path,required=True);p.add_argument('--ext-version',choices=SUPPORTED_VERSIONS,required=True)
  a=p.parse_args();root=a.firmware_root.resolve();out=a.out.resolve()
@@ -22,15 +33,9 @@ def main():
    dest=out/f'{index:02d}-{profile}'
    report,artifacts=run_worker(path,mode,hard_stop=hard,ext_version=a.ext_version)
    publish(dest,report,artifacts)
-   already=group not in ('Original Firmware','Hard-Stop')
-   small='16.04.06' in path.name and mode=='patch'
-   old_gate=a.ext_version.startswith('1.6') and mode=='patch' and any(v in path.name for v in ('16.06.03','16.06.04','16.06.05'))
-   expected='refused' if already or small or old_gate else 'passed'
+   expected,reason=expected_outcome(group,path.name,a.ext_version)
    actual=report['status']
-   if small:
-    valid=actual=='refused' and 'UART1 buffers too small' in report.get('error','')
-   elif old_gate and not already:valid=actual=='refused' and 'unsupported EMU1101-EXT 1.6 gate ABI' in report.get('error','')
-   else:valid=actual==expected
+   valid=actual==expected and (reason is None or reason in report.get('error',''))
    row={'input':str(path.relative_to(root)),'input_sha256':hashlib.sha256(path.read_bytes()).hexdigest(),'profile':profile,'expected':expected,'status':actual,'expected_result':valid,'tests':len(report.get('tests',[])),'report':str(dest.relative_to(out)/'report.json'),'output_sha256':report.get('output_file_sha256'),'reason':report.get('error')}
    matrix.append(row);print(json.dumps({k:row[k] for k in ('input','profile','status','tests','expected_result','reason')},ensure_ascii=False),flush=True)
  (out/'matrix.json').write_text(json.dumps({'inputs':len(files),'runs':len(matrix),'all_expected':all(r['expected_result'] for r in matrix),'results':matrix},ensure_ascii=False,indent=2)+'\n')

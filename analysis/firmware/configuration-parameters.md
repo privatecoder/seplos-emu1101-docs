@@ -8,6 +8,8 @@ Labelling: all effects have been **verified in the code of 06.12 and 06.13** (as
 
 ---
 
+> **Before interpreting charge warnings:** [Bank CCL, local 10 A limiting and charge protection](states-and-triggers.md#charge-warnings-bank-ccl-and-local-current-limiting). P0/P10 high-voltage warnings do not activate the local limiter; P50 overcurrent can, with BitGroup6.bit7 enabled.
+
 ## 1. Storage, wire layout and XML exports
 
 ### RAM and positional wire layout
@@ -82,11 +84,11 @@ The English names were machine-translated from Chinese. The most common errors:
 | unit **String** | 串 = series | **number of cells** or **cell position** |
 | **SOC** in Ah | – | **remaining capacity**, not a percentage |
 | **Interval charge capacity** | 间歇充电 | **intermittent recharge**: charging resumes below … % |
-| **warning** / **alarm** | 告警 | **warning** (report only, for CCL consequences see below) |
+| **warning** / **alarm** | 告警 | **warning** (may affect bank CCL or trigger local overcurrent limiting; see below) |
 | **protection** | 保护 | **protection**: MOSFET opens |
 | **recovery** | 恢复 | return threshold (hysteresis) |
 
-**Warning vs. protection:** every quantity has two levels. A warning does not open a MOSFET by itself, but it can have control effects: if all packs have a charge-related warning, the master lowers the CCL to 10 A total, and the charge over-current warning can activate the hardware current limiter. Protection normally inhibits the affected MOSFET; the [native recovery priority](power-on-off.md#discharge-permission-and-recovery-priority) can bypass some inhibits. *(confirmed, see [Charge permission and output masks](power-on-off.md#charge-permission-and-output-masks))*
+**Warning vs. protection:** every quantity has two levels. A warning is not a protection trip, but it can have control effects: if all packs have a charge-related warning, the master lowers the CCL to 10 A total, and the charge over-current warning can activate the hardware current limiter. Protection normally inhibits the affected MOSFET; the [native recovery priority](power-on-off.md#discharge-permission-and-recovery-priority) can bypass some inhibits. *(confirmed, see [Charge permission and output masks](power-on-off.md#charge-permission-and-output-masks))*
 
 ---
 
@@ -371,3 +373,7 @@ Detailed derivation: [States and triggers](states-and-triggers.md).
 7. **Deep discharge lock P9 ineffective:** BitGroup6 bit 4 (automatic charge activation) disables the charge lock "cell ≤ 1.5 V". Anyone who wants the lock must switch off bit 4 (and then loses automatic charge activation).
 8. **Standby self-shutdown after 48 h active** (BitGroup7 bit 1): a pack that sits in standby for 48 h without a charger at the port and whose highest cell is < 3.45 V shuts itself down. An inverter that maintains external port voltage or resumes charging can prevent the timeout. Button, detected charging and eligible port-voltage wakeup have separate conditions; shutdown does not establish that a button is the only recovery path.
 9. **Current limiter after charge overcurrent warning** (BitGroup6 bit 7): if 100 A (P50) flow for 5 s, the pack charges for 5 min (P71) only through the hardware limiter. With 50 A CCL per pack this is not reached in normal operation.
+
+## EXT-only CCL configuration
+
+Full 1.6.7 adds a separate [downward CCL factor](../../mod/docs/firmware/configurable-ccl-ramp.md), 1–20 A per online pack per update, default 1. It is read/written through 64/07–08 and is not a new P-index, function-switch bit or member of the OEM 47/A1/XML parameter layout.

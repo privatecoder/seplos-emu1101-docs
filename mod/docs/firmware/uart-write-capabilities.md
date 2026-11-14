@@ -4,8 +4,8 @@
 
 The versioned feature baselines are **Light 1.5.3+** and **Full 1.6.3+**.
 Shared remote reads are available from Light 1.5.4+ / Full 1.6.4+, and atomic
-scheduler cleanup from Light 1.5.5+ / Full 1.6.5+. The tables compare the exact
-OEM 16.06.13, Light 1.5.5 and Full 1.6.5 images listed below. Determine each target's capabilities with 64/03;
+scheduler cleanup from Light 1.5.5+ / Full 1.6.5+ and validated early UART0 polling from Light 1.5.6+ / Full 1.6.6+. The tables compare the exact
+OEM 16.06.13, Light 1.5.6 and Full 1.6.7 images listed below. Determine each target's capabilities with 64/03;
 command 51 reports the OEM base family and cannot identify the patch release.
 Unknown images require separate analysis. The catalogue verifies current input
 hashes, EXT05 metadata/template and build-ID digests against public release
@@ -14,8 +14,8 @@ JSONs without opening ports or rerunning native emulation.
 | Firmware | Build ID | EXT05 image flags | .ehex file SHA-256 |
 |---|---|---|---|
 | Original 16.06.13 | — | — | `0ea75c9834cf19789a58f58db8cde1a2bbd722a8f5a7bde7f00106f59b91ccf6` |
-| Light 1.5.5 | `082cb731c006aac5` | `0x3A` | `20ee87a808314781479821a107dbad350e165db6a63c88241bec444e02556911` |
-| Full 1.6.5 | `13464fc91a6e6a20` | `0xFE` | `fae20016130c950ee12e9a90ad0aa0e042b41eda3e46aef1f95469378d800b2f` |
+| Light 1.5.6 | `fe7cba82f861f337` | `0x3A` | `2535115af7ca492930fe5bb6ae926bb2696f5cab6d7f36801142924272fd8f5e` |
+| Full 1.6.7 | `f445666c205184a8` | `0xFE` | `24665349103b44362c6dffd31d21e52cb67ef09e0dd2788a8cc6ba2a31b4255a` |
 
 SHA-256, where listed, covers the complete .ehex file. The OEM image has no
 EMU1101-EXT build ID or EXT05 reply. Published hashes bind the actual release files;
@@ -41,7 +41,7 @@ are decimal. Pack 11 uses ASCII address 0B. Normal DIP addresses are 0–15;
 EMU1101-EXT addressed operations accept 0–21. These are local capabilities, without
 a master proxy. A dash means no implemented route.
 
-**[W]** Group0.Bit0=1 permits A1 writes through UART1.
+**[W]** Group0.Bit0=1 permits A1 writes and Full 1.6.7 CCL-setting writes through UART1.
 
 **[P]** Requires image flag bit 1 and Group0.Bit3=1; 0 denies access in every versioned release. This permission covers power, restart and RTC writes through UART1;
 UART0 uses its original path, and UART1 RTC reads need no power permission.
@@ -57,7 +57,7 @@ on may release it independently of that setting.
 
 **Bold UART names** in the EMU1101-EXT columns mark interfaces newly available for that operation compared with Original .13.
 
-| Value / action | Command | Original .13 | EMU1101-EXT Light 1.5.5 | EMU1101-EXT Full 1.6.5 |
+| Value / action | Command | Original .13 | EMU1101-EXT Light 1.5.6 | EMU1101-EXT Full 1.6.7 |
 |---|---|---|---|---|
 | All 87 configuration parameters P0–P86 | A1, whole block | UART0, UART2 | UART0, **UART1**[W], UART2 | UART0, **UART1**[W], UART2 |
 | Function switches Group0–7, including display format | A1; exceptions below | UART0, UART2 | UART0, **UART1**[W], UART2 | UART0, **UART1**[W], UART2; bit 5 protected |
@@ -82,14 +82,19 @@ on may release it independently of that setting.
 | Send six undecoded bytes to the display/dongle | ASCII AB → UART2-Tunnel | UART0 → UART2 | UART0 → UART2 | UART0 → UART2 |
 | Save SOC before a planned restart | Automatic before addressed ASCII 45/06 | — | — | **UART0**, **UART1**[P]; no separate write permission |
 | Configure hard stop during recharge waiting | A1, Group0.Bits6/7 | — | — | **UART0**, **UART1**[W], **UART2**; write together |
+| CCL decrease step, 1–20 A per online pack/update | ASCII 64/08 value | — | — | **UART0**, **UART1**[W] |
 
 A1 always transmits a complete valid parameter block. UART0 uses ASCII with 169
 INFO bytes, including the device name. UART1/UART2 use binary with 158 DATA bytes,
 without the name. Individual P values are not directly writable registers.
 
+The Full 1.6.7 CCL step is a **separate persistent numeric EXT setting**, not one of those 87 values or a Function bit. Its own `64/07` read and `64/08 value` write leave the OEM block unchanged. The normal application control targets the identified master and must be excluded from OEM XML and copy/apply-to-all-pack operations. Addressed slave access exists in firmware, but no replication is required. [OpenBMS / Home Assistant contract](../../docs/firmware/openbms-monitor.md#full-167-ccl-configuration).
+
+[Version and timing matrix](../../docs/firmware/ext-version-comparison.md#polling-and-ccl-matrix-through-full-167) compares fixed-window and early-poll releases, several downward factors, and conditional seconds estimates. Setting units are A per online pack per aggregate update, not A/s.
+
 ## Additional read and service operations
 
-| Read operation | Command | Original .13 | EMU1101-EXT Light 1.5.5 | EMU1101-EXT Full 1.6.5 |
+| Read operation | Command | Original .13 | EMU1101-EXT Light 1.5.6 | EMU1101-EXT Full 1.6.7 |
 |---|---|---|---|---|
 | Read parameters, switches and device name | 47 | UART0: ASCII; UART2: binary; UART1: — | UART0: ASCII; **UART1**/UART2: binary | UART0: ASCII; **UART1**/UART2: binary |
 | Read battery serial number / String1 | A2 | UART0: ASCII; UART1/UART2: — | UART0: ASCII; **UART1**: binary; UART2: — | UART0: ASCII; **UART1**: binary; UART2: — |
@@ -104,6 +109,7 @@ without the name. Individual P values are not directly writable registers.
 | Read persisted capacity/SOC contents | ASCII 64/06 | — | **UART0**, **UART1**; no permission required | **UART0**, **UART1**; no permission required |
 | Read full-width live charged/discharged energy | ASCII 64/06 | — | **UART0**, **UART1**; no permission required | **UART0**, **UART1**; no permission required |
 | Read hard-stop selection and build default | 64/03, for configuration also read 47 | — | 64/03 image flag 0: fixed in image | 64/03 flag 80/bit 0 +47 Group0.Bits6/7 |
+| CCL decrease configuration and bounds | ASCII 64/07 | — | — | **UART0**, **UART1** |
 
 This complements the action matrix rather than replacing the telemetry
 catalogue. UART1 47/A2/A4 and implemented 64/03/04 reads need no A1 permission.
@@ -124,14 +130,14 @@ does not reset, alter parameters or release an individual pack lock.
 
 UART0/UART1 64/03 returns identical EXT05 information for a given pack: 21 decoded
 bytes, LENGTH 402A. Offsets 0–2 EXT, 3 format, 4–6 OEM base, 7–9 patch version,
-10–17 build ID, 18 image flags, 19–20 capability mask u16 BE 000F. It contains no runtime marker or state fields.
+10–17 build ID, 18 image flags, 19–20 capability mask u16 BE 000F (Light) or 001F (Full 1.6.7). It contains no runtime marker or state fields.
 Flag 0x10 identifies UART0 marker/info support.
 
-From Light 1.5.4+ / Full 1.6.4+, read-capability bits 0/1/2/3 mean UART1 history, calibration pages, persisted SOC contents and full-width live energy. Discover support through the explicit mask; never infer it from a version or image flag. Reads require no master role, marker or Group0 enable flag. UART1 RX injection at the EEPROM transfer boundary is model-tested; deterministic native cases cover timer/protection/CMP execution and concurrent UART0 reception, while complete multi-pack polling and physical timing remain untested. Existing 64/04 is unchanged. [Remote diagnostics](../../docs/firmware/remote-diagnostics.md) defines exact layouts, shared-cursor rollback and snapshot/boot limits. UART2 is unchanged.
+From Light 1.5.4+ / Full 1.6.4+, read-capability bits 0/1/2/3 mean UART1 history, calibration pages, persisted SOC contents and full-width live energy. Discover support through the explicit mask; never infer it from a version or image flag. Reads require no master role, marker or Group0 enable flag. UART1 RX injection at the EEPROM transfer boundary is model-tested; deterministic native cases cover timer/protection/CMP execution and concurrent UART0 reception, while physical multi-pack polling and timing remain untested. Existing 64/04 is unchanged. [Remote diagnostics](../../docs/firmware/remote-diagnostics.md) defines exact layouts, shared-cursor rollback and snapshot/boot limits. UART2 is unchanged.
 
 ## Availability and variant rules
 
-The table above compares the concrete current `.5` images. Feature availability
+The table above compares the concrete current Light 1.5.6 / Full 1.6.7 images. Feature availability
 in the versioned release lines begins as follows; earlier development steps are
 listed separately in the [changelog](../../firmware/CHANGELOG.md).
 
@@ -142,27 +148,29 @@ listed separately in the [changelog](../../firmware/CHANGELOG.md).
 | Runtime hard-stop selection | Unavailable | Full 1.6.3 onward |
 | UART1 history, calibration pages, persisted SOC contents and full-width energy reads | Light 1.5.4 onward | Full 1.6.4 onward |
 | Atomic scheduler cleanup | Light 1.5.5 onward | Full 1.6.5 onward |
+| Validated early UART0 poll completion | Light 1.5.6 onward | Full 1.6.6 onward |
+| Configurable downward CCL, 64/07–08 | Unavailable | Full 1.6.7 onward |
 
 Both variants permit UART1 Power/RTC with Group0.Bit3=1. Image flag 0x08
 records this standard rule and is set in every versioned release. Group0 FF
 therefore allows UART1 Power/RTC.
-Extended off requires Full capability 0x04 and bit4=1; bit5=0 reports an
-individual lock. Disabling bit4 does not release an existing lock. Light
+Extended off requires Full capability 0x04 and bit 4=1; bit 5=0 reports an
+individual lock. Disabling bit 4 does not release an existing lock. Light
 reserves bits4/5. The scheduler fix introduces no new parameter.
 
 Storage diagnostics are freely readable at own addresses 0–21 on UART0/UART1;
-foreign/FF remain silent. Format01 has ten INFO bytes, LENGTH B014, and reads
+foreign/FF remain silent. Format 01 has ten INFO bytes, LENGTH B014, and reads
 parameter/SOC shape, CRC and differences without repair. Light returns lock
-bytes7/8=FF and byte9=00: unavailable state, not confirmed unlocked. Full saves
+bytes 7/8=FF and byte9=00: unavailable state, not confirmed unlocked. Full saves
 and verifies both original SOC copies before addressed UART0/UART1 45/06.
 RTN08 prevents reset on storage/verification failure; FF does not checkpoint or
 reset. UART1 still needs [P]. Light retains the OEM UART0 45 broadcast paths.
 
-The four buildable profiles use EXT05. EXT05 patch bytes are 01 05 05 / 01 06 05 in the current Light/Full builds. Diagnostic flag0x20 is present in both; checkpoint flag0x40
+The seven buildable profiles use EXT05. EXT05 patch bytes are 01 05 06 / 01 06 07 in the current Light/Full builds. Diagnostic flag0x20 is present in both; checkpoint flag0x40
 is Full-only. Current soft-default image flags are3A/FE; a static hard-stop
-Light build uses3B. Full protects bit5 even during malformed UART0/UART2 imports.
+Light build uses3B. Full protects bit 5 even during malformed UART0/UART2 imports.
 Addressed UART0/UART1 on/off returns RTN08/LENGTH0000 on a persistence failure;
-matching RAM bit5 does not turn failure into success. Check uncertain outcomes
+matching RAM bit 5 does not turn failure into success. Check uncertain outcomes
 with fresh reads rather than automatically repeating writes.
 
 ### Configurable hard stop from EMU1101-EXT Full 1.6.3
@@ -196,14 +204,14 @@ live. 64/03 is static: read 47/Group0 for active configuration.
 
 ## Group0 rules
 
-| Field | Original .13 | EMU1101-EXT Light 1.5.5 | EMU1101-EXT Full 1.6.5 | Write route / exception |
+| Field | Original .13 | EMU1101-EXT Light 1.5.6 | EMU1101-EXT Full 1.6.7 | Write route / exception |
 |---|---|---|---|---|
 | Group0.Bit0 | Reserved, no OEM function | 1 = allow writes over **UART1** | 1 = allow writes over **UART1** | UART0/UART2; UART1[W] may disable itself 1→0. Re-enable only through UART0/UART2. |
-| Group0.Bit1 | 1 = enable temperature sensor plausibility check | 1 = enable temperature sensor plausibility check | same as 1.5.5 | UART0, UART1[W], UART2 |
-| Group0.Bit2 | Reserved, no OEM function | 1 = allow maintenance start over **UART1** | same as 1.5.5 | UART0/UART2 only; a change through UART1-A1 returns E3 and rejects the entire block. |
+| Group0.Bit1 | 1 = enable temperature sensor plausibility check | 1 = enable temperature sensor plausibility check | same as 1.5.6 | UART0, UART1[W], UART2 |
+| Group0.Bit2 | Reserved, no OEM function | 1 = allow maintenance start over **UART1** | same as 1.5.6 | UART0/UART2 only; a change through UART1-A1 returns E3 and rejects the entire block. |
 | Group0.Bit3 | Reserved, no OEM function | **1 = allow Power/RTC over UART1**, 0 = blocked | **1 = allow Power/RTC over UART1**, 0 = blocked | UART0/UART2 only; a change through UART1-A1 returns E3 and rejects the entire block. |
 | Group0.Bit4 | Reserved, no OEM function | Reserved, no function | **1 = enable extended off**, 0 = disabled | UART0, UART1[W], UART2; Disabling does not release an existing lock. |
-| Group0.Bit5 | Reserved, no OEM function | Reserved, no function | **0 = individual pack lock active**, 1 = clear | 1.5.5: writable through UART0/UART1[W]/UART2. 1.6.5: status only; change only through addressed 45 on/off over UART0/UART1[P]. |
+| Group0.Bit5 | Reserved, no OEM function | Reserved, no function | **0 = individual pack lock active**, 1 = clear | 1.5.6: writable through UART0/UART1[W]/UART2. 1.6.7: status only; change only through addressed 45 on/off over UART0/UART1[P]. |
 | Group0.Bit6 | Reserved, no OEM function | Reserved, no function | When bit 7=0: 1 hard stop, 0 soft stop | UART0, UART1[W], UART2; set both bits together. |
 | Group0.Bit7 | Reserved, no OEM function | Reserved, no function | 0 explicit choice, 1 build default | Edit together with bit 6; FF follows the build default. |
 
@@ -367,10 +375,10 @@ Group7.Bit4 selects its frame format. Preserve unused bits.
 | Group0 | 1 | Temperature sensor plausibility |
 | Group0 | 2 | Allow maintenance start over UART1 |
 | Group0 | 3 | Allow Power/RTC over UART1: 1 in both EMU1101-EXT variants; reserved in OEM |
-| Group0 | 4 | 1.6.5: extended off enabled at 1; 1.5.5 reserved |
-| Group0 | 5 | 1.6.5: individual pack lock active at 0, status; 1.5.5 reserved |
-| Group0 | 6 | 1.6.5: hard-stop selection when bit 7=0; Original/1.5.5 reserved |
-| Group0 | 7 | 1.6.5: 0 explicit choice, 1 build default; Original/1.5.5 reserved |
+| Group0 | 4 | 1.6.7: extended off enabled at 1; 1.5.6 reserved |
+| Group0 | 5 | 1.6.7: individual pack lock active at 0, status; 1.5.6 reserved |
+| Group0 | 6 | 1.6.7: hard-stop selection when bit 7=0; Original/1.5.6 reserved |
+| Group0 | 7 | 1.6.7: 0 explicit choice, 1 build default; Original/1.5.6 reserved |
 | Group1 | 0 | Cell high-voltage warning |
 | Group1 | 1 | Cell OVP |
 | Group1 | 2 | Cell low-voltage warning |

@@ -41,7 +41,7 @@ if (rs485_address == 0  &&  slave_count != 0) {
 
 - The DIP switches are not only read at startup: `0x2112` runs in the main loop's measurement cycle (`0x6152`–`0x6160`, about 1 s) and rewrites the slave count from DIP 5–8 to `0x20000026` every time (`0x21BE`, only if BitGroup7 bit 5 is off). *(confirmed)*
 - With BitGroup7 bit 5 (automatic addressing) disabled, setting DIP 5–8 on the master to 0 during operation makes the main loop take the normal dispatcher `0x1132` immediately: polling stops, the master answers requests to address 0 on the pack bus, and the bus is free for an external client. Switching back restarts polling without a reboot. *(confirmed in code; whether "all OFF" decodes as 0 on the hardware has not been measured)*
-- ⚠ **Limitation:** While DIP 5–8 are at 0, the master reports only **its own values as a single-pack system** to the inverter: capacity, SOC and current of the master pack only, DCL immediately for 1 pack. With unchanged gate/alarm state and no immediate zero/heating override, CCL falls via the ordinary ramp, by 1 A per second (step = packs online × 1 A, `0x995C`–`0x9986`), so from a large starting value it takes many minutes to reach the single-pack value. *(confirmed)*
+- ⚠ **Limitation:** While DIP 5–8 are at 0, the master reports only **its own values as a single-pack system** to the inverter: capacity, SOC and current of the master pack only, DCL immediately for 1 pack. With unchanged gate/alarm state and no immediate zero/heating override, CCL falls via the ordinary ramp, by a nominal 1 A per aggregate update (about one second here; Full 1.6.7 uses its configured downward factor instead; native step = packs online × 1 A, `0x995C`–`0x9986`), so from a large starting value it takes many minutes to reach the single-pack value. *(confirmed)*
   - Reason: with address 0 and slave count 0, `0x944C` clears the flag byte `0x20000000` and the online bitmask (`0x94C6`–`0x94CE`). Immediately afterwards (`0x6212`), `0x12E2` sets its own online bit (`0x1364`–`0x136A`) and bit 2 again (`0x136C`–`0x1380`). `0x99BA` therefore recomputes the aggregate every second, but only from its own pack. The same applies to a master operated alone.
   - The inverter thus sees only a fraction of the current and capacity while all packs keep delivering power. Every pack still protects itself via its MOSFETs. Even so, the inverter should be set to **"no battery power"** for this maintenance window.
 
@@ -57,6 +57,64 @@ if (rs485_address == 0  &&  slave_count != 0) {
 | Pack 3 | `~2003465A0000FD9B\r` |
 
 This is the frame "`20.01.46.5A.00.00`" from esphome issue #116.
+
+### Sequential polling and aggregate timing
+
+The master keeps **one outstanding request**, not a pipeline of requests to
+different slaves. In OEM 16.06.13, `0x13F6` returns while `0x20000000.bit0`
+is set. Otherwise it advances the index, builds/transmits the request, clears
+bit 1 and sets bit 0. The next slave cannot be selected until `0x14AE`
+finishes the current transaction and clears bits 0/1.
+
+The polling window is **30 timer-0 ticks**, nominally **150 ms**. The common
+tail of timer ISR `0x5FF0` calls `0x1472` every nominal 5 ms. While bit 0 is
+set, that helper increments `0x20000501`; at 30 it resets the counter and sets
+`0x20000000.bit1`. Response evaluation `0x14AE` is gated by this bit, not
+directly by receipt of a complete response. UART0 RX handler `0x01AA` marks
+completion separately as `0x20000108 = 4`; it does not release the polling
+window early. Thus **an early valid response does not start the next request
+early**. Missing or invalid responses also consume the window, then advance
+the index after updating the failure counter.
+
+At 19,200 baud and 8N1, an 18-character request plus an 82-character response
+needs approximately **52.1 ms of wire time**, excluding slave processing and
+turnaround. This transmission fits inside the nominal 150 ms window; the
+firmware does not replace that window with the shorter wire time.
+
+After the final slave, bit 2 marks the round complete. Main-loop communication
+dispatch `0x6274–0x627A` pauses polling until the next nominal one-second slow
+pass consumes it in `0x99BA`. That function recomputes the aggregate once and
+clears bit 2; the next round can then begin. For a stable 11-slave configuration,
+11 windows take about **1.65 s**, so steady-state aggregate updates normally
+fall on every **second** slow pass, approximately **2 s apart**. CAN can still
+send every second, repeating the previous aggregate on intervening passes.
+The master contributes its own local record; it does not poll itself over UART0.
+
+These intervals are derived from the firmware scheduler, not measured bus
+latencies. Tick phase, main-loop/interrupt delays, on/off broadcasts, discovery
+and changing slave counts can alter the schedule. An individual slave also
+refreshes its transmitted snapshot cyclically, so warning-detection latency
+must not be equated with either 52 ms or one 150 ms window.
+
+Fresh native-instruction replays of the pinned OEM .13 and EMU1101-EXT Full
+1.6.5 images confirm that 100 repeated send/evaluate calls with RX already
+marked complete do not advance the index before the timer threshold. Requests
+1–11 start at logical ticks 0, 30, …, 300; round completion occurs at tick 330.
+Those bounded tests execute the frame builder and polling state machine with
+synthetic RAM, replacing physical TX, response validation and record decoding
+with explicit stubs. They do not emulate a full multi-board bus or measure
+physical time. See [clock/timer derivation](../firmware/startup-clock-timers.md)
+and [CCL aggregation and ramp](can.md#3-limits-and-data-source-master-aggregation-confirmed).
+
+### Early completion in EMU1101-EXT
+
+Light 1.5.6+ / Full 1.6.6+ replace the fixed successful-response dwell with validated early completion. The master still has one outstanding request; complete matching responses are validated under UART0 buffer ownership and then passed through the native parser/decoder. The original 30-tick timeout remains the fallback, serviced by the main loop. Malformed/foreign frames do not restart it. Per-request timer reset, broadcast behavior, address-chain discovery and aggregate/CCL gating are preserved.
+
+The .6 mandatory suites execute the native parser, decoder, FIFO/silence paths and complete eleven-slave rounds, including enabled protection interrupts. Earlier round completion may make aggregate updates eligible on successive slow passes; no sub-second physical round is promised. See [early polling contract, test scope and limits](../../mod/docs/firmware/early-polling.md).
+
+[Calculated intervals and CCL descent examples through Full 1.6.7](../../mod/docs/firmware/early-polling.md#calculated-timing-across-firmware-versions) separate configured poll slots, online count, charge eligibility and the aggregate gate. A faster completed round is not an extra ramp step for each slave response.
+
+### On/off broadcast
 
 **On/off synchronisation:** If the master's on/off state changes (system status bit 5 "off"), it sends, instead of the next 0x5A request, a **broadcast to address 0xFF with CID2 0x45** (remote control, type 4). *(confirmed)*
 

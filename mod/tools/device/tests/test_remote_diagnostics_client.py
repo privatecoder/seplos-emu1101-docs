@@ -73,7 +73,7 @@ class RemoteDiagnosticsClient(unittest.TestCase):
 
     def test_ext05_rejects_malformed_lengths_formats_and_reserved_capabilities(self):
         good = b'EXT\5\x10\6\x0d\1\6\4' + bytes(8) + b'\xfe\0\x0f'
-        for bad in (good[:-1], good+b'\0', b'EXT\6'+good[4:], good[:19]+b'\x80\0', good[:19]+b'\0\x10'):
+        for bad in (good[:-1], good+b'\0', b'EXT\6'+good[4:], good[:19]+b'\x80\0', good[:19]+b'\0\x20'):
             with self.subTest(raw=bad), self.assertRaises(ValueError):
                 self.c.parse_info(bad)
 

@@ -3,8 +3,8 @@
 > **Port notation:** **UART0 = RS485-1/RS485-2 (shared pack bus)**; **UART1 = RS485 pair in the CAN socket**; **UART2 = local display/Bluetooth port**. UART1 carries RS485 traffic; the actual CAN interface uses separate pins in the same socket.
 
 EMU1101-EXT (EMU1101 Extended Firmware) is custom firmware for Seplos BMS 2.0
-(EMU1101, hardware V16). The current versions are Light 1.5.5 and Full 1.6.5;
-Light 1.5.4 and Full 1.6.4 remain explicit reference builders. The Light branch
+(EMU1101, hardware V16). The current versions are Light 1.5.6 and Full 1.6.7;
+Light 1.5.4/1.5.5 and Full 1.6.4/1.6.5/1.6.6 remain explicit reference builders. The Light branch
 uses 1.5.x; Full uses 1.6.x. Every versioned release uses 1=enabled and 0=denied
 permission semantics.
 
@@ -79,12 +79,13 @@ version and persistence boundaries.
 ## Read-only remote diagnostics
 
 Addressed UART1 history, calibration pages, persisted SOC contents and full-width
-live energy reads are available in Light 1.5.4+ and Full 1.6.4+. The four
-buildable profiles advertise these reads through the EXT05 capability mask.
+live energy reads are available in Light 1.5.4+ and Full 1.6.4+. All supported
+profiles advertise these reads through the EXT05 capability mask.
 Read fresh `info` for each addressed board.
 The identity decoder requires the 21-byte EXT05 format and rejects old formats
 and prefixes. The version bytes, eight-byte build ID, image flags and capability
-bits retain their field positions; the current capability mask is `0x000F`.
+bits retain their field positions; Light uses capability mask `0x000F`; Full 1.6.7 uses `0x001F`,
+including the configurable CCL decrease.
 Marker status remains the five-byte raw response to command `64/02`. The
 [wire contract](../../docs/firmware/remote-diagnostics.md)
 defines exact layouts, units, errors and limits.
@@ -134,3 +135,7 @@ The historical source tree, its five chained builders, fixed emulator, laborator
 ```
 
 `--suite legacy`, `device` or `patcher` selects one group. Each historical builder suite runs in its own process to avoid module-name collisions. The runner uses a neutral working directory, produces fresh logs and reports, verifies positive test counts, and opens no devices. It never grants native execution permissions itself. [Current firmware builds](../../firmware/patcher/README.md) use the maintained patcher.
+
+### Full 1.6.7 CCL decrease setting
+
+`maintenance_client.py ccl-ramp --uart UART1 --address 0` reads the separate numerical setting. `maintenance_client.py set-ccl-ramp --step 10 --uart UART1 --address 0` composes a write. Both remain offline without `--serial` or `--tcp`; real writes first require EXT capability0010. The BMS validates integer1–20 itself and UART1 requires Group0.bit0. See the [wire and persistence contract](../../docs/firmware/configurable-ccl-ramp.md).

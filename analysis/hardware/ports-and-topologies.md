@@ -2,9 +2,9 @@
 
 > **Port notation:** **UART0 = RS485-1/RS485-2 (shared pack bus)**; **UART1 = RS485 pair in the CAN socket**; **UART2 = local display/Bluetooth port**. UART1 carries RS485 traffic; the actual CAN interface uses separate pins in the same socket.
 
-Updated 2026-10-26. This guide covers simultaneous inverter, monitor and service
+Updated 2026-11-14. This guide covers simultaneous inverter, monitor and service
 connections for BMS packs. The reference is **OEM 16.06.13**, with current
-patch alternatives **EMU1101-EXT Light 1.5.5 / EMU1101-EXT Full 1.6.5**. Addressed access, maintenance, identity and storage diagnostics begin at Light 1.5.3 / Full 1.6.3; Full also includes the persistent pack lock, planned-reset checkpoint and configurable hard-stop policy from 1.6.3. Runtime permissions use 1=enabled in every versioned release. Older OEM differences are explicit.
+patch alternatives **EMU1101-EXT Light 1.5.6 / EMU1101-EXT Full 1.6.7**. Addressed access, maintenance, identity and storage diagnostics begin at Light 1.5.3 / Full 1.6.3; Full also includes the persistent pack lock, planned-reset checkpoint and configurable hard-stop policy from 1.6.3. Runtime permissions use 1=enabled in every versioned release. Older OEM differences are explicit.
 
 **Practical rule:** An inverter on actual CAN leaves UART1 available to a monitor.
 An inverter on UART1 leaves UART0 available only when no Seplos master polls UART0. Two

@@ -18,7 +18,7 @@ class Profiles(unittest.TestCase):
  def test_help_has_only_current_profiles_and_no_polarity_option(self):
   result=self.cli('patch','--help')
   self.assertEqual(result.returncode,0)
-  self.assertIn('{1.5.4,1.6.4,1.5.5,1.6.5}',result.stdout)
+  self.assertIn('{1.5.4,1.6.4,1.5.5,1.6.5,1.6.6,1.5.6,1.6.7}',result.stdout)
   self.assertNotIn('--positive-flags',result.stdout)
  def test_cli_refuses_retired_profiles_before_output(self):
   with tempfile.TemporaryDirectory() as tmp:

@@ -1,5 +1,6 @@
 # Firmware analysis
 
+- **[Charge warnings: bank CCL versus local 10 A limiting and charge protection](states-and-triggers.md#charge-warnings-bank-ccl-and-local-current-limiting)**
 - [Configuration parameters and function switches](configuration-parameters.md)
 - [Firmware Analysis](firmware-analysis.md)
 - [Startup, clock, timers and output write sites (06.13)](startup-clock-timers.md)

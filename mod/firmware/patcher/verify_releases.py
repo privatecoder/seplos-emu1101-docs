@@ -49,7 +49,8 @@ def verify_existing(raw, metadata):
         raise ValueError(f'build_id mismatch for {metadata["name"]}')
     if info[18] != metadata['image_flags']:
         raise ValueError(f'image_flags mismatch for {metadata["name"]}')
-    if int.from_bytes(info[19:21],'big') != 15 or metadata.get('remote_capabilities') != 15:
+    expected_caps = 31 if metadata['patch_version'] == '1.6.7' else 15
+    if int.from_bytes(info[19:21],'big') != expected_caps or metadata.get('remote_capabilities') != expected_caps:
         raise ValueError('remote_capabilities mismatch')
     actual.update(build_id=build_id.hex(), info_hex=info.hex(),
                   patch_version=metadata['patch_version'], image_flags=info[18], remote_capabilities=int.from_bytes(info[19:21],'big'))

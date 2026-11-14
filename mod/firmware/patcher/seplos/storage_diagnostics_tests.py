@@ -42,9 +42,10 @@ def validate_diagnostics(original,patched,facts,report):
    assert f[role] not in m.executed,role
  def hooks():
   expected={**facts['hooks'],**facts['marker_uart0']['hooks']}
-  atomic=report['patch_version']=='1.5.5'
+  atomic=report['patch_version'] in ('1.5.5','1.5.6');polling=report['patch_version']=='1.5.6'
   if atomic:expected.update(facts['scheduler_atomic']['hooks'])
-  equal(report['hooks'],expected);equal(len(expected),5+int(atomic));equal(report['ram_bytes'],0)
+  if polling:expected.update(facts['polling']['hooks'])
+  equal(report['hooks'],expected);equal(len(expected),5+int(atomic)+2*int(polling));equal(report['ram_bytes'],0)
   assert not report.get('cutoff') and bool(report.get('positive_flags'))==positive and not report.get('checkpoint_before_reset')
   assert all(not name.startswith(('hook_cut_','hook_service_')) for name in report['entries'])
   allowed={a for site in expected.values() for a in range(site,site+4)}

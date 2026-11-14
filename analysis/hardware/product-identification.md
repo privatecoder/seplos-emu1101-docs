@@ -82,7 +82,7 @@ other release-specific evidence. The two stored version bytes alone do not
 identify the patch release. [Container and version evidence](../firmware/firmware-analysis.md),
 [original image hashes](../firmware/original-images.md).
 
-EMU1101-EXT Light 1.5.5 and EMU1101-EXT Full 1.6.5 are separate modification-release numbers. They are
+EMU1101-EXT Light 1.5.6 and EMU1101-EXT Full 1.6.7 are separate modification-release numbers. They are
 based on OEM 16.06.13 and do not rename the physical hardware.
 
 ## Seplos generation, document and software versions

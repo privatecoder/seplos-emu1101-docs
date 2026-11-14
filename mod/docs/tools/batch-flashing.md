@@ -2,7 +2,7 @@
 
 > **Port notation:** **UART0 = RS485-1/RS485-2 (shared pack bus)**; **UART1 = RS485 pair in the CAN socket**; **UART2 = local display/Bluetooth port**. UART1 carries RS485 traffic; the actual CAN interface uses separate pins in the same socket.
 
-`flash_packs.py` updates a declared set of packs over a local USB–RS485 adapter on UART0 at 19200 baud. It uses the existing `flash_gap.py` transfer and `boot_entry.py` entry procedure, then verifies each target before proceeding. The target must match one of the two current [release metadata files](../../firmware/releases/README.md). `--profile light` selects EMU1101-EXT Light 1.5.5; `--profile full` selects EMU1101-EXT Full 1.6.5. `--image PATH` may select another copy of the exact same release bytes; it does not permit arbitrary firmware.
+`flash_packs.py` updates a declared set of packs over a local USB–RS485 adapter on UART0 at 19200 baud. It uses the existing `flash_gap.py` transfer and `boot_entry.py` entry procedure, then verifies each target before proceeding. The target must match one of the two current [release metadata files](../../firmware/releases/README.md). `--profile light` selects EMU1101-EXT Light 1.5.6; `--profile full` selects EMU1101-EXT Full 1.6.7. `--image PATH` may select another copy of the exact same release bytes; it does not permit arbitrary firmware.
 
 The default invocation only prints an offline plan. **Only `--execute` opens serial ports or performs device operations.** The tool has no TCP transport and never automatically restores parameters, unlocks a pack, clears maintenance, retries a write or invokes recovery.
 
@@ -121,6 +121,6 @@ Set those three values deliberately; the recovery helper has no pack-address arg
 
 ## Validation scope
 
-The device suite uses deterministic serial/storage models, tests both twelve-pack address ranges, malformed/extra/partial responses, all-bank backup ordering, exact post-verification, lock/downgrade guards, source pinning, errors and interruption boundaries. Existing single-pack transfer/ACK/reset tests remain applicable. Native UART0 counterexamples cover OEM 16.06.13 and EMU1101-EXT Full 1.6.5 at their exact APP hashes and show foreign requests do not reset other modeled packs. They do not emulate the bootloader or establish physical multidrop timing.
+The device suite uses deterministic serial/storage models, tests both twelve-pack address ranges, malformed/extra/partial responses, all-bank backup ordering, exact post-verification, lock/downgrade guards, source pinning, errors and interruption boundaries. Existing single-pack transfer/ACK/reset tests remain applicable. Native UART0 counterexamples cover OEM 16.06.13 and EMU1101-EXT Full 1.6.7 at their exact APP hashes and show foreign requests do not reset other modeled packs. They do not emulate the bootloader or establish physical multidrop timing.
 
 No board was accessed or flashed during development. The current EMU1101-EXT images and this batch path still require hardware validation.

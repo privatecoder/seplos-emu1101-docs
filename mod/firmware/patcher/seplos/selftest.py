@@ -254,7 +254,7 @@ def validate(original,patched,facts,build):
   equal(m.payload(),before);equal(m.flash_ops,[]);equal(m.saves,[])
   equal(ascii_payload(tx(m,request),11)[0],0)
  check('slave-info-rejects-malformed-CRC-length-VER-CID-and-recovers',malformed_slave_info)
- for payload in (b'',b'\x07' if build.get('extended_diagnostics') else b'\x04',b'\x01\xc3\0',b'\x00\xc3\0',b'\x03\0'):
+ for payload in (b'',b'\x09' if build.get('ccl_ramp') else b'\x07' if build.get('extended_diagnostics') else b'\x04',b'\x01\xc3\0',b'\x00\xc3\0',b'\x03\0'):
   check('maintenance-invalid-contract-'+payload.hex(),lambda payload=payload:equal(maintenance(board(),payload),(5,b'')))
  def tick():
   m=board();m.put(0x23000,bytes(4));m.put(r['slaves'],b'\x0b');m.run(build['entries']['hook_dip']);equal(m.num(r['slaves']),0)
@@ -307,4 +307,10 @@ def validate(original,patched,facts,build):
  if build.get('scheduler_atomic'):
   from .scheduler_atomic_tests import validate_scheduler_atomic
   passed.extend(validate_scheduler_atomic(original,patched,facts,build))
+ if build.get('polling'):
+  from .polling_tests import validate_polling
+  passed.extend(validate_polling(original,patched,facts,build))
+ if build.get('ccl_ramp'):
+  from .ccl_ramp_tests import validate_ccl_ramp
+  passed.extend(validate_ccl_ramp(original,patched,facts,build))
  return passed

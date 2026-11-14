@@ -81,9 +81,9 @@ def render():
         '@PROFILES@': table(('Firmware', 'Build ID', 'EXT05 image flags', '.ehex file SHA-256'),
             [('Original 16.06.13', '—', '—', f'`{data["base_image"]["ehex_sha256"]}`')] +
             [(('Light ' if v.startswith('1.5.') else 'Full ')+v, f'`{p["build_id"]}`', f'`0x{p["image_flags"]:02X}`', f'`{p["ehex_sha256"]}`') for v, p in profiles.items()]),
-        '@MATRIX@': table(('Value / action', 'Command', 'Original .13', 'EMU1101-EXT Light 1.5.5', 'EMU1101-EXT Full 1.6.5'), comparison_rows(data['matrix'])),
-        '@READS@': table(('Read operation', 'Command', 'Original .13', 'EMU1101-EXT Light 1.5.5', 'EMU1101-EXT Full 1.6.5'), comparison_rows(data['selected_read_commands'])),
-        '@GROUP0@': table(('Field', 'Original .13', 'EMU1101-EXT Light 1.5.5', 'EMU1101-EXT Full 1.6.5', 'Write route / exception'), comparison_rows(data['group0'], oem_column=1, ext_columns=(2, 3))),
+        '@MATRIX@': table(('Value / action', 'Command', 'Original .13', 'EMU1101-EXT Light 1.5.6', 'EMU1101-EXT Full 1.6.7'), comparison_rows(data['matrix'])),
+        '@READS@': table(('Read operation', 'Command', 'Original .13', 'EMU1101-EXT Light 1.5.6', 'EMU1101-EXT Full 1.6.7'), comparison_rows(data['selected_read_commands'])),
+        '@GROUP0@': table(('Field', 'Original .13', 'EMU1101-EXT Light 1.5.6', 'EMU1101-EXT Full 1.6.7', 'Write route / exception'), comparison_rows(data['group0'], oem_column=1, ext_columns=(2, 3))),
         '@PARAMETERS@': table(('Index', 'Value', 'Raw unit', 'OEM .13 RAM'),
             [(f'P{p["index"]}', p['name'], p['unit'], f'`{p["ram"]:#010x}`') for p in data['parameters']]),
         '@BITS@': table(('Group', 'Bit', 'Meaning'),
@@ -121,7 +121,7 @@ def verify():
         require(manifest.get('info_format') == 5 and manifest.get('info_bytes') == 21,
                 f'{version}: EXT05 format/length mismatch')
         capabilities = manifest.get('remote_capabilities')
-        require(type(capabilities) is int and capabilities == 0x000f,
+        require(type(capabilities) is int and capabilities == (0x001f if version=='1.6.7' else 0x000f),
                 f'{version}: EXT05 remote capabilities missing or unsupported')
         try:
             info = bytes.fromhex(manifest['info_hex'])
@@ -144,11 +144,11 @@ def verify():
         verified[version] = {'manifest': profile['manifest'], 'ehex_sha256': manifest['ehex_sha256'],
                              'app_sha256': image.sha, 'build_id': manifest['build_id'],
                              'info_hex': info.hex().upper(), 'remote_capabilities': capabilities}
-    require((len(data['parameters']), len(data['function_bits']), len(data['matrix'])) == (87, 64, 23),
+    require((len(data['parameters']), len(data['function_bits']), len(data['matrix'])) == (87, 64, 24),
             'capability dimensions changed')
     return {'passed': True, 'verification': 'current release hashes and EXT05 metadata; no native emulation',
             'profiles': verified, 'parameter_count': 87, 'switch_positions': 64,
-            'action_rows': 23, 'hardware_access': False}
+            'action_rows': 24, 'hardware_access': False}
 
 
 def main():

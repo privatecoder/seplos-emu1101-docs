@@ -4,7 +4,7 @@
 
 Firmware updates use **UART0 at RS485-1/2**. UART1 on the CAN socket's RS485 pair is not an update port. Use a complete offline-validated EHEX and its exact build report or release metadata. [Build instructions](../firmware/build-and-validation.md) create the image; [device tool help](../../tools/device/README.md) defines each retained updater's arguments.
 
-**Experimental firmware:** EMU1101-EXT Light 1.5.5 / EMU1101-EXT Full 1.6.5 have offline validation only and have not been flashed or hardware-tested. Incorrect firmware, wiring or interrupted programming can leave the BMS unusable and compromise battery protection. Use at your own risk; project-authored software is provided "AS IS", without warranty, under the [license](../../../LICENSE).
+**Experimental firmware:** EMU1101-EXT Light 1.5.6 / EMU1101-EXT Full 1.6.7 have offline validation only and have not been flashed or hardware-tested. Incorrect firmware, wiring or interrupted programming can leave the BMS unusable and compromise battery protection. Use at your own risk; project-authored software is provided "AS IS", without warranty, under the [license](../../../LICENSE).
 
 Use a prepared device interpreter such as `SEPLOS_TOOLS_PY="$HOME/.local/share/seplos-firmware-tools/venv/bin/python"` for serial helpers; it must supply the dependencies listed in the [device setup](../../tools/device/README.md). The separate `SEPLOS_PYTHON` patcher interpreter stays at `~/.local/share/seplos-oem-patcher/venv/bin/python`.
 
@@ -29,13 +29,13 @@ For an already reachable bootloader, use read-only RFL first; no functioning app
 
 ## After programming
 
-Verify the application at its actual DIP address. Query fresh 51, 47, A2/A4 and 64/03 where supported. Compare parameter/SN baseline, exact build ID and flags with the chosen image, including current EXT05/21-byte layout and explicit capability mask 000F. A sequence of acknowledged bootloader blocks does not replace application verification. Without a pre-flash baseline, parameter preservation cannot be proved.
+Verify the application at its actual DIP address. Query fresh 51, 47, A2/A4 and 64/03 where supported. Compare parameter/SN baseline, exact build ID and flags with the chosen image, including current EXT05/21-byte layout and explicit capability mask (000F for current Light, 001F for Full 1.6.7). A sequence of acknowledged bootloader blocks does not replace application verification. Without a pre-flash baseline, parameter preservation cannot be proved.
 
 For a multi-pack bank, restore the application and confirm its identity before proceeding to another isolated target. When all intended work is complete, stop maintenance, confirm marker FFFFFFFF and the expected effective DIP slave count, then confirm normal polling. A clear ACK alone does not prove polling has resumed; allow the full DIP update cycle when the expected count is 0.
 
 Before a downgrade from a lock-capable profile, deliberately release any individual lock and verify its persistence: older firmware does not understand that state contract. Restoring parameters or clearing the maintenance marker does not unlock a pack. Enabling configurable hard stop is separate from pack off and requires a fresh 47 plus 64/03 interpretation.
 
-The current Light 1.5.5 and Full 1.6.5 releases have not been flashed or hardware-tested. Historical bench/recovery results remain bound to their exact archived builds and isolated-master conditions. They provide no hardware evidence for the current images, electrical gate/current behavior or a real multi-board bus.
+The current Light 1.5.6 and Full 1.6.7 releases have not been flashed or hardware-tested. Historical bench/recovery results remain bound to their exact archived builds and isolated-master conditions. They provide no hardware evidence for the current images, electrical gate/current behavior or a real multi-board bus.
 
 
 ## Gateways and interrupted transfers

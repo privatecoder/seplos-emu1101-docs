@@ -71,10 +71,10 @@ class CatalogueTests(unittest.TestCase):
         manifests.mkdir(parents=True)
         images = root / 'local/releases'
         images.mkdir(parents=True)
-        for version, flags, name in (('1.5.5', 0x3a, PUBLIC[0]), ('1.6.5', 0xfe, PUBLIC[1])):
+        for version, flags, name in (('1.5.6', 0x3a, PUBLIC[0]), ('1.6.7', 0xfe, PUBLIC[1])):
             app = bytearray(base.app[:0x1000])
             app[4:8] = (0xc1).to_bytes(4, 'little')
-            info = b'EXT\5\x10\6\x0d' + bytes(map(int, version.split('.'))) + b'UPID0000' + bytes([flags]) + b'\0\x0f'
+            info = b'EXT\5\x10\6\x0d' + bytes(map(int, version.split('.'))) + b'UPID0000' + bytes([flags]) + (31 if version=='1.6.7' else 15).to_bytes(2,'big')
             template = info[:4] + bytes(2) + info[6:]
             app[0x200:0x200+len(template)] = template
             build_id = hashlib.sha256(app).digest()[:8]
@@ -84,7 +84,7 @@ class CatalogueTests(unittest.TestCase):
             image_name = version + '-synthetic.ehex'
             (images / image_name).write_bytes(rendered)
             metadata = dict(patch_version=version, name=image_name, info_format=5, info_bytes=21,
-                            remote_capabilities=15, image_flags=flags, build_id=build_id.hex(),
+                            remote_capabilities=31 if version=='1.6.7' else 15, image_flags=flags, build_id=build_id.hex(),
                             info_hex=(info[:10]+build_id+info[18:]).hex(), app_bytes=len(app),
                             app_sha256=image.sha, ehex_sha256=hashlib.sha256(rendered).hexdigest(),
                             extended_diagnostics=True, checkpoint_before_reset=flags==0xfe,
@@ -97,21 +97,21 @@ class CatalogueTests(unittest.TestCase):
         result = self.command(source)
         self.assertEqual(result.returncode, 0, result.stderr)
         data = json.loads(result.stdout)
-        self.assertEqual(set(data['profiles']), {'1.5.5', '1.6.5'})
-        self.assertEqual((len(data['parameters']), len(data['function_bits']), len(data['matrix'])), (87, 64, 23))
+        self.assertEqual(set(data['profiles']), {'1.5.6', '1.6.7'})
+        self.assertEqual((len(data['parameters']), len(data['function_bits']), len(data['matrix'])), (87, 64, 24))
         self.assertEqual([p['index'] for p in data['parameters']], list(range(87)))
         self.assertEqual({(p['group'], p['bit']) for p in data['function_bits']},
                          {(group, bit) for group in range(8) for bit in range(8)})
         for version, profile in data['profiles'].items():
-            self.assertEqual(profile['remote_capabilities'], 15)
+            self.assertEqual(profile['remote_capabilities'], 31 if version=='1.6.7' else 15)
             self.assertEqual(profile['info_format'], 5)
             self.assertEqual(profile['power_rtc_enabled_bit3'], 1)
             self.assertEqual(profile['manifest'], 'mod/firmware/releases/' +
-                             ('ext-light.json' if version=='1.5.5' else 'ext-full.json'))
-        self.assertIsNone(data['profiles']['1.5.5']['extended_off_enabled_bit4'])
-        self.assertIsNone(data['profiles']['1.5.5']['lock_status_bit5'])
-        self.assertEqual(data['profiles']['1.6.5']['extended_off_enabled_bit4'], 1)
-        self.assertEqual(data['profiles']['1.6.5']['lock_status_bit5'], 0)
+                             ('ext-light.json' if version=='1.5.6' else 'ext-full.json'))
+        self.assertIsNone(data['profiles']['1.5.6']['extended_off_enabled_bit4'])
+        self.assertIsNone(data['profiles']['1.5.6']['lock_status_bit5'])
+        self.assertEqual(data['profiles']['1.6.7']['extended_off_enabled_bit4'], 1)
+        self.assertEqual(data['profiles']['1.6.7']['lock_status_bit5'], 0)
         rows = data['selected_read_commands']
         for label, command in (('Read one history record', '4B'),
                                ('Read active/stored calibration', '64/05'),
@@ -141,21 +141,21 @@ class CatalogueTests(unittest.TestCase):
         report = json.loads(result.stdout)
         self.assertTrue(report['passed'])
         self.assertFalse(report['hardware_access'])
-        self.assertEqual(set(report['profiles']), {'1.5.5', '1.6.5'})
+        self.assertEqual(set(report['profiles']), {'1.5.6', '1.6.7'})
         for version, profile in report['profiles'].items():
-            self.assertEqual(profile['remote_capabilities'], 15)
+            self.assertEqual(profile['remote_capabilities'], 31 if version=='1.6.7' else 15)
             info = bytes.fromhex(profile['info_hex'])
             self.assertEqual(len(info), 21)
-            self.assertEqual(info[18], 0x3a if version=='1.5.5' else 0xfe)
-            self.assertEqual(info[19:], b'\0\x0f')
+            self.assertEqual(info[18], 0x3a if version=='1.5.6' else 0xfe)
+            self.assertEqual(info[19:], (31 if version=='1.6.7' else 15).to_bytes(2,'big'))
 
     def test_synthetic_renderer_labels_only_current_profiles_and_canonical_ports(self):
         root, source = self.synthetic_project()
         result = self.command(source, '--markdown')
         self.assertEqual(result.returncode, 0, result.stderr)
         text = result.stdout
-        self.assertIn('EMU1101-EXT Light 1.5.5', text)
-        self.assertIn('EMU1101-EXT Full 1.6.5', text)
+        self.assertIn('EMU1101-EXT Light 1.5.6', text)
+        self.assertIn('EMU1101-EXT Full 1.6.7', text)
         self.assertIn('EXT05 image flags', text)
         self.assertIn('capability mask u16 BE 000F', text)
         self.assertIn('| Read one history record |', text)
@@ -168,7 +168,7 @@ class CatalogueTests(unittest.TestCase):
         self.assertIn('Full 1.6.3', text)
         self.assertIn('Light 1.5.4', text)
         self.assertIn('Full 1.6.4', text)
-        self.assertIn('EXT05 patch bytes are 01 05 05 / 01 06 05', text)
+        self.assertIn('EXT05 patch bytes are 01 05 06 / 01 06 07', text)
         self.assertNotIn('@PROFILES@', text)
 
     def test_new_interfaces_are_bold_relative_to_available_OEM_routes(self):
@@ -221,7 +221,7 @@ class CatalogueTests(unittest.TestCase):
         report = json.loads(result.stdout)
         self.assertTrue(report['passed'])
         self.assertEqual(report['verification'], 'current release hashes and EXT05 metadata; no native emulation')
-        self.assertEqual(set(report['profiles']), {'1.5.5', '1.6.5'})
+        self.assertEqual(set(report['profiles']), {'1.5.6', '1.6.7'})
         result = self.command(source, '--markdown')
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertIn('All 87 A1 parameters', result.stdout)

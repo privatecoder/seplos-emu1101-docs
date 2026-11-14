@@ -47,9 +47,15 @@ def worker_job(source,out,mode,revision,hard_stop,ext_version):
    if ext_version.startswith('1.6.'):
     from .configurable_hardstop import discover_configurable
     report['stage']='configurable_hardstop-contract';discover_configurable(im,facts)
-   if ext_version in ('1.5.5','1.6.5'):
+   if ext_version in ('1.5.5','1.6.5','1.5.6','1.6.6','1.6.7'):
     from .scheduler_atomic import discover_scheduler_atomic
     report['stage']='scheduler-atomic-contract';discover_scheduler_atomic(im,facts)
+   if ext_version in ('1.5.6','1.6.6','1.6.7'):
+    from .polling import discover_polling
+    report['stage']='UART0-polling-contract';discover_polling(im,facts)
+   if ext_version=='1.6.7':
+    from .ccl_ramp import discover_ccl_ramp
+    report['stage']='CCL-ramp-contract';discover_ccl_ramp(im,facts)
    from .remote_diagnostics import discover_remote
    report['stage']='remote-diagnostics-contract';discover_remote(im,facts)
    report.update(status='compatible',stage='complete')
@@ -109,9 +115,9 @@ def run_worker(source,mode,revision=255,timeout=120,worker=None,hard_stop='prese
    if report.get('suite')!=expected_suite or report.get('suite_complete') is not True or len(tests)<60 or not all(t.get('passed') is True for t in tests):raise ValueError('mandatory suite incomplete')
    if mode=='patch' and ext_version.startswith('1.6') and (report['build'].get('patch_version')!=ext_version or len([t for t in tests if t.get('name','').startswith('cutoff-')])<30):raise ValueError('mandatory1.6 suite incomplete')
    if mode=='patch':
-    built=report['build'];atomic=ext_version in ('1.5.5','1.6.5')
+    built=report['build'];atomic=ext_version in ('1.5.5','1.6.5','1.5.6','1.6.6','1.6.7');polling=ext_version in ('1.5.6','1.6.6','1.6.7')
     if built.get('patch_version')!=ext_version:raise ValueError('worker version differs from request')
-    if built.get('info_format')!=5 or built.get('info_bytes')!=21 or built.get('remote_capabilities')!=15 or not built.get('remote_diagnostics'):
+    if built.get('info_format')!=5 or built.get('info_bytes')!=21 or built.get('remote_capabilities')!=(31 if ext_version=='1.6.7' else 15) or not built.get('remote_diagnostics'):
      raise ValueError('remote info contract missing')
     if ext_version.count('.')==2:
      from .marker_uart0_tests import REQUIRED
@@ -126,13 +132,14 @@ def run_worker(source,mode,revision=255,timeout=120,worker=None,hard_stop='prese
      if not built.get('storage_diagnostics') or not built.get('extended_diagnostics') or built.get('image_flags',0)&0xfe!=0x3a or built.get('cutoff') or built.get('checkpoint_before_reset') or built.get('ram_bytes')!=0:raise ValueError('storage_diagnostics capability contract missing')
      expected={**report.get('facts',{}).get('hooks',{}),**report.get('facts',{}).get('marker_uart0',{}).get('hooks',{})}
      if atomic:expected.update(report.get('facts',{}).get('scheduler_atomic',{}).get('hooks',{}))
-     if len(expected)!=5+int(atomic) or built.get('hooks')!=expected:raise ValueError('storage_diagnostics '+('six' if atomic else 'five')+'-hook contract missing')
+     if polling:expected.update(report.get('facts',{}).get('polling',{}).get('hooks',{}))
+     if len(expected)!=5+int(atomic)+2*int(polling) or built.get('hooks')!=expected:raise ValueError('storage_diagnostics '+('eight' if polling else 'six' if atomic else 'five')+'-hook contract missing')
      if not set(REQUIRED)<={t['name'] for t in tests}:raise ValueError('mandatory storage_diagnostics suite incomplete')
     if ext_version.startswith('1.6.'):
      from .configurable_hardstop_tests import REQUIRED
      if not built.get('configurable_hard_stop') or built.get('image_flags',0)&0xfe!=0xfe or type(built.get('hard_stop_default')) is not bool or bool(built.get('image_flags',0)&1)!=built['hard_stop_default']:raise ValueError('configurable_hardstop capability/default contract missing')
      h=report.get('facts',{}).get('configurable_hardstop',{})
-     if len(built.get('hooks',{}))!=21+int(atomic) or built['hooks'].get('hook_configurable_hard_stop')!=h.get('site') or built.get('ram_bytes')!=4:raise ValueError('configurable_hardstop hook/RAM contract missing')
+     if len(built.get('hooks',{}))!=21+int(atomic)+2*int(polling)+int(ext_version=='1.6.7') or built['hooks'].get('hook_configurable_hard_stop')!=h.get('site') or built.get('ram_bytes')!=4:raise ValueError('configurable_hardstop hook/RAM contract missing')
      if not set(REQUIRED)<={t['name'] for t in tests}:raise ValueError('mandatory configurable_hardstop suite incomplete')
     from .remote_diagnostics_tests import REQUIRED
     if not set(REQUIRED)<={t['name'] for t in tests}:raise ValueError('mandatory remote diagnostics suite incomplete')
@@ -151,6 +158,13 @@ def run_worker(source,mode,revision=255,timeout=120,worker=None,hard_stop='prese
     if atomic:
      from .scheduler_atomic_tests import REQUIRED as ATOMIC
      groups.append(('scheduler atomic',ATOMIC))
+    if polling:
+     from .polling_tests import REQUIRED as POLLING
+     groups.append(('UART0 polling',POLLING))
+    if ext_version=='1.6.7':
+     from .ccl_ramp_tests import REQUIRED as CCL
+     groups.append(('CCL ramp',CCL))
+     if not built.get('ccl_ramp',{}).get('enabled'):raise ValueError('CCL ramp capability missing')
     names={t['name'] for t in tests}
     for label,required in groups:
      if not set(required)<=names:raise ValueError('mandatory '+label+' suite incomplete')
@@ -159,17 +173,38 @@ def run_worker(source,mode,revision=255,timeout=120,worker=None,hard_stop='prese
      contract=discover_scheduler_atomic(Image.read(source),report['facts'])
      if built.get('scheduler_atomic')!={**contract,'enabled':True} or built.get('hooks',{}).get('hook_scheduler_atomic')!=contract['site']:
       raise ValueError('scheduler atomic source contract missing')
+    if polling:
+     from .polling import discover_polling
+     poll_contract=discover_polling(Image.read(source),report['facts'])
+     if built.get('polling')!={**poll_contract,'enabled':True} or any(built.get('hooks',{}).get(k)!=v for k,v in poll_contract['hooks'].items()):
+      raise ValueError('UART0 polling source contract missing')
    output=(tmp/'firmware.ehex').read_bytes()
    if hashlib.sha256(output).hexdigest()!=report['output_file_sha256']:raise ValueError('output digest mismatch')
    candidate=Image.parse(output.decode('ascii'))
    if candidate.sha!=report['build']['app_sha256']:raise ValueError('app digest mismatch')
+   if mode=='patch' and ext_version=='1.6.7':
+    from .analysis import discover
+    from .build import build as rebuild
+    original=Image.read(source)
+    from .guards import guard
+    from .machine import probe
+    independent_facts=discover(original);guard(original,independent_facts);probe(original,independent_facts)
+    expected,expected_report=rebuild(original,independent_facts,revision,hard_stop=='enable',ext_version=ext_version)
+    if candidate.app!=expected.app or built.get('ccl_ramp')!=expected_report['ccl_ramp']:
+     raise ValueError('independent CCL ramp image/source mismatch')
    if mode=='patch' and atomic:
     from .thumb import encode_bl
     if candidate.app[contract['site']:contract['site']+4]!=encode_bl(contract['site'],built['entries']['hook_scheduler_atomic']) or candidate.app[contract['branch_site']:contract['branch_site']+2].hex()!=contract['branch_replacement']:
      raise ValueError('scheduler atomic veneer mismatch')
+   if mode=='patch' and polling:
+    from .thumb import encode_bl
+    if any(candidate.app[site:site+4]!=encode_bl(site,built['entries'][name]) for name,site in poll_contract['hooks'].items()):
+     raise ValueError('UART0 polling veneer mismatch')
+    from .polling import verify_polling_payload
+    report['publication_polling']=verify_polling_payload(Image.read(source),candidate,built['entries'])
    identity_offset=report['build']['build_id_offset']-10
    identity=candidate.app[identity_offset:identity_offset+21]
-   if len(identity)!=21 or identity[:4]!=b'EXT\x05' or identity[7:10]!=bytes(map(int,ext_version.split('.'))) or identity[18]!=report['build']['image_flags'] or identity[19:21]!=b'\0\x0f':raise ValueError('embedded remote info contract mismatch')
+   if len(identity)!=21 or identity[:4]!=b'EXT\x05' or identity[7:10]!=bytes(map(int,ext_version.split('.'))) or identity[18]!=report['build']['image_flags'] or identity[19:21]!=(31 if ext_version=='1.6.7' else 15).to_bytes(2,'big'):raise ValueError('embedded remote info contract mismatch')
    names=('firmware.ehex','payload.resolved.s','payload.dis')
    return report,{name:(tmp/name).read_bytes() for name in names}
   except Exception as exc:
@@ -193,13 +228,13 @@ def publish(out,report,artifacts):
 
 
 def main(argv=None):
- p=argparse.ArgumentParser(description='Offline OEM analysis and mandatory tested EMU1101-EXT Light 1.5.5 / Full 1.6.5 patching. Reference builders: Light 1.5.4 / Full 1.6.4. Never flashes hardware.')
+ p=argparse.ArgumentParser(description='Offline OEM analysis and mandatory tested EMU1101-EXT Light 1.5.6 / Full 1.6.7 patching. Reference builders: Light 1.5.4/1.5.5 / Full 1.6.4/1.6.5/1.6.6. Never flashes hardware.')
  sub=p.add_subparsers(dest='command',required=True)
  for name in ('analyze','patch','_worker'):
   q=sub.add_parser(name,help='private bounded worker' if name=='_worker' else name)
   q.add_argument('input',type=Path);q.add_argument('--out',required=True,type=Path,help='new output directory; parent must exist')
   q.add_argument('--base-revision',type=int,default=255,help='explicit OEM third component 0..254; default 255=unknown (not inferred from filename)')
-  q.add_argument('--hard-stop',choices=('preserve','enable'),default='preserve',help='patch: preserve existing charge-inhibit behavior (default), or enable SP80 hard stop (Full 1.6.4/1.6.5: default for configuration without an explicit mode)')
+  q.add_argument('--hard-stop',choices=('preserve','enable'),default='preserve',help='patch: preserve existing charge-inhibit behavior (default), or enable SP80 hard stop (Full 1.6.4/1.6.5/1.6.6/1.6.7: default for configuration without an explicit mode)')
   q.add_argument('--ext-version',choices=SUPPORTED_VERSIONS,required=True,help='Light 1.5.x; Full 1.6.x; required EMU1101-EXT version; every version uses 1=enabled and 0=denied permissions')
   if name=='_worker':q.add_argument('--mode',required=True,choices=('analyze','patch'))
  args=p.parse_args(argv)

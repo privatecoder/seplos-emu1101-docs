@@ -109,7 +109,7 @@ class ReleaseVerification(unittest.TestCase):
             self.assertFalse(report['rebuild'])
             self.assertEqual(report['profiles'], 2)
             self.assertEqual({row['existing']['patch_version'] for row in report['results']},
-                             {'1.5.5', '1.6.5'})
+                             {'1.5.6', '1.6.7'})
             for row in report['results']:
                 self.assertEqual(len(row['existing']['build_id']), 16)
                 self.assertEqual(len(row['existing']['ehex_sha256']), 64)
